@@ -1,10 +1,8 @@
 "use client";
 
-import type { ChangeEventHandler, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { sileo } from "sileo";
-import { ChevronDown } from "lucide-react";
 
 import {
   useCreateKebeleMutation,
@@ -43,6 +41,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type SectionKey = "region" | "zone" | "woreda" | "kebele" | "religion";
 
@@ -63,37 +68,49 @@ function ListLoadingSkeleton() {
 }
 
 const unifiedInputClass = "h-11 text-[0.95rem] md:text-base";
-const unifiedSelectClass =
-  "h-11 w-full rounded-lg border border-input bg-background px-3 pr-9 text-[0.95rem] md:text-base outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
+const NONE_SELECTED_VALUE = "__WEEMA_NONE__";
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
 
 function SelectField({
   value,
-  onChange,
-  children,
+  onValueChange,
+  options,
   className,
-  ariaLabel,
+  placeholder,
 }: {
   value: string;
-  onChange: ChangeEventHandler<HTMLSelectElement>;
-  children: ReactNode;
+  onValueChange: (value: string) => void;
+  options: SelectOption[];
   className?: string;
-  ariaLabel: string;
+  placeholder: string;
 }) {
+  const selectValue = value || NONE_SELECTED_VALUE;
+
   return (
-    <div className="relative">
-      <select
-        aria-label={ariaLabel}
-        className={`${unifiedSelectClass} ${className ?? ""}`}
-        value={value}
-        onChange={onChange}
-      >
-        {children}
-      </select>
-      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-    </div>
+    <Select
+      value={selectValue}
+      onValueChange={(nextValue) =>
+        onValueChange(nextValue === NONE_SELECTED_VALUE ? "" : nextValue)
+      }
+    >
+      <SelectTrigger className={className}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NONE_SELECTED_VALUE}>{placeholder}</SelectItem>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
-
 function RegionManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -379,17 +396,14 @@ function ZoneManager() {
             onChange={(event) => setDescription(event.target.value)}
           />
           <SelectField
-            ariaLabel="Select region"
             value={regionId}
-            onChange={(event) => setRegionId(event.target.value)}
-          >
-            <option value="">Select region</option>
-            {regionOptions.map((region) => (
-              <option key={region.id} value={region.id}>
-                {region.name}
-              </option>
-            ))}
-          </SelectField>
+            placeholder="Select region"
+            options={regionOptions.map((region) => ({
+              value: region.id,
+              label: region.name,
+            }))}
+            onValueChange={setRegionId}
+          />
 
           <div className="flex gap-2">
             <Button
@@ -654,17 +668,14 @@ function WoredaManager() {
             onChange={(event) => setDescription(event.target.value)}
           />
           <SelectField
-            ariaLabel="Select zone"
             value={zoneId}
-            onChange={(event) => setZoneId(event.target.value)}
-          >
-            <option value="">Select zone</option>
-            {zoneOptions.map((zone) => (
-              <option key={zone.id} value={zone.id}>
-                {zone.name}
-              </option>
-            ))}
-          </SelectField>
+            placeholder="Select zone"
+            options={zoneOptions.map((zone) => ({
+              value: zone.id,
+              label: zone.name,
+            }))}
+            onValueChange={setZoneId}
+          />
 
           <div className="flex gap-2">
             <Button
@@ -744,38 +755,32 @@ function WoredaManager() {
               }}
             />
             <SelectField
-              ariaLabel="Filter by region"
               className="w-full sm:min-w-[180px]"
               value={regionFilterId}
-              onChange={(event) => {
-                setRegionFilterId(event.target.value);
+              placeholder="All regions"
+              options={(regionsQuery.data?.regions ?? []).map((region) => ({
+                value: region.id,
+                label: region.name,
+              }))}
+              onValueChange={(value) => {
+                setRegionFilterId(value);
                 setZoneId("");
                 setPage(1);
               }}
-            >
-              <option value="">All regions</option>
-              {regionsQuery.data?.regions?.map((region) => (
-                <option key={region.id} value={region.id}>
-                  {region.name}
-                </option>
-              ))}
-            </SelectField>
+            />
             <SelectField
-              ariaLabel="Filter by zone"
               className="w-full sm:min-w-[180px]"
               value={zoneId}
-              onChange={(event) => {
-                setZoneId(event.target.value);
+              placeholder="All zones"
+              options={zoneOptions.map((zone) => ({
+                value: zone.id,
+                label: zone.name,
+              }))}
+              onValueChange={(value) => {
+                setZoneId(value);
                 setPage(1);
               }}
-            >
-              <option value="">All zones</option>
-              {zoneOptions.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.name}
-                </option>
-              ))}
-            </SelectField>
+            />
           </div>
 
           <div className="max-h-[460px] space-y-2 overflow-auto pr-1">
@@ -964,17 +969,14 @@ function KebeleManager() {
             onChange={(event) => setDescription(event.target.value)}
           />
           <SelectField
-            ariaLabel="Select woreda"
             value={selectedWoredaId}
-            onChange={(event) => setSelectedWoredaId(event.target.value)}
-          >
-            <option value="">Select woreda</option>
-            {woredaOptions.map((woreda) => (
-              <option key={woreda.id} value={woreda.id}>
-                {woreda.name}
-              </option>
-            ))}
-          </SelectField>
+            placeholder="Select woreda"
+            options={woredaOptions.map((woreda) => ({
+              value: woreda.id,
+              label: woreda.name,
+            }))}
+            onValueChange={setSelectedWoredaId}
+          />
 
           <div className="flex gap-2">
             <Button
@@ -1056,38 +1058,32 @@ function KebeleManager() {
               }}
             />
             <SelectField
-              ariaLabel="Filter by zone"
               className="w-full sm:min-w-[180px]"
               value={zoneFilterId}
-              onChange={(event) => {
-                setZoneFilterId(event.target.value);
+              placeholder="All zones"
+              options={(zonesQuery.data?.zones ?? []).map((zone) => ({
+                value: zone.id,
+                label: zone.name,
+              }))}
+              onValueChange={(value) => {
+                setZoneFilterId(value);
                 setWoredaFilterId("");
                 setPage(1);
               }}
-            >
-              <option value="">All zones</option>
-              {zonesQuery.data?.zones?.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.name}
-                </option>
-              ))}
-            </SelectField>
+            />
             <SelectField
-              ariaLabel="Filter by woreda"
               className="w-full sm:min-w-[180px]"
               value={woredaFilterId}
-              onChange={(event) => {
-                setWoredaFilterId(event.target.value);
+              placeholder="All woredas"
+              options={woredaOptions.map((woreda) => ({
+                value: woreda.id,
+                label: woreda.name,
+              }))}
+              onValueChange={(value) => {
+                setWoredaFilterId(value);
                 setPage(1);
               }}
-            >
-              <option value="">All woredas</option>
-              {woredaOptions.map((woreda) => (
-                <option key={woreda.id} value={woreda.id}>
-                  {woreda.name}
-                </option>
-              ))}
-            </SelectField>
+            />
           </div>
 
           <div className="max-h-[460px] space-y-2 overflow-auto pr-1">

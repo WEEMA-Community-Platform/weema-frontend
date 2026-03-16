@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/samson/weema/apps/admin/app/providers.tsx"],"sourcesContent":["\"use client\";\n\nimport { QueryClient, QueryClientProvider } from \"@tanstack/react-query\";\nimport { useState, type PropsWithChildren } from \"react\";\nimport { Toaster } from \"sileo\";\nimport \"sileo/styles.css\";\n\nexport function Providers({ children }: PropsWithChildren) {\n  const [queryClient] = useState(\n    () =>\n      new QueryClient({\n        defaultOptions: {\n          queries: {\n            refetchOnWindowFocus: false,\n            retry: 1,\n          },\n          mutations: {\n            retry: 0,\n          },\n        },\n      })\n  );\n\n  return (\n    <QueryClientProvider client={queryClient}>\n      {children}\n      <Toaster position=\"top-right\" />\n    </QueryClientProvider>\n  );\n}\n\n"],"names":[],"mappings":";;;;;AAEA;AAAA;AACA;AACA;;;AAJA;;;;;AAOO,SAAS,UAAU,EAAE,QAAQ,EAAqB;;IACvD,MAAM,CAAC,YAAY,GAAG,IAAA,0UAAQ;8BAC5B,IACE,IAAI,yQAAW,CAAC;gBACd,gBAAgB;oBACd,SAAS;wBACP,sBAAsB;wBACtB,OAAO;oBACT;oBACA,WAAW;wBACT,OAAO;oBACT;gBACF;YACF;;IAGJ,qBACE,8VAAC,iTAAmB;QAAC,QAAQ;;YAC1B;0BACD,8VAAC,oRAAO;gBAAC,UAAS;;;;;;;;;;;;AAGxB;GAtBgB;KAAA"}}]
-}
