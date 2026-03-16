@@ -614,14 +614,19 @@ function WoredaManager() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [regionFilterId, setRegionFilterId] = useState("");
-  const [zoneId, setZoneId] = useState("");
+  const [zoneFilterId, setZoneFilterId] = useState("");
+  const [selectedZoneId, setSelectedZoneId] = useState("");
   const [editingWoreda, setEditingWoreda] = useState<Woreda | null>(null);
   const [pendingDeleteWoreda, setPendingDeleteWoreda] = useState<Woreda | null>(
     null
   );
 
   const regionsQuery = useRegionsQuery({ page: 1, pageSize: 100 });
-  const zonesForSelectQuery = useZonesQuery({
+  const zonesForCreateQuery = useZonesQuery({
+    page: 1,
+    pageSize: 100,
+  });
+  const zonesForFilterQuery = useZonesQuery({
     page: 1,
     pageSize: 100,
     regionId: regionFilterId || undefined,
@@ -631,16 +636,20 @@ function WoredaManager() {
     pageSize: 10,
     searchQuery,
     regionId: regionFilterId || undefined,
-    zoneId: zoneId || undefined,
+    zoneId: zoneFilterId || undefined,
   });
 
   const createMutation = useCreateWoredaMutation();
   const updateMutation = useUpdateWoredaMutation();
   const deleteMutation = useDeleteWoredaMutation();
 
-  const zoneOptions = useMemo(
-    () => zonesForSelectQuery.data?.zones ?? [],
-    [zonesForSelectQuery.data?.zones]
+  const zoneCreateOptions = useMemo(
+    () => zonesForCreateQuery.data?.zones ?? [],
+    [zonesForCreateQuery.data?.zones]
+  );
+  const zoneFilterOptions = useMemo(
+    () => zonesForFilterQuery.data?.zones ?? [],
+    [zonesForFilterQuery.data?.zones]
   );
 
   return (
@@ -668,20 +677,20 @@ function WoredaManager() {
             onChange={(event) => setDescription(event.target.value)}
           />
           <SelectField
-            value={zoneId}
+            value={selectedZoneId}
             placeholder="Select zone"
-            options={zoneOptions.map((zone) => ({
+            options={zoneCreateOptions.map((zone) => ({
               value: zone.id,
               label: zone.name,
             }))}
-            onValueChange={setZoneId}
+            onValueChange={setSelectedZoneId}
           />
 
           <div className="flex gap-2">
             <Button
               className={editingWoreda ? "flex-1 bg-[#415A9F] text-white hover:bg-[#384d88]" : "w-full bg-[#415A9F] text-white hover:bg-[#384d88]"}
               onClick={async () => {
-                if (!name.trim() || !zoneId) {
+                if (!name.trim() || !selectedZoneId) {
                   sileo.warning({
                     title: "Missing fields",
                     description: "Woreda name and zone are required.",
@@ -695,7 +704,7 @@ function WoredaManager() {
                       payload: {
                         name: name.trim(),
                         description: description.trim(),
-                        zoneId,
+                        zoneId: selectedZoneId,
                       },
                     });
                     sileo.success({ title: "Updated", description: result.message });
@@ -703,12 +712,13 @@ function WoredaManager() {
                     const result = await createMutation.mutateAsync({
                       name: name.trim(),
                       description: description.trim(),
-                      zoneId,
+                      zoneId: selectedZoneId,
                     });
                     sileo.success({ title: "Created", description: result.message });
                   }
                   setName("");
                   setDescription("");
+                  setSelectedZoneId("");
                   setEditingWoreda(null);
                   setPage(1);
                 } catch (error) {
@@ -730,6 +740,7 @@ function WoredaManager() {
                   setEditingWoreda(null);
                   setName("");
                   setDescription("");
+                  setSelectedZoneId("");
                 }}
               >
                 Cancel editing
@@ -764,20 +775,20 @@ function WoredaManager() {
               }))}
               onValueChange={(value) => {
                 setRegionFilterId(value);
-                setZoneId("");
+                setZoneFilterId("");
                 setPage(1);
               }}
             />
             <SelectField
               className="w-full sm:min-w-[180px]"
-              value={zoneId}
+              value={zoneFilterId}
               placeholder="All zones"
-              options={zoneOptions.map((zone) => ({
+              options={zoneFilterOptions.map((zone) => ({
                 value: zone.id,
                 label: zone.name,
               }))}
               onValueChange={(value) => {
-                setZoneId(value);
+                setZoneFilterId(value);
                 setPage(1);
               }}
             />
@@ -805,7 +816,7 @@ function WoredaManager() {
                         setEditingWoreda(woreda);
                         setName(woreda.name);
                         setDescription(woreda.description || "");
-                        setZoneId(woreda.zoneId);
+                        setSelectedZoneId(woreda.zoneId);
                       }}
                     >
                       Edit

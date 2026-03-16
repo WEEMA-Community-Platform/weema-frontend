@@ -14,6 +14,7 @@ export function proxy(request: NextRequest) {
     isPublicAsset ||
     path.startsWith("/auth/callback") ||
     path.startsWith("/login") ||
+    path.startsWith("/forgot-password") ||
     path.startsWith("/api/")
   ) {
     return NextResponse.next();
