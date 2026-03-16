@@ -1,0 +1,3 @@
+{
+  "/api/kebele/[id]/route": "app/api/kebele/[id]/route.js"
+}

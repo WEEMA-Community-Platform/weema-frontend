@@ -1,0 +1,3 @@
+{
+  "/api/woreda/[id]/route": "app/api/woreda/[id]/route.js"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@weema/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react-query": "./src/react-query.ts"
+  },
+  "scripts": {
+    "lint": "echo 'No lints in @weema/auth yet'",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "echo '@weema/auth is source-consumed by workspace apps'"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.21"
+  }
+}

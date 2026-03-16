@@ -1,0 +1,877 @@
+[00:00:02.538] Server  LOG     ✓ Ready in 2.1s
+[00:00:05.749] Server  LOG     ○ Compiling /login ...
+[00:00:08.699] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:25.638] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:26.292] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/login" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true}>
+                          <body
+                            className="geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__var..."
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[00:15:54.364] Server  LOG     ✓ Compiled in 97ms
+[00:15:54.547] Server  LOG     ✓ Compiled in 65ms
+[00:15:54.637] Server  LOG     ✓ Compiled in 55ms
+[00:15:54.779] Server  LOG     ✓ Compiled in 58ms
+[00:16:51.434] Server  LOG     ✓ Compiled in 425ms
+[00:17:06.549] Server  LOG     ✓ Compiled in 0ms
+[00:17:06.926] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:07.493] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/login" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true}>
+                          <body
+                            className="lato_e70685d2-module__UmoDgW__variable antialiased"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[00:17:39.344] Server  LOG     ✓ Compiled in 134ms
+[00:17:50.100] Server  ERROR   ⨯ "The requested resource isn't a valid image for" "/weema-logo.png" "received" null
+[00:19:59.116] Server  ERROR   ⨯ "The requested resource isn't a valid image for" "/weema-logo.png" "received" null
+[00:19:59.194] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:20:08.116] Server  ERROR   ⨯ "The requested resource isn't a valid image for" "/weema-logo.png" "received" null
+[00:20:08.130] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:21:04.457] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:21:04.506] Server  ERROR   ⨯ "The requested resource isn't a valid image for" "/weema-logo.png" "received" null
+[00:21:23.363] Server  LOG     ✓ Compiled in 41ms
+[00:21:28.225] Server  LOG     ✓ Compiled in 138ms
+[00:22:05.404] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:22:05.880] Browser WARN    Image with src "/weema-logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:23:23.269] Server  LOG     ✓ Compiled in 67ms
+[00:24:38.203] Server  LOG     ✓ Compiled in 104ms
+[00:25:26.811] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:25:27.044] Browser WARN    Image with src "/weema-logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:29:23.387] Server  LOG     ✓ Compiled in 72ms
+[00:30:04.809] Server  LOG     ✓ Compiled in 73ms
+[00:31:07.860] Server  LOG     ✓ Compiled in 56ms
+[00:31:18.436] Server  LOG     ✓ Compiled in 33ms
+[00:32:41.992] Server  LOG     ✓ Compiled in 55ms
+[00:33:14.924] Server  LOG     ✓ Compiled in 28ms
+[00:33:19.096] Server  LOG     ✓ Compiled in 31ms
+[00:33:23.128] Server  LOG     ✓ Compiled in 30ms
+[00:33:26.938] Server  LOG     ✓ Compiled in 61ms
+[00:33:30.356] Server  LOG     ✓ Compiled in 78ms
+[00:36:24.334] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:36:24.588] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                            ...
+                              <section className="flex gap-3">
+                                <Button>
+                                  <Button data-slot="button" className={"group/bu..."}>
+                                    <button
+                                      type="button"
+                                      onClick={function onClick}
+                                      onMouseDown={function onMouseDown}
+                                      onKeyDown={function}
+                                      onKeyUp={function onKeyUp}
+                                      onPointerDown={function onPointerDown}
+                                      tabIndex={0}
+                                      disabled={false}
+                                      data-slot="button"
+                                      ref={function}
++                                     className={"group/button inline-flex shrink-0 cursor-pointer items-center justi..."}
+-                                     className={"group/button inline-flex shrink-0 items-center justify-center round..."}
+                                    >
++                                     Start Admin Dashboard
+                                <Button variant="outline">
+                                  <Button data-slot="button" className={"group/bu..."}>
+                                    <button
+                                      type="button"
+                                      onClick={function onClick}
+                                      onMouseDown={function onMouseDown}
+                                      onKeyDown={function}
+                                      onKeyUp={function onKeyUp}
+                                      onPointerDown={function onPointerDown}
+                                      tabIndex={0}
+                                      disabled={false}
+                                      data-slot="button"
+                                      ref={function}
++                                     className={"group/button inline-flex shrink-0 cursor-pointer items-center justi..."}
+-                                     className={"group/button inline-flex shrink-0 items-center justify-center round..."}
+                                    >
++                                     Configure Modules
+                  ...
+
+[00:37:02.328] Server  LOG     ✓ Compiled in 181ms
+[00:37:12.314] Server  LOG     ✓ Compiled in 1266ms
+[00:37:29.337] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:37:29.763] Browser WARN    Image with src "/weema-logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:37:29.763] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/login" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[00:37:31.146] Server  LOG     ✓ Compiled in 50ms
+[00:38:02.542] Server  LOG     ✓ Compiled in 59ms
+[00:39:14.488] Server  LOG     ✓ Compiled in 1051ms
+[00:39:15.571] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:39:16.081] Browser WARN    Image with src "/weema-logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:39:16.081] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/login" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[00:39:21.925] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:39:22.097] Browser WARN    Image with src "/weema-logo.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+[00:56:44.742] Server  LOG     ✓ Compiled in 89ms
+[00:56:44.858] Server  LOG     ✓ Compiled in 105ms
+[00:56:45.085] Server  LOG     ✓ Compiled in 75ms
+[00:56:45.353] Server  LOG     ✓ Compiled in 90ms
+[00:56:45.483] Server  LOG     ✓ Compiled in 93ms
+[00:56:45.606] Server  LOG     ✓ Compiled in 82ms
+[00:56:46.349] Server  LOG     ✓ Compiled in 1ms
+[00:56:47.105] Server  LOG     ✓ Compiled in 224ms
+[00:56:47.282] Server  LOG     ✓ Compiled in 0ms
+[00:56:47.623] Server  LOG     ✓ Compiled in 148ms
+[00:57:33.955] Server  LOG     ✓ Compiled in 41ms
+[00:59:22.437] Server  LOG     ✓ Compiled in 96ms
+[00:59:43.411] Server  LOG     ✓ Compiled in 82ms
+[01:00:22.761] Server  LOG     ✓ Compiled in 484ms
+[01:00:24.146] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:00:25.262] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[01:00:29.760] Server  LOG     ✓ Compiled in 56ms
+[01:01:30.847] Server  LOG     ✓ Compiled in 52ms
+[01:11:40.779] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:11:41.088] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[01:11:42.471] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:11:46.031] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:11:59.638] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:17:51.062] Server  LOG     ✓ Compiled in 57ms
+[01:18:05.979] Server  LOG     ✓ Compiled in 74ms
+[01:18:23.097] Server  LOG     ✓ Compiled in 191ms
+[01:18:39.739] Server  LOG     ✓ Compiled in 46ms
+[01:22:55.214] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:22:55.537] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[01:23:05.610] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:25:46.402] Server  LOG     ✓ Compiled in 172ms
+[01:26:33.808] Server  LOG     ✓ Compiled in 282ms
+[01:26:44.271] Server  LOG     ✓ Compiled in 66ms
+[01:28:37.529] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:28:37.861] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[01:28:42.360] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:29:17.789] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:29:19.116] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:29:20.463] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:29:39.583] Server  LOG     ✓ Compiled in 64ms
+[01:29:58.380] Server  LOG     ✓ Compiled in 71ms
+[01:32:05.113] Server  LOG     ✓ Compiled in 227ms
+[01:33:56.653] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:34:01.479] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:34:06.462] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:34:06.665] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[01:34:10.603] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:34:12.363] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:34:12.641] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="/apps/admi...">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" suppressHydrationWarning={true} className="lato_e7068...">
+                          <body
+                            className="antialiased font-medium font-sans"
+-                           cz-shortcut-listen="true"
+                          >
+                  ...
+
+[01:37:44.502] Server  LOG     ✓ Compiled in 118ms
+[01:37:55.890] Server  LOG     ✓ Compiled in 77ms
+[01:38:24.672] Server  LOG     ✓ Compiled in 67ms
+[01:38:39.413] Server  LOG     ✓ Compiled in 57ms
+[01:39:16.393] Server  LOG     ✓ Compiled in 102ms
+[01:39:28.149] Server  LOG     ✓ Compiled in 80ms
+[01:39:46.763] Server  LOG     ✓ Compiled in 144ms
+[01:41:31.113] Server  LOG     ✓ Compiled in 59ms
+[01:41:54.244] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:42:12.200] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:42:16.221] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:42:21.619] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:42:25.971] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:42:29.076] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:42:34.057] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:02.616] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:04.500] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:08.278] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:15.177] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:15.608] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+      ...
+        <div data-slot="sidebar-co..." data-sidebar="content" className="no-scrollb...">
+          <NavMain items={[...]}>
+            <SidebarGroup>
+              <div data-slot="sidebar-group" data-sidebar="group" className="relative f...">
+                <SidebarGroupLabel>
+                <SidebarMenu>
+                  <ul data-slot="sidebar-menu" data-sidebar="menu" className="flex w-ful...">
+                    <Collapsible defaultOpen={true} className="group/coll..." render={<SidebarMenuItem>}>
+                      <CollapsibleRoot data-slot="collapsible" defaultOpen={true} className="group/coll..." ...>
+                        <SidebarMenuItem data-open="" data-slot="collapsible" ref={null} className="group/coll...">
+                          <li data-slot="collapsible" data-sidebar="menu-item" className="group/menu..." data-open="" ...>
+                            ...
+                              <TooltipTrigger render={undefined} data-slot="collapsibl..." data-sidebar="menu-button" ...>
+                                <TooltipTrigger data-slot="collapsibl..." render={undefined} data-sidebar="menu-button" ...>
+                                  <button
+                                    type="button"
+                                    onPointerDown={function}
+                                    onPointerEnter={function setPointerRef}
+                                    onMouseMove={function onMouseMove}
+                                    onMouseLeave={function onMouseLeave}
+                                    onFocus={function onFocus}
+                                    onBlur={function onBlur}
++                                   id="base-ui-_R_3faandlb_"
+-                                   id="base-ui-_R_dt9indlb_"
+                                    data-trigger-disabled={undefined}
+                                    data-slot="collapsible-trigger"
+                                    data-sidebar="menu-button"
+                                    data-size="default"
+                                    data-panel-open=""
+                                    onClick={function onClick}
+                                    onMouseDown={function onMouseDown}
+                                    onKeyDown={function}
+                                    onKeyUp={function onKeyUp}
+                                    tabIndex={0}
+                                    aria-disabled={false}
++                                   aria-controls="base-ui-_R_3aandlb_"
+-                                   aria-controls="base-ui-_R_d9indlb_"
+                                    aria-expanded={true}
+                                    ref={function}
+                                    className={"peer/menu-button group/menu-button flex w-full items-center gap-2 ove..."}
+                                  >
+                              ...
+                            <CollapsibleContent>
+                              <CollapsiblePanel data-slot="collapsibl...">
+                                <div
+                                  data-open=""
+                                  hidden={false}
++                                 id="base-ui-_R_3aandlb_"
+-                                 id="base-ui-_R_d9indlb_"
+                                  ref={function}
+                                  style={{--collapsible-panel-height:"auto",--collapsible-panel-width:"auto"}}
+                                  data-slot="collapsible-content"
+                                >
+      <SidebarInset>
+        <main data-slot="sidebar-inset" className="relative f...">
+          <header>
+          <div className="flex flex-...">
+            <div>
+            <CommunityStructurePanel>
+              <ZoneManager>
+                <div className="grid items...">
+                  <Card className="self-start...">
+                    <div data-slot="card" data-size="default" className={"group/ca..."}>
+                      <CardHeader>
+                      <CardContent className="space-y-3">
+                        <div data-slot="card-content" className="px-4 group...">
+                          <Input placeholder="Zone name" value="" onChange={function onChange}>
+                            <Input type={undefined} data-slot="input" className="h-8 w-full..." placeholder="Zone name" ...>
+                              <FieldControl ref={null} type={undefined} data-slot="input" className="h-8 w-full..." ...>
+                                <input
++                                 id="base-ui-_R_kqindlb_"
+-                                 id="base-ui-_R_2jaindlb_"
+                                  disabled={false}
+                                  name={undefined}
+                                  ref={function}
+                                  aria-labelledby={undefined}
+                                  autoFocus={false}
+                                  value=""
+                                  onChange={function}
+                                  onFocus={function onFocus}
+                                  onBlur={function onBlur}
+                                  onKeyDown={function onKeyDown}
+                                  type={undefined}
+                                  data-slot="input"
+                                  placeholder="Zone name"
+                                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 p..."
+                                >
+                          ...
+                  <Card className="border-pri...">
+                    <div data-slot="card" data-size="default" className={"group/ca..."}>
+                      <CardHeader>
+                      <CardContent className="space-y-3">
+                        <div data-slot="card-content" className="px-4 group...">
+                          <Input placeholder="Search zone" value="" onChange={function onChange}>
+                            <Input type={undefined} data-slot="input" className="h-8 w-full..." placeholder="Search zone" ...>
+                              <FieldControl ref={null} type={undefined} data-slot="input" className="h-8 w-full..." ...>
+                                <input
++                                 id="base-ui-_R_daindlb_"
+-                                 id="base-ui-_R_1laindlb_"
+                                  disabled={false}
+                                  name={undefined}
+                                  ref={function}
+                                  aria-labelledby={undefined}
+                                  autoFocus={false}
+                                  value=""
+                                  onChange={function}
+                                  onFocus={function onFocus}
+                                  onBlur={function onBlur}
+                                  onKeyDown={function onKeyDown}
+                                  type={undefined}
+                                  data-slot="input"
+                                  placeholder="Search zone"
+                                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 p..."
+                                >
+                          ...
+                  ...
+
+[01:43:17.310] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:19.120] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:20.625] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:21.257] Server  LOG     ✓ Compiled in 93ms
+[01:43:27.983] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:32.698] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:37.451] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:43.869] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:45.887] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:47.694] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:43:50.703] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:46:10.829] Server  LOG     ✓ Compiled in 204ms
+[01:46:23.348] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:46:29.120] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:46:29.442] Browser ERROR   A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <div data-slot="sidebar-wr..." style={{...}} className="group/side...">
+      ...
+        <div data-slot="sidebar-co..." data-sidebar="content" className="no-scrollb...">
+          <NavMain items={[...]}>
+            <SidebarGroup>
+              <div data-slot="sidebar-group" data-sidebar="group" className="relative f...">
+                <SidebarGroupLabel>
+                <SidebarMenu>
+                  <ul data-slot="sidebar-menu" data-sidebar="menu" className="flex w-ful...">
+                    <Collapsible defaultOpen={true} className="group/coll..." render={<SidebarMenuItem>}>
+                      <CollapsibleRoot data-slot="collapsible" defaultOpen={true} className="group/coll..." ...>
+                        <SidebarMenuItem data-open="" data-slot="collapsible" ref={null} className="group/coll...">
+                          <li data-slot="collapsible" data-sidebar="menu-item" className="group/menu..." data-open="" ...>
+                            ...
+                              <TooltipTrigger render={undefined} data-slot="collapsibl..." data-sidebar="menu-button" ...>
+                                <TooltipTrigger data-slot="collapsibl..." render={undefined} data-sidebar="menu-button" ...>
+                                  <button
+                                    type="button"
+                                    onPointerDown={function}
+                                    onPointerEnter={function setPointerRef}
+                                    onMouseMove={function onMouseMove}
+                                    onMouseLeave={function onMouseLeave}
+                                    onFocus={function onFocus}
+                                    onBlur={function onBlur}
++                                   id="base-ui-_R_3faandlb_"
+-                                   id="base-ui-_R_dt9indlb_"
+                                    data-trigger-disabled={undefined}
+                                    data-slot="collapsible-trigger"
+                                    data-sidebar="menu-button"
+                                    data-size="default"
+                                    data-panel-open=""
+                                    onClick={function onClick}
+                                    onMouseDown={function onMouseDown}
+                                    onKeyDown={function}
+                                    onKeyUp={function onKeyUp}
+                                    tabIndex={0}
+                                    aria-disabled={false}
++                                   aria-controls="base-ui-_R_3aandlb_"
+-                                   aria-controls="base-ui-_R_d9indlb_"
+                                    aria-expanded={true}
+                                    ref={function}
+                                    className={"peer/menu-button group/menu-button flex w-full items-center gap-2 ove..."}
+                                  >
+                              ...
+                            <CollapsibleContent>
+                              <CollapsiblePanel data-slot="collapsibl...">
+                                <div
+                                  data-open=""
+                                  hidden={false}
++                                 id="base-ui-_R_3aandlb_"
+-                                 id="base-ui-_R_d9indlb_"
+                                  ref={function}
+                                  style={{--collapsible-panel-height:"auto",--collapsible-panel-width:"auto"}}
+                                  data-slot="collapsible-content"
+                                >
+      <SidebarInset>
+        <main data-slot="sidebar-inset" className="relative f...">
+          <header>
+          <div className="flex flex-...">
+            <div>
+            <CommunityStructurePanel>
+              <WoredaManager>
+                <div className="grid items...">
+                  <Card className="self-start...">
+                    <div data-slot="card" data-size="default" className={"group/ca..."}>
+                      <CardHeader>
+                      <CardContent className="space-y-3">
+                        <div data-slot="card-content" className="px-4 group...">
+                          <Input placeholder="Woreda name" value="" onChange={function onChange}>
+                            <Input type={undefined} data-slot="input" className="h-8 w-full..." placeholder="Woreda name" ...>
+                              <FieldControl ref={null} type={undefined} data-slot="input" className="h-8 w-full..." ...>
+                                <input
++                                 id="base-ui-_R_kqindlb_"
+-                                 id="base-ui-_R_2jaindlb_"
+                                  disabled={false}
+                                  name={undefined}
+                                  ref={function}
+                                  aria-labelledby={undefined}
+                                  autoFocus={false}
+                                  value=""
+                                  onChange={function}
+                                  onFocus={function onFocus}
+                                  onBlur={function onBlur}
+                                  onKeyDown={function onKeyDown}
+                                  type={undefined}
+                                  data-slot="input"
+                                  placeholder="Woreda name"
+                                  className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 p..."
+                                >
+                          ...
+                  <Card className="border-pri...">
+                    <div data-slot="card" data-size="default" className={"group/ca..."}>
+                      <CardHeader>
+                      <CardContent className="space-y-3">
+                        <div data-slot="card-content" className="px-4 group...">
+                          <div className="flex flex-...">
+                            <Input placeholder="Search wor..." value="" className="h-11 w-ful..." ...>
+                              <Input type={undefined} data-slot="input" className="min-w-0 ro..." ...>
+                                <FieldControl ref={null} type={undefined} data-slot="input" className="min-w-0 ro..." ...>
+                                  <input
++                                   id="base-ui-_R_1daindlb_"
+-                                   id="base-ui-_R_5laindlb_"
+                                    disabled={false}
+                                    name={undefined}
+                                    ref={function}
+                                    aria-labelledby={undefined}
+                                    autoFocus={false}
+                                    value=""
+                                    onChange={function}
+                                    onFocus={function onFocus}
+                                    onBlur={function onBlur}
+                                    onKeyDown={function onKeyDown}
+                                    type={undefined}
+                                    data-slot="input"
+                                    placeholder="Search woredas"
+                                    className="min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 trans..."
+                                  >
+                            ...
+                          ...
+                  ...
+
+[01:46:32.607] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:46:42.146] Server  LOG     ✓ Compiled in 119ms
+[01:46:53.420] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:46:56.921] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold

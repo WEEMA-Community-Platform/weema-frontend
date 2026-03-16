@@ -1,0 +1,3 @@
+{
+  "/api/auth/request-otp/[email]/route": "app/api/auth/request-otp/[email]/route.js"
+}
