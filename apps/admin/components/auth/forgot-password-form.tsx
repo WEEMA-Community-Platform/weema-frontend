@@ -159,7 +159,7 @@ export function ForgotPasswordForm() {
 
           <Button
             type="button"
-            className="h-11 w-full bg-[#415A9F] text-white hover:bg-[#384d88]"
+            className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90"
             disabled={resetPasswordMutation.isPending}
             onClick={async () => {
               if (!email.trim() || !otp.trim() || !newPassword || !confirmPassword) {

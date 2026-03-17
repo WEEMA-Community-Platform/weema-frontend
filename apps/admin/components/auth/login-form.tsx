@@ -112,7 +112,7 @@ export function LoginForm({
               <Field>
                 <Button
                   type="submit"
-                  className="w-full bg-[#415A9F] py-5 text-white hover:bg-[#384d88]"
+                  className="w-full bg-primary py-5 text-primary-foreground hover:bg-primary/90"
                   disabled={loginMutation.isPending}
                 >
                   {loginMutation.isPending ? "Signing in..." : "Login"}

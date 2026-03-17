@@ -15,6 +15,7 @@ export type Zone = {
   description: string;
   regionId: string;
   regionName: string;
+  specialWoreda?: boolean | null;
 };
 
 export type Woreda = {
@@ -108,6 +109,7 @@ export type ZonePayload = {
   name: string;
   description: string;
   regionId: string;
+  specialWoreda?: boolean | null;
 };
 
 export type WoredaPayload = {
