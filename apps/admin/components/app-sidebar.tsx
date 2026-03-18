@@ -1,56 +1,52 @@
 "use client"
 
-import { useLogoutMutation } from "@weema/auth/react-query"
+import { Building2Icon, MapPinnedIcon, NetworkIcon } from "lucide-react"
+import Link from "next/link"
+
 import { NavMain } from "@/components/nav-main"
+import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
 } from "@/components/ui/sidebar"
-import { Building2Icon, LogOutIcon, MapPinnedIcon } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { sileo } from "sileo"
+import { useCurrentUser } from "@/hooks/use-user"
 
-import { Button } from "@/components/ui/button"
-
-const data = {
-  navMain: [
-    {
-      title: "Base Data",
-      url: "/?section=region",
-      icon: <MapPinnedIcon />,
-      isActive: true,
-      items: [
-        {
-          title: "Region",
-          url: "/?section=region",
-        },
-        {
-          title: "Zone",
-          url: "/?section=zone",
-        },
-        {
-          title: "Woreda",
-          url: "/?section=woreda",
-        },
-        {
-          title: "Kebele",
-          url: "/?section=kebele",
-        },
-        {
-          title: "Religion",
-          url: "/?section=religion",
-        },
-      ],
-    },
-  ],
-}
+const navMain = [
+  {
+    title: "Base Data",
+    url: "/?section=region",
+    icon: <MapPinnedIcon />,
+    isActive: true,
+    items: [
+      { title: "Region",   url: "/?section=region" },
+      { title: "Zone",     url: "/?section=zone" },
+      { title: "Woreda",   url: "/?section=woreda" },
+      { title: "Kebele",   url: "/?section=kebele" },
+      { title: "Religion", url: "/?section=religion" },
+    ],
+  },
+  {
+    title: "Community Structure",
+    url: "/?section=federation",
+    icon: <NetworkIcon />,
+    isActive: false,
+    items: [
+      { title: "Federations",      url: "/?section=federation" },
+      { title: "Clusters",         url: "/?section=cluster" },
+      { title: "Self-Help Groups", url: "/?section=shg" },
+    ],
+  },
+]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const router = useRouter()
-  const logoutMutation = useLogoutMutation({ baseUrl: "/api/auth" })
+  const { data: currentUserData } = useCurrentUser()
+
+  const user = currentUserData?.user
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "Loading..."
+  const displayEmail = user?.email ?? ""
+  const displayRole = user?.role?.replace("ROLE_", "").replace(/_/g, " ") ?? ""
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -69,37 +65,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <Button
-          type="button"
-          variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
-          disabled={logoutMutation.isPending}
-          onClick={async () => {
-            try {
-              const result = await logoutMutation.mutateAsync()
-              sileo.success({
-                title: "Logged out",
-                description: result.message || "You have been signed out.",
-              })
-              router.push("/login")
-              router.refresh()
-            } catch (error) {
-              sileo.error({
-                title: "Logout failed",
-                description:
-                  error instanceof Error ? error.message : "Unexpected error",
-              })
-            }
+        <NavUser
+          user={{
+            name: displayName,
+            email: displayEmail,
+            role: displayRole,
+            avatar: "",
           }}
-        >
-          <LogOutIcon className="size-4" />
-          <span className="group-data-[collapsible=icon]:hidden">
-            {logoutMutation.isPending ? "Logging out..." : "Logout"}
-          </span>
-        </Button>
+        />
       </SidebarFooter>
     </Sidebar>
   )

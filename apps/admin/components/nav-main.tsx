@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import {
   Collapsible,
@@ -19,29 +20,39 @@ import {
 } from "@/components/ui/sidebar"
 import { ChevronRightIcon } from "lucide-react"
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon?: React.ReactNode
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
-}) {
+type NavItem = {
+  title: string
+  url: string
+  icon?: React.ReactNode
+  isActive?: boolean
+  items?: { title: string; url: string }[]
+}
+
+export function NavMain({ items }: { items: NavItem[] }) {
   const searchParams = useSearchParams()
   const activeSection = searchParams.get("section") ?? "region"
   const { state } = useSidebar()
 
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      items.map((item) => [
+        item.title,
+        item.items?.some((sub) => sub.url.includes(`section=${activeSection}`)) ??
+          item.isActive ??
+          false,
+      ])
+    )
+  )
+
+  const toggleGroup = (title: string) => {
+    setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }))
+  }
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Community Structure</SidebarGroupLabel>
+      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {items.map((item) =>
           state === "collapsed" ? (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton tooltip={item.title} render={<a href={item.url} />}>
@@ -52,7 +63,8 @@ export function NavMain({
           ) : (
             <Collapsible
               key={item.title}
-              defaultOpen={item.isActive}
+              open={openGroups[item.title] ?? false}
+              onOpenChange={() => toggleGroup(item.title)}
               className="group/collapsible"
               render={<SidebarMenuItem />}
             >
@@ -79,7 +91,7 @@ export function NavMain({
               </CollapsibleContent>
             </Collapsible>
           )
-        ))}
+        )}
       </SidebarMenu>
     </SidebarGroup>
   )
