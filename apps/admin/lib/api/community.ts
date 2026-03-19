@@ -124,6 +124,7 @@ export type SHGPayload = {
   status?: EntityStatus;
   woredaId?: string | null;
   kebeleId?: string | null;
+  clusterId?: string | null;
   facilitatorId?: string | null;
 };
 
@@ -348,6 +349,22 @@ export async function getSHGById(id: string) {
 
 export async function deleteSHG(id: string) {
   const response = await fetch(`/api/self-help-group/${id}`, {
+    method: "DELETE",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function addSHGsToCluster(clusterId: string, shgIds: string[]) {
+  const response = await fetch(`/api/cluster/${clusterId}/self-help-groups`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(shgIds),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function removeSHGFromCluster(clusterId: string, shgId: string) {
+  const response = await fetch(`/api/cluster/${clusterId}/self-help-groups/${shgId}`, {
     method: "DELETE",
   });
   return parseResponse<BaseApiResponse>(response);

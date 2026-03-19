@@ -1,18 +1,22 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { EyeIcon } from "lucide-react";
+import { LayersIcon, LinkIcon, UserIcon, XIcon } from "lucide-react";
 import { sileo } from "sileo";
+import { useQuery } from "@tanstack/react-query";
 
 import {
+  useAddClustersToFederationMutation,
   useCreateFederationMutation,
   useDeleteFederationMutation,
   useFederationDetailQuery,
   useFederationsQuery,
+  useRemoveClusterFromFederationMutation,
   useUpdateFederationMutation,
 } from "@/hooks/use-community";
 import { useCurrentUser } from "@/hooks/use-user";
-import type { EntityStatus, Federation } from "@/lib/api/community";
+import type { Cluster, EntityStatus, Federation } from "@/lib/api/community";
+import { getClusters } from "@/lib/api/community";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +27,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CardMetaRow,
+  CommunityCard,
+  CommunityCardSkeleton,
+  StatusBadge,
+} from "@/components/community/community-card";
 import {
   Dialog,
   DialogContent,
@@ -34,16 +41,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TableCell, TableRow } from "@/components/ui/table";
 import {
   DataToolbar,
-  EmptyStateRow,
   PaginationRow,
   SaveButton,
-  TableShell,
-  descriptionCellClass,
   inputClass,
 } from "@/components/base-data/shared";
 import { SelectField } from "@/components/base-data/select-field";
@@ -53,64 +58,268 @@ const STATUS_OPTIONS = [
   { value: "INACTIVE", label: "Inactive" },
 ];
 
-function StatusBadge({ status }: { status: EntityStatus }) {
-  return (
-    <Badge variant={status === "ACTIVE" ? "default" : "secondary"} className="text-xs">
-      {status === "ACTIVE" ? "Active" : "Inactive"}
-    </Badge>
-  );
-}
-
 function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <>
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium break-words">{value ?? <span className="text-muted-foreground/50">—</span>}</dd>
+      <dd className="text-sm font-medium wrap-break-word">
+        {value ?? <span className="text-muted-foreground/50">—</span>}
+      </dd>
     </>
   );
 }
 
-function FederationDetailDialog({
-  id,
+function AssignClustersDialog({
+  federation,
   open,
   onClose,
 }: {
-  id: string | null;
+  federation: Federation | null;
   open: boolean;
   onClose: () => void;
 }) {
-  const { data, isLoading } = useFederationDetailQuery(id);
-  const fed = data?.federation;
+  const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const { data: allClustersData, isLoading } = useQuery({
+    queryKey: ["clusters", { assignModal: true }],
+    queryFn: () => getClusters({ pageSize: 200 }),
+    enabled: open,
+  });
+
+  const addMutation = useAddClustersToFederationMutation();
+  const allClusters = allClustersData?.clusters ?? [];
+  const assignable = allClusters.filter((c) => c.federationId !== federation?.id);
+  const filtered = search
+    ? assignable.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+    : assignable;
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleClose = () => {
+    setSearch("");
+    setSelectedIds(new Set());
+    onClose();
+  };
+
+  const handleAssign = async () => {
+    if (!federation || selectedIds.size === 0) return;
+    try {
+      const result = await addMutation.mutateAsync({
+        federationId: federation.id,
+        clusterIds: [...selectedIds],
+      });
+      sileo.success({ title: "Clusters assigned", description: result.message });
+      handleClose();
+    } catch (error) {
+      sileo.error({
+        title: "Could not assign clusters",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{fed?.name ?? "Federation details"}</DialogTitle>
-          <DialogDescription>Full details for this federation.</DialogDescription>
+          <DialogTitle>Assign clusters</DialogTitle>
+          <DialogDescription>
+            Add clusters to <span className="font-medium text-foreground">{federation?.name}</span>.
+          </DialogDescription>
         </DialogHeader>
-        <div className="px-5 pb-2">
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-4 w-full" />
-              ))}
-            </div>
-          ) : fed ? (
-            <dl className="grid grid-cols-[140px_1fr] gap-x-6 gap-y-3.5">
-              <DetailField label="Name" value={fed.name} />
-              <DetailField label="Location" value={fed.location} />
-              <DetailField label="Status" value={<StatusBadge status={fed.status} />} />
-              <DetailField label="Manager" value={fed.managerName} />
-              <DetailField label="Clusters" value={fed.clusterCount} />
-              <DetailField label="Description" value={fed.description} />
-            </dl>
-          ) : (
-            <p className="text-sm text-muted-foreground">Could not load details.</p>
+        <div className="px-5 pb-2 space-y-3">
+          <Input
+            placeholder="Search clusters…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={inputClass}
+          />
+          <div className="max-h-60 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
+            {isLoading ? (
+              <div className="p-4 space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="px-4 py-8 text-sm text-center text-muted-foreground">
+                {search ? "No clusters match your search." : "No available clusters to assign."}
+              </p>
+            ) : (
+              filtered.map((c) => (
+                <label
+                  key={c.id}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(c.id)}
+                    onChange={() => toggle(c.id)}
+                    className="size-4 rounded accent-primary shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{c.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {c.woredaName}
+                      {c.federationName ? ` · Currently in ${c.federationName}` : ""}
+                    </p>
+                  </div>
+                  <StatusBadge status={c.status} />
+                </label>
+              ))
+            )}
+          </div>
+          {selectedIds.size > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {selectedIds.size} cluster{selectedIds.size !== 1 ? "s" : ""} selected
+            </p>
           )}
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose} type="button">Cancel</Button>
+          <Button
+            onClick={handleAssign}
+            disabled={selectedIds.size === 0 || addMutation.isPending}
+            type="button"
+          >
+            {addMutation.isPending
+              ? "Assigning…"
+              : `Assign${selectedIds.size > 0 ? ` ${selectedIds.size}` : ""} cluster${selectedIds.size !== 1 ? "s" : ""}`}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FederationDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
+  const { data, isLoading } = useFederationDetailQuery(id);
+  const { data: clustersData, isLoading: clustersLoading } = useQuery({
+    queryKey: ["clusters", { federationId: id }],
+    queryFn: () => getClusters({ federationId: id!, pageSize: 200 }),
+    enabled: !!id && open,
+  });
+  const removeMutation = useRemoveClusterFromFederationMutation();
+  const [pendingRemove, setPendingRemove] = useState<{ id: string; name: string } | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const fed = data?.federation;
+  const clusters = clustersData?.clusters ?? [];
+
+  const confirmRemove = async () => {
+    if (!pendingRemove || !id) return;
+    const target = pendingRemove;
+    setPendingRemove(null);
+    setRemovingId(target.id);
+    try {
+      await removeMutation.mutateAsync({ federationId: id, clusterId: target.id });
+      sileo.success({ title: "Cluster removed from federation" });
+    } catch (error) {
+      sileo.error({
+        title: "Could not remove cluster",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{fed?.name ?? "Federation details"}</DialogTitle>
+            <DialogDescription>Full details for this federation.</DialogDescription>
+          </DialogHeader>
+          <div className="px-5 pb-2 space-y-4 max-h-[70vh] overflow-y-auto">
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}
+              </div>
+            ) : fed ? (
+              <>
+                <dl className="grid grid-cols-[140px_1fr] gap-x-6 gap-y-3.5">
+                  <DetailField label="Name" value={fed.name} />
+                  <DetailField label="Location" value={fed.location} />
+                  <DetailField label="Status" value={<StatusBadge status={fed.status} />} />
+                  <DetailField label="Manager" value={fed.managerName} />
+                  <DetailField label="Description" value={fed.description} />
+                </dl>
+
+                <div className="pt-3 border-t border-border">
+                  <p className="text-sm font-medium mb-3">
+                    Clusters
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                      ({clustersLoading ? "…" : clusters.length})
+                    </span>
+                  </p>
+                  {clustersLoading ? (
+                    <div className="space-y-2">
+                      {Array.from({ length: 2 }).map((_, i) => (
+                        <Skeleton key={i} className="h-11 w-full rounded-lg" />
+                      ))}
+                    </div>
+                  ) : clusters.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-1">No clusters assigned yet.</p>
+                  ) : (
+                    <div className="max-h-52 overflow-y-auto space-y-1.5 pr-0.5">
+                      {clusters.map((c: Cluster) => (
+                        <div key={c.id} className="flex items-center gap-3 rounded-lg px-3 py-2.5 bg-muted/40 ring-1 ring-border/40">
+                          <LayersIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{c.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{c.woredaName}</p>
+                          </div>
+                          <StatusBadge status={c.status} />
+                          <button
+                            className="shrink-0 rounded p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            onClick={() => setPendingRemove({ id: c.id, name: c.name })}
+                            aria-label={`Remove ${c.name}`}
+                            disabled={removingId === c.id}
+                          >
+                            {removingId === c.id
+                              ? <span className="size-3.5 block animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              : <XIcon className="size-3.5" />}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Could not load details.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove cluster</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove <span className="font-semibold text-foreground">{pendingRemove?.name}</span> from this federation? The cluster will remain in the system but will no longer be linked here.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmRemove}>
+              Remove cluster
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -125,8 +334,9 @@ export function FederationManager() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Federation | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [assigningFederation, setAssigningFederation] = useState<Federation | null>(null);
 
-  const federationsQuery = useFederationsQuery({ page, pageSize: 10, searchQuery });
+  const federationsQuery = useFederationsQuery({ page, pageSize: 12, searchQuery });
   const { data: currentUserData } = useCurrentUser();
   const createMutation = useCreateFederationMutation();
   const updateMutation = useUpdateFederationMutation();
@@ -134,199 +344,127 @@ export function FederationManager() {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  const resetForm = () => {
-    setName("");
-    setDescription("");
-    setLocation("");
-    setStatus("ACTIVE");
-    setEditingFederation(null);
-  };
-
-  const openCreate = () => {
-    resetForm();
-    setIsFormOpen(true);
-  };
-
-  const openEdit = (federation: Federation) => {
-    setEditingFederation(federation);
-    setName(federation.name);
-    setDescription(federation.description || "");
-    setLocation(federation.location || "");
-    setStatus(federation.status);
-    setIsFormOpen(true);
-  };
+  const resetForm = () => { setName(""); setDescription(""); setLocation(""); setStatus("ACTIVE"); setEditingFederation(null); };
+  const openCreate = () => { resetForm(); setIsFormOpen(true); };
+  const openEdit = (f: Federation) => { setEditingFederation(f); setName(f.name); setDescription(f.description || ""); setLocation(f.location || ""); setStatus(f.status); setIsFormOpen(true); };
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
-
-    if (!name.trim()) {
-      sileo.warning({ title: "Missing name", description: "Federation name is required." });
-      return;
-    }
-
+    if (!name.trim()) { sileo.warning({ title: "Missing name", description: "Federation name is required." }); return; }
     const managerId = currentUserData?.user?.id;
-
     try {
       if (editingFederation) {
-        const result = await updateMutation.mutateAsync({
-          id: editingFederation.id,
-          payload: {
-            name: name.trim(),
-            description: description.trim(),
-            location: location.trim(),
-            status,
-            ...(managerId ? { managerId } : {}),
-          },
-        });
+        const result = await updateMutation.mutateAsync({ id: editingFederation.id, payload: { name: name.trim(), description: description.trim(), location: location.trim(), status, ...(managerId ? { managerId } : {}) } });
         sileo.success({ title: "Federation updated", description: result.message });
       } else {
-        const result = await createMutation.mutateAsync({
-          name: name.trim(),
-          description: description.trim(),
-          location: location.trim(),
-          status,
-          ...(managerId ? { managerId } : {}),
-        });
+        const result = await createMutation.mutateAsync({ name: name.trim(), description: description.trim(), location: location.trim(), status, ...(managerId ? { managerId } : {}) });
         sileo.success({ title: "Federation added", description: result.message });
       }
-
-      setPage(1);
-      setIsFormOpen(false);
-      resetForm();
+      setPage(1); setIsFormOpen(false); resetForm();
     } catch (error) {
-      sileo.error({
-        title: "Could not save federation",
-        description: error instanceof Error ? error.message : "Unexpected error",
-      });
+      sileo.error({ title: "Could not save federation", description: error instanceof Error ? error.message : "Unexpected error" });
     }
   };
 
-  return (
-    <Card className="border-primary/10">
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Federations</CardTitle>
-        <DataToolbar
-          searchPlaceholder="Search federations"
-          searchValue={searchQuery}
-          onSearchChange={(value) => { setSearchQuery(value); setPage(1); }}
-          onAdd={openCreate}
-          addLabel="Add federation"
-        />
-      </CardHeader>
-      <CardContent>
-        <TableShell
-          headers={["Name", "Location", "Status", "Clusters", "Actions"]}
-          loading={federationsQuery.isLoading}
-          loadingColumnCount={5}
-          emptyState={
-            <EmptyStateRow colSpan={5} message="No federations found. Add your first federation to get started." />
-          }
-        >
-          {federationsQuery.data?.federations?.map((federation) => (
-            <TableRow key={federation.id}>
-              <TableCell className="font-medium">{federation.name}</TableCell>
-              <TableCell className={descriptionCellClass}>{federation.location || "---"}</TableCell>
-              <TableCell><StatusBadge status={federation.status} /></TableCell>
-              <TableCell className="text-muted-foreground">{federation.clusterCount}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button type="button" size="sm" variant="outline" onClick={() => setViewingId(federation.id)}>
-                    <EyeIcon className="size-3.5" />
-                    View
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => openEdit(federation)}>
-                    Edit
-                  </Button>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDelete(federation)}>
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableShell>
+  const federations = federationsQuery.data?.federations ?? [];
 
-        {federationsQuery.data && (
-          <PaginationRow
-            currentPage={federationsQuery.data.currentPage}
-            totalPages={federationsQuery.data.totalPages}
-            totalElements={federationsQuery.data.totalElements}
-            onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
-            onNext={() => setPage((prev) => Math.min(federationsQuery.data?.totalPages ?? prev, prev + 1))}
-          />
-        )}
-      </CardContent>
+  return (
+    <div className="space-y-4">
+      <DataToolbar
+        searchPlaceholder="Search federations"
+        searchValue={searchQuery}
+        onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
+        onAdd={openCreate}
+        addLabel="Add federation"
+      />
+
+      {federationsQuery.isLoading ? (
+        <CommunityCardSkeleton rowCount={2} />
+      ) : federations.length === 0 ? (
+        <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">No federations found. Add your first federation to get started.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+          {federations.map((f) => (
+            <CommunityCard
+              key={f.id}
+              title={f.name}
+              status={f.status}
+              onView={() => setViewingId(f.id)}
+              onEdit={() => openEdit(f)}
+              onDelete={() => setPendingDelete(f)}
+              extraMenuItems={
+                <DropdownMenuItem className="text-[12px]" onClick={() => setAssigningFederation(f)}>
+                  <LinkIcon />Assign clusters
+                </DropdownMenuItem>
+              }
+            >
+              <CardMetaRow icon={UserIcon} label="Manager">
+                {f.managerName ?? "No manager"}
+              </CardMetaRow>
+              <CardMetaRow icon={LayersIcon} label="Clusters">
+                {f.clusterCount} {f.clusterCount === 1 ? "cluster" : "clusters"}
+              </CardMetaRow>
+            </CommunityCard>
+          ))}
+        </div>
+      )}
+
+      {federationsQuery.data && federationsQuery.data.totalPages > 1 && (
+        <PaginationRow
+          currentPage={federationsQuery.data.currentPage}
+          totalPages={federationsQuery.data.totalPages}
+          totalElements={federationsQuery.data.totalElements}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(federationsQuery.data?.totalPages ?? p, p + 1))}
+        />
+      )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
             <DialogHeader>
               <DialogTitle>{editingFederation ? "Edit federation" : "Add federation"}</DialogTitle>
-              <DialogDescription>
-                {editingFederation
-                  ? "Update federation details, then save your changes."
-                  : "Add a new federation to the community structure."}
-              </DialogDescription>
+              <DialogDescription>{editingFederation ? "Update federation details, then save your changes." : "Add a new federation to the community structure."}</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 overflow-auto px-5 pb-4">
               <Input placeholder="Federation name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
               <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
               <SelectField value={status} onValueChange={(v) => setStatus(v as EntityStatus)} options={STATUS_OPTIONS} placeholder="Status" className="h-11" />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <textarea className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
             <DialogFooter>
-              <SaveButton
-                isPending={isSubmitting}
-                idleLabel={editingFederation ? "Save federation" : "Add federation"}
-                pendingLabel={editingFederation ? "Saving..." : "Adding..."}
-              />
+              <SaveButton isPending={isSubmitting} idleLabel={editingFederation ? "Save federation" : "Add federation"} pendingLabel={editingFederation ? "Saving…" : "Adding…"} />
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <FederationDetailDialog
-        id={viewingId}
-        open={!!viewingId}
-        onClose={() => setViewingId(null)}
+      <FederationDetailDialog id={viewingId} open={!!viewingId} onClose={() => setViewingId(null)} />
+
+      <AssignClustersDialog
+        federation={assigningFederation}
+        open={!!assigningFederation}
+        onClose={() => setAssigningFederation(null)}
       />
 
-      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => { if (!o) setPendingDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete federation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete <span className="font-semibold text-foreground">{pendingDelete?.name}</span>? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Delete <span className="font-semibold text-foreground">{pendingDelete?.name}</span>? This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={async () => {
-                if (!pendingDelete) return;
-                try {
-                  const result = await deleteMutation.mutateAsync(pendingDelete.id);
-                  sileo.success({ title: "Federation deleted", description: result.message });
-                  setPendingDelete(null);
-                } catch (error) {
-                  sileo.error({
-                    title: "Could not delete federation",
-                    description: error instanceof Error ? error.message : "Unexpected error",
-                  });
-                }
-              }}
-            >
-              Delete federation
-            </AlertDialogAction>
+            <AlertDialogAction variant="destructive" onClick={async () => {
+              if (!pendingDelete) return;
+              try { const result = await deleteMutation.mutateAsync(pendingDelete.id); sileo.success({ title: "Federation deleted", description: result.message }); setPendingDelete(null); }
+              catch (error) { sileo.error({ title: "Could not delete federation", description: error instanceof Error ? error.message : "Unexpected error" }); }
+            }}>Delete federation</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 }

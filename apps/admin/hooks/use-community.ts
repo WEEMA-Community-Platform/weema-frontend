@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   addClustersToFederation,
+  addSHGsToCluster,
   createCluster,
   createFederation,
   createSHG,
@@ -17,6 +18,7 @@ import {
   getSHGById,
   getSHGs,
   removeClusterFromFederation,
+  removeSHGFromCluster,
   updateCluster,
   updateFederation,
   updateSHG,
@@ -211,6 +213,30 @@ export function useDeleteSHGMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shgs"] });
       queryClient.invalidateQueries({ queryKey: ["clusters"] });
+    },
+  });
+}
+
+export function useAddSHGsToClusterMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clusterId, shgIds }: { clusterId: string; shgIds: string[] }) =>
+      addSHGsToCluster(clusterId, shgIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+    },
+  });
+}
+
+export function useRemoveSHGFromClusterMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clusterId, shgId }: { clusterId: string; shgId: string }) =>
+      removeSHGFromCluster(clusterId, shgId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      queryClient.invalidateQueries({ queryKey: ["shgs"] });
     },
   });
 }

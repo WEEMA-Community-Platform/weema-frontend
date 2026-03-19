@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
   Collapsible,
@@ -55,7 +56,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
         {items.map((item) =>
           state === "collapsed" ? (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title} render={<a href={item.url} />}>
+              <SidebarMenuButton tooltip={item.title} render={<Link href={item.url} />}>
                 {item.icon}
                 <span>{item.title}</span>
               </SidebarMenuButton>
@@ -81,7 +82,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
                         isActive={subItem.url.includes(`section=${activeSection}`)}
-                        render={<a href={subItem.url} />}
+                        render={<Link href={subItem.url} />}
                       >
                         <span>{subItem.title}</span>
                       </SidebarMenuSubButton>
