@@ -7,7 +7,9 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <Suspense fallback={null}>
+        <AppSidebar />
+      </Suspense>
       <SidebarInset>
         <Suspense>
           <AppHeader />
