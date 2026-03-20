@@ -1,17 +1,12 @@
-import {
-  API_BASE_URL,
-  AUTH_API_BASE_URL,
-  AUTH_API_PREFIX,
-  getAuthApiBaseUrlSource,
-} from "@/lib/auth";
+import { API_BASE_URL, AUTH_API_BASE_URL, AUTH_API_PREFIX } from "@/lib/auth";
 
 export function buildAuthBackendUrl(pathname: string) {
-  const base = AUTH_API_BASE_URL.replace(/\/$/, "");
+  const base = (AUTH_API_BASE_URL ?? "").replace(/\/$/, "");
   return `${base}${AUTH_API_PREFIX}${pathname}`;
 }
 
 export function buildBackendUrl(pathname: string) {
-  const base = API_BASE_URL.replace(/\/$/, "");
+  const base = (API_BASE_URL ?? "").replace(/\/$/, "");
   const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
   return `${base}${normalizedPath}`;
 }
@@ -41,7 +36,7 @@ function logAuthProxyLine(
     `[auth-proxy] ${prefix} ${label}`,
     JSON.stringify({
       ...detail,
-      authBaseUrlSource: getAuthApiBaseUrlSource(),
+      authBaseUrlSource: process.env.AUTH_API_BASE_URL ? "env" : "unset",
       resolvedAuthApiBase: AUTH_API_BASE_URL,
     })
   );
