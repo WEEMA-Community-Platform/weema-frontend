@@ -6,21 +6,25 @@ import {
   REFRESH_TOKEN_COOKIE,
   getSecureCookieOptions,
 } from "@/lib/auth";
-import { buildAuthBackendUrl } from "../_lib";
+import { buildAuthBackendUrl, proxyAuthFetchOptional } from "../_lib";
 
 export async function POST() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
   if (accessToken) {
-    await fetch(buildAuthBackendUrl("/logout"), {
-      method: "POST",
-      headers: {
-        Accept: "*/*",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    }).catch(() => null);
+    await proxyAuthFetchOptional(
+      "logout",
+      buildAuthBackendUrl("/logout"),
+      {
+        method: "POST",
+        headers: {
+          Accept: "*/*",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+      }
+    );
   }
 
   const response = NextResponse.json({ message: "Logged out.", statusCode: "OK" });

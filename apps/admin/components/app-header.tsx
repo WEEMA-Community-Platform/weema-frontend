@@ -24,6 +24,7 @@ export const SECTION_META: Record<
   federation: { group: "Community Structure", label: "Federations",      description: "Manage federations that group clusters together." },
   cluster:    { group: "Community Structure", label: "Clusters",         description: "Manage clusters linked to woredas and federations." },
   shg:        { group: "Community Structure", label: "Self-Help Groups", description: "Manage self-help groups and their cluster assignments." },
+  member:     { group: "Community Structure", label: "Members", description: "Register and manage members within self-help groups." },
 }
 
 export function AppHeader() {

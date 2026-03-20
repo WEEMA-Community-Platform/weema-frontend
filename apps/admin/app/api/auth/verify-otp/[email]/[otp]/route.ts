@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { buildAuthBackendUrl, safeJson } from "../../../_lib";
+import { buildAuthBackendUrl, proxyAuthFetch, safeJson } from "../../../_lib";
 
 type RouteParams = {
   params: Promise<{ email: string; otp: string }>;
@@ -8,15 +8,19 @@ type RouteParams = {
 
 export async function GET(_: Request, { params }: RouteParams) {
   const { email, otp } = await params;
-  const backendResponse = await fetch(
-    buildAuthBackendUrl(
-      `/verify-otp/${encodeURIComponent(email)}/${encodeURIComponent(otp)}`
-    ),
+  const verifyPath = `/verify-otp/${encodeURIComponent(email)}/${encodeURIComponent(otp)}`;
+  const backendResponse = await proxyAuthFetch(
+    "verify-otp",
+    buildAuthBackendUrl(verifyPath),
     {
       method: "GET",
       headers: { Accept: "*/*" },
       cache: "no-store",
-    }
+    },
+    { email },
+    buildAuthBackendUrl(
+      `/verify-otp/${encodeURIComponent(email)}/[redacted]`
+    )
   );
 
   const payload = await safeJson<{ message?: string; statusCode?: string }>(

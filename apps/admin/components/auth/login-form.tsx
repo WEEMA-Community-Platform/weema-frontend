@@ -61,7 +61,9 @@ export function LoginForm({
           >
             <FieldGroup>
               <div className="flex flex-col items-center gap-1 text-center">
-                <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Welcome back
+                </h1>
                 <p className="text-balance text-muted-foreground">
                   Sign in to your WEEMA Admin account
                 </p>
@@ -82,12 +84,6 @@ export function LoginForm({
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <Link
-                    href="/forgot-password"
-                    className="ml-auto text-sm text-primary underline-offset-2 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
                 </div>
                 <div className="relative">
                   <Input
@@ -102,11 +98,21 @@ export function LoginForm({
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                     className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
+                </div>
+                <div className="flex justify-end pt-1.5">
+                  <Link
+                    href="/forgot-password"
+                    className="text-sm text-primary underline-offset-2 hover:underline"
+                  >
+                    Forgot your password?
+                  </Link>
                 </div>
               </Field>
               <Field>

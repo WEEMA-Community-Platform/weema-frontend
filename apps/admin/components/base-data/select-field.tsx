@@ -21,12 +21,15 @@ export function SelectField({
   options,
   className,
   placeholder,
+  id,
 }: {
   value: string;
   onValueChange: (value: string) => void;
   options: SelectOption[];
   className?: string;
   placeholder: string;
+  /** For pairing with `<Label htmlFor={id}>`. */
+  id?: string;
 }) {
   const selectValue = value || NONE_SELECTED_VALUE;
 
@@ -37,7 +40,7 @@ export function SelectField({
         onValueChange(nextValue === NONE_SELECTED_VALUE ? "" : nextValue)
       }
     >
-      <SelectTrigger className={className}>
+      <SelectTrigger id={id} className={className}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

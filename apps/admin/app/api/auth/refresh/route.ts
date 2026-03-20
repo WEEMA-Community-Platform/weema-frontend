@@ -8,7 +8,7 @@ import {
   REFRESH_TOKEN_COOKIE,
   getSecureCookieOptions,
 } from "@/lib/auth";
-import { buildAuthBackendUrl, safeJson } from "../_lib";
+import { buildAuthBackendUrl, proxyAuthFetch, safeJson } from "../_lib";
 
 export async function POST() {
   const refreshToken = (await cookies()).get(REFRESH_TOKEN_COOKIE)?.value;
@@ -20,16 +20,20 @@ export async function POST() {
     );
   }
 
-  const backendResponse = await fetch(buildAuthBackendUrl("/refresh"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "*/*",
-      Authorization: `Bearer ${refreshToken}`,
-    },
-    body: JSON.stringify({ refreshToken }),
-    cache: "no-store",
-  });
+  const backendResponse = await proxyAuthFetch(
+    "refresh",
+    buildAuthBackendUrl("/refresh"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "*/*",
+        Authorization: `Bearer ${refreshToken}`,
+      },
+      body: JSON.stringify({ refreshToken }),
+      cache: "no-store",
+    }
+  );
 
   const payload = await safeJson<RefreshResponse & { message?: string }>(
     backendResponse

@@ -10,6 +10,7 @@ import { ZoneManager } from "@/components/base-data/zone-manager";
 import { FederationManager } from "@/components/community/federation-manager";
 import { ClusterManager } from "@/components/community/cluster-manager";
 import { SHGManager } from "@/components/community/shg-manager";
+import { MemberManager } from "@/components/community/members/member-manager";
 
 type SectionKey =
   | "region"
@@ -19,7 +20,8 @@ type SectionKey =
   | "religion"
   | "federation"
   | "cluster"
-  | "shg";
+  | "shg"
+  | "member";
 
 export function CommunityStructurePanel() {
   const searchParams = useSearchParams();
@@ -33,6 +35,7 @@ export function CommunityStructurePanel() {
   if (section === "federation") return <FederationManager />;
   if (section === "cluster") return <ClusterManager />;
   if (section === "shg") return <SHGManager />;
+  if (section === "member") return <MemberManager />;
   return <RegionManager />;
 }
 

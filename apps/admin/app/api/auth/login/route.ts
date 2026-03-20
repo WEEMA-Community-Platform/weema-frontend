@@ -9,7 +9,7 @@ import {
   getSecureCookieOptions,
   isAllowedAdminRole,
 } from "@/lib/auth";
-import { buildAuthBackendUrl, safeJson } from "../_lib";
+import { buildAuthBackendUrl, proxyAuthFetch, safeJson } from "../_lib";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as LoginRequest | null;
@@ -21,15 +21,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const backendResponse = await fetch(buildAuthBackendUrl("/login"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "*/*",
+  const backendResponse = await proxyAuthFetch(
+    "login",
+    buildAuthBackendUrl("/login"),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "*/*",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
     },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+    { email: body.email }
+  );
 
   const payload = await safeJson<LoginResponse & { message?: string }>(
     backendResponse

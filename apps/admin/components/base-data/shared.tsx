@@ -171,16 +171,18 @@ export function SaveButton({
   isPending,
   idleLabel,
   pendingLabel,
+  disabled: disabledProp,
 }: {
   isPending: boolean;
   idleLabel: string;
   pendingLabel: string;
+  disabled?: boolean;
 }) {
   return (
     <Button
       type="submit"
       className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90"
-      disabled={isPending}
+      disabled={isPending || disabledProp}
     >
       {isPending ? (
         <>

@@ -36,6 +36,7 @@ const navMain = [
       { title: "Federations",      url: "/?section=federation" },
       { title: "Clusters",         url: "/?section=cluster" },
       { title: "Self-Help Groups", url: "/?section=shg" },
+      { title: "Members", url: "/?section=member" },
     ],
   },
 ]

@@ -12,8 +12,9 @@ export function Providers({ children }: PropsWithChildren) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000,
-            gcTime: 10 * 60 * 1000,
+            /** Fresh longer; mutations still invalidate by query key. */
+            staleTime: 15 * 60 * 1000,
+            gcTime: 45 * 60 * 1000,
             refetchOnWindowFocus: false,
             refetchOnMount: false,
             retry: 1,
