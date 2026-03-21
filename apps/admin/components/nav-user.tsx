@@ -82,44 +82,44 @@ export function NavUser({
             <ChevronsUpDownIcon className="ml-auto size-4 shrink-0" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="min-w-60 rounded-lg"
+            className="min-w-64 rounded-xl border border-border/60 bg-popover p-1.5 shadow-lg shadow-black/5 ring-1 ring-black/5 dark:ring-white/10"
             side={isMobile ? "bottom" : "right"}
             align="end"
-            sideOffset={4}
+            sideOffset={6}
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-3 px-2 py-2">
-                  <Avatar className="size-9">
+              <DropdownMenuLabel className="cursor-default rounded-lg bg-muted/30 p-0 font-normal">
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <Avatar className="size-9 ring-1 ring-border/60">
                     <AvatarImage src={user.avatar} alt={user.name} />
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                       {initials || "?"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">{user.name}</span>
                     <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                     {user.role && (
-                      <span className="truncate text-xs text-primary/70 capitalize mt-0.5">
-                        {user.role.toLowerCase()}
+                      <span className="mt-0.5 truncate text-xs capitalize text-muted-foreground">
+                        {user.role.replace(/^ROLE_/, "").replace(/_/g, " ").toLowerCase()}
                       </span>
                     )}
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <UserCircle2Icon className="size-4" />
+            <DropdownMenuSeparator className="my-1.5 bg-border/80" />
+            <DropdownMenuGroup className="gap-0.5">
+              <DropdownMenuItem onClick={() => router.push("/?section=profile")}>
+                <UserCircle2Icon className="size-4 opacity-80" />
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
+                variant="destructive"
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
               >
-                <LogOutIcon className="size-4" />
+                <LogOutIcon className="size-4 opacity-90" />
                 {logoutMutation.isPending ? "Logging out..." : "Log out"}
               </DropdownMenuItem>
             </DropdownMenuGroup>

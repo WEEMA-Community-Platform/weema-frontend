@@ -27,3 +27,26 @@ export async function getCurrentUser(): Promise<CurrentUserResponse> {
 
   return payload;
 }
+
+export type EditProfilePayload = {
+  firstName: string;
+  lastName: string;
+};
+
+export async function editMyProfile(
+  payload: EditProfilePayload
+): Promise<BaseApiResponse> {
+  const response = await fetch("/api/user/edit-profile", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Accept: "*/*" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+  const data = (await response.json().catch(() => null)) as
+    | (BaseApiResponse & { message?: string })
+    | null;
+  if (!response.ok || !data) {
+    throw new Error(data?.message ?? "Failed to update profile");
+  }
+  return data;
+}

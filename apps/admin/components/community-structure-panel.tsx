@@ -11,6 +11,8 @@ import { FederationManager } from "@/components/community/federation-manager";
 import { ClusterManager } from "@/components/community/cluster-manager";
 import { SHGManager } from "@/components/community/shg-manager";
 import { MemberManager } from "@/components/community/members/member-manager";
+import { AdminUsersSection } from "@/components/users/admin-users-section";
+import { ProfilePanel } from "@/components/users/profile-panel";
 
 type SectionKey =
   | "region"
@@ -21,12 +23,16 @@ type SectionKey =
   | "federation"
   | "cluster"
   | "shg"
-  | "member";
+  | "member"
+  | "profile"
+  | "users";
 
 export function CommunityStructurePanel() {
   const searchParams = useSearchParams();
   const section = (searchParams.get("section") ?? "region") as SectionKey;
 
+  if (section === "profile") return <ProfilePanel />;
+  if (section === "users") return <AdminUsersSection />;
   if (section === "region") return <RegionManager />;
   if (section === "zone") return <ZoneManager />;
   if (section === "woreda") return <WoredaManager />;
