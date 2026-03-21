@@ -50,3 +50,26 @@ export async function editMyProfile(
   }
   return data;
 }
+
+export type ChangePasswordPayload = {
+  oldPassword: string;
+  newPassword: string;
+};
+
+export async function changeMyPassword(
+  payload: ChangePasswordPayload
+): Promise<BaseApiResponse> {
+  const response = await fetch("/api/user/change-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "*/*" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  });
+  const data = (await response.json().catch(() => null)) as
+    | (BaseApiResponse & { message?: string })
+    | null;
+  if (!response.ok || !data) {
+    throw new Error(data?.message ?? "Failed to change password");
+  }
+  return data;
+}
