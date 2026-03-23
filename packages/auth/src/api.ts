@@ -16,17 +16,49 @@ function buildUrl(baseUrl: string, path: string) {
   return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
+/** Best-effort string for failed auth API responses (Spring, etc.). */
+export function extractAuthErrorMessage(
+  payload: unknown,
+  httpStatus: number
+): string {
+  if (payload == null || typeof payload !== "object") {
+    return `Request failed with status ${httpStatus}`;
+  }
+  const o = payload as Record<string, unknown>;
+
+  const asStr = (v: unknown): string | null => {
+    if (typeof v === "string" && v.trim()) return v.trim();
+    return null;
+  };
+
+  const m = asStr(o.message);
+  if (m) return m;
+
+  const err = asStr(o.error);
+  if (err) return err;
+
+  const det = asStr(o.detail);
+  if (det) return det;
+
+  if (typeof o.message === "object" && o.message !== null) {
+    const inner = o.message as Record<string, unknown>;
+    const innerM = asStr(inner.message) ?? asStr(inner.error);
+    if (innerM) return innerM;
+  }
+
+  if (Array.isArray(o.errors) && o.errors.length > 0) {
+    const first = o.errors[0] as Record<string, unknown>;
+    const dm = asStr(first.defaultMessage) ?? asStr(first.message);
+    if (dm) return dm;
+  }
+
+  return `Request failed with status ${httpStatus}`;
+}
+
 async function parseJson<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => null)) as T | null;
   if (!response.ok) {
-    const message =
-      (payload &&
-        typeof payload === "object" &&
-        "message" in payload &&
-        typeof payload.message === "string" &&
-        payload.message) ||
-      `Request failed with status ${response.status}`;
-    throw new Error(message);
+    throw new Error(extractAuthErrorMessage(payload, response.status));
   }
 
   return payload as T;
