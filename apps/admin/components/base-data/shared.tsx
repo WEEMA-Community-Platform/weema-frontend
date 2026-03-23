@@ -27,10 +27,10 @@ export const descriptionCellClass =
   "max-w-[34ch] whitespace-normal break-words text-muted-foreground line-clamp-2";
 
 /** Row action buttons — matches `member-table-card` (left-aligned with the Actions header). */
-export const tableRowActionsClass = "flex w-full min-w-0 justify-start gap-2";
+export const tableRowActionsClass = "flex w-full min-w-0 flex-wrap justify-start gap-2 sm:flex-nowrap";
 
 /** Last column: keep text and controls left-aligned with the Actions header (avoids odd centering). */
-export const tableActionsCellClass = "text-left";
+export const tableActionsCellClass = "align-top text-left";
 
 /** Empty list copy when the API returns no rows — reflects search vs filters vs empty catalog. */
 export function listEmptyMessage(opts: {

@@ -159,13 +159,20 @@ export function RegionManager() {
               <TableCell className="align-top font-medium">{region.name}</TableCell>
               <DescriptionTableCell
                 description={region.description}
-                onView={() => {
-                  setIsFormOpen(false);
-                  setViewingRegion(region);
-                }}
               />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsFormOpen(false);
+                      setViewingRegion(region);
+                    }}
+                  >
+                    View
+                  </Button>
                   <Button type="button" size="sm" variant="outline" onClick={() => openEdit(region)}>
                     Edit
                   </Button>

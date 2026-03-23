@@ -148,15 +148,20 @@ export function ReligionManager() {
           {religionsQuery.data?.religions?.map((religion) => (
             <TableRow key={religion.id}>
               <TableCell className="align-top font-medium">{religion.name}</TableCell>
-              <DescriptionTableCell
-                description={religion.description}
-                onView={() => {
-                  setIsFormOpen(false);
-                  setViewingReligion(religion);
-                }}
-              />
+              <DescriptionTableCell description={religion.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsFormOpen(false);
+                      setViewingReligion(religion);
+                    }}
+                  >
+                    View
+                  </Button>
                   <Button
                     type="button"
                     size="sm"

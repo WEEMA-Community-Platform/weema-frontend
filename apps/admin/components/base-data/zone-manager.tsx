@@ -214,15 +214,20 @@ export function ZoneManager() {
                       : "No";
                 })()}
               </TableCell>
-              <DescriptionTableCell
-                description={zone.description}
-                onView={() => {
-                  setIsFormOpen(false);
-                  setViewingZone(zone);
-                }}
-              />
+              <DescriptionTableCell description={zone.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsFormOpen(false);
+                      setViewingZone(zone);
+                    }}
+                  >
+                    View
+                  </Button>
                   <Button
                     type="button"
                     size="sm"

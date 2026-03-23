@@ -191,15 +191,20 @@ export function KebeleManager() {
             <TableRow key={kebele.id}>
               <TableCell className="align-top font-medium">{kebele.name}</TableCell>
               <TableCell className="align-top">{kebele.woredaName}</TableCell>
-              <DescriptionTableCell
-                description={kebele.description}
-                onView={() => {
-                  setIsFormOpen(false);
-                  setViewingKebele(kebele);
-                }}
-              />
+              <DescriptionTableCell description={kebele.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsFormOpen(false);
+                      setViewingKebele(kebele);
+                    }}
+                  >
+                    View
+                  </Button>
                   <Button
                     type="button"
                     size="sm"

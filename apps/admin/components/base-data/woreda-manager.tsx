@@ -188,15 +188,20 @@ export function WoredaManager() {
             <TableRow key={woreda.id}>
               <TableCell className="align-top font-medium">{woreda.name}</TableCell>
               <TableCell className="align-top">{woreda.zoneName}</TableCell>
-              <DescriptionTableCell
-                description={woreda.description}
-                onView={() => {
-                  setIsFormOpen(false);
-                  setViewingWoreda(woreda);
-                }}
-              />
+              <DescriptionTableCell description={woreda.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsFormOpen(false);
+                      setViewingWoreda(woreda);
+                    }}
+                  >
+                    View
+                  </Button>
                   <Button
                     type="button"
                     size="sm"
