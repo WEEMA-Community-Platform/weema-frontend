@@ -87,7 +87,7 @@ function AssignSHGsDialog({
 
   const { data: allSHGsData, isLoading } = useQuery({
     queryKey: ["shgs", { assignModal: true }],
-    queryFn: () => getSHGs({ pageSize: 200 }),
+    queryFn: () => getSHGs({ pageSize: 200, unassignedCluster: true }),
     enabled: open,
   });
 

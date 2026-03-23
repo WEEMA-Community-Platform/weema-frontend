@@ -141,6 +141,8 @@ export type SHGListQuery = {
   woredaId?: string;
   kebeleId?: string;
   clusterId?: string;
+  /** Filter only SHGs without any assigned cluster. */
+  unassignedCluster?: boolean;
   location?: string;
 };
 
@@ -316,6 +318,8 @@ export async function getSHGs(query: SHGListQuery = {}) {
     "woreda-id": query.woredaId,
     "kebele-id": query.kebeleId,
     "cluster-id": query.clusterId,
+    "unassigned-cluster":
+      query.unassignedCluster === undefined ? undefined : String(query.unassignedCluster),
     location: query.location,
   });
   const response = await fetch(`/api/self-help-group?${qs}`, {
