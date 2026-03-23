@@ -9,8 +9,49 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const inputClass = "h-11 text-[0.95rem] md:text-base";
+/** Read-only fields in view dialogs (matches edit sizing, muted surface). */
+export const viewReadOnlyInputClass = `${inputClass} cursor-default bg-muted/30`;
+export const viewReadOnlyTextareaClass =
+  "min-h-24 w-full cursor-default rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm outline-none";
+
+/**
+ * Body for base-data dialog forms. `FieldGroup` already uses flex `gap`; do not add `space-y-*`
+ * on the same node — it stacks with gap and makes spacing look uneven.
+ */
+export const baseDataDialogFieldGroupClass = "gap-4 overflow-auto px-5 pb-4";
+
+/** Editable description in add/edit modals — matches `inputClass` typography and focus treatment. */
+export const formTextareaClass =
+  "min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-[0.95rem] md:text-base leading-normal outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-input/30";
 export const descriptionCellClass =
   "max-w-[34ch] whitespace-normal break-words text-muted-foreground line-clamp-2";
+
+/** Row action buttons — matches `member-table-card` (left-aligned with the Actions header). */
+export const tableRowActionsClass = "flex w-full min-w-0 justify-start gap-2";
+
+/** Last column: keep text and controls left-aligned with the Actions header (avoids odd centering). */
+export const tableActionsCellClass = "text-left";
+
+/** Empty list copy when the API returns no rows — reflects search vs filters vs empty catalog. */
+export function listEmptyMessage(opts: {
+  entityPlural: string;
+  hasSearch: boolean;
+  hasFilters: boolean;
+  /** Shown when there is no active search or filters (e.g. “Add your first …”). */
+  emptyCatalogHint: string;
+}): string {
+  const { entityPlural, hasSearch, hasFilters, emptyCatalogHint } = opts;
+  if (hasSearch && hasFilters) {
+    return `No ${entityPlural} match your search and filters. Try adjusting or clearing them.`;
+  }
+  if (hasSearch) {
+    return `No ${entityPlural} match your search. Try a different term.`;
+  }
+  if (hasFilters) {
+    return `No ${entityPlural} match your filters. Try adjusting or clearing filters.`;
+  }
+  return emptyCatalogHint;
+}
 
 export function DataToolbar({
   searchPlaceholder,
@@ -86,10 +127,8 @@ export function TableShell({
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow className="border-b border-primary/10 hover:bg-transparent">
-            {headers.map((header) => (
-              <TableHead key={header} className="font-medium">
-                {header}
-              </TableHead>
+            {headers.map((header, index) => (
+              <TableHead key={`${header}-${index}`}>{header}</TableHead>
             ))}
           </TableRow>
         </TableHeader>

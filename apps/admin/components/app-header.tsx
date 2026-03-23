@@ -1,10 +1,6 @@
 "use client"
 
-import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-
-import { SUPER_ADMIN_ROLE } from "@/components/users/constants"
-import { useCurrentUser } from "@/hooks/use-user"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,18 +25,16 @@ export const SECTION_META: Record<
   shg:        { group: "Community Structure", label: "Self-Help Groups", description: "Manage self-help groups and their cluster assignments." },
   member:     { group: "Community Structure", label: "Members", description: "Register and manage members within self-help groups." },
   profile:    { group: "Account", label: "My profile", description: "Update your name and review your account details." },
-  users:      { group: "Administration", label: "Users", description: "Create users and manage activation (super admin)." },
+  users:      { group: "User Management", label: "Users", description: "Create users and manage activation (super admin)." },
 }
 
 export function AppHeader() {
   const searchParams = useSearchParams()
   const section = searchParams.get("section") ?? "region"
   const meta = SECTION_META[section] ?? SECTION_META.region
-  const { data: currentUserData } = useCurrentUser()
-  const isSuperAdmin = currentUserData?.user?.role === SUPER_ADMIN_ROLE
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-primary/10 bg-background/80 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b border-primary/10 bg-background/80 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex min-w-0 flex-1 items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator
@@ -59,16 +53,6 @@ export function AppHeader() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      {isSuperAdmin && section !== "users" && (
-        <div className="shrink-0 px-4">
-          <Link
-            href="/?section=users"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Users
-          </Link>
-        </div>
-      )}
     </header>
   )
 }

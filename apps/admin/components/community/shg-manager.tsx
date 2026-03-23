@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { type ClipboardEvent, FormEvent, useMemo, useState } from "react";
 import { LayersIcon, MapPinIcon, UsersIcon, UserIcon } from "lucide-react";
 import { sileo } from "sileo";
 
@@ -14,6 +14,8 @@ import {
 } from "@/hooks/use-community";
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
 import type { EntityStatus, SHG } from "@/lib/api/community";
+import { extractLatLngFromMapsUrl } from "@/lib/maps-coordinates";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,12 +42,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DataToolbar,
   PaginationRow,
   SaveButton,
   inputClass,
+  listEmptyMessage,
 } from "@/components/base-data/shared";
 import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 
@@ -70,7 +74,7 @@ function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boole
   const shg = data?.selfHelpGroup;
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent>
+      <DialogContent className="w-[min(100vw-1.5rem,42rem)] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{shg?.name ?? "Self-Help Group details"}</DialogTitle>
           <DialogDescription>Full details for this self-help group.</DialogDescription>
@@ -111,32 +115,46 @@ export function SHGManager() {
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<EntityStatus>("ACTIVE");
-  const [woredaId, setWoredaId] = useState("");
-  const [kebeleId, setKebeleId] = useState("");
-  const [clusterId, setClusterId] = useState("");
+  const [status, setStatus] = useState<EntityStatus | "">("");
+  const [woredaId, setWoredaId] = useState("none");
+  const [kebeleId, setKebeleId] = useState("none");
+  /** Edit form only — new SHGs are created without a cluster; assign via Edit SHG. */
+  const [clusterId, setClusterId] = useState("none");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  /** Helper field — not submitted; used to paste maps links and fill lat/lng. */
+  const [mapsUrl, setMapsUrl] = useState("");
+  /**
+   * idle: user can paste a map link or type coordinates.
+   * map: coordinates came from a parsed link — lat/lng read-only.
+   * manual: user is typing coordinates — map link field disabled until they switch back.
+   */
+  const [coordinateMode, setCoordinateMode] = useState<"idle" | "map" | "manual">("idle");
   const [editingSHG, setEditingSHG] = useState<SHG | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<SHG | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterWoredaId, setFilterWoredaId] = useState("");
-  const [filterKebeleId, setFilterKebeleId] = useState("");
-  const [filterClusterId, setFilterClusterId] = useState("");
-  const [filterLocation, setFilterLocation] = useState("");
+  const [appliedFilterStatus, setAppliedFilterStatus] = useState("");
+  const [appliedFilterWoredaId, setAppliedFilterWoredaId] = useState("");
+  const [appliedFilterKebeleId, setAppliedFilterKebeleId] = useState("");
+  const [appliedFilterClusterId, setAppliedFilterClusterId] = useState("");
+  const [appliedFilterLocation, setAppliedFilterLocation] = useState("");
+  const [draftFilterStatus, setDraftFilterStatus] = useState("");
+  const [draftFilterWoredaId, setDraftFilterWoredaId] = useState("");
+  const [draftFilterKebeleId, setDraftFilterKebeleId] = useState("");
+  const [draftFilterClusterId, setDraftFilterClusterId] = useState("");
+  const [draftFilterLocation, setDraftFilterLocation] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const shgsQuery = useSHGsQuery({
     page,
     pageSize: 12,
     searchQuery,
-    status: filterQueryParam(filterStatus) as EntityStatus | undefined,
-    woredaId: filterQueryParam(filterWoredaId),
-    kebeleId: filterQueryParam(filterKebeleId),
-    clusterId: filterQueryParam(filterClusterId),
-    location: filterLocation.trim() || undefined,
+    status: filterQueryParam(appliedFilterStatus) as EntityStatus | undefined,
+    woredaId: filterQueryParam(appliedFilterWoredaId),
+    kebeleId: filterQueryParam(appliedFilterKebeleId),
+    clusterId: filterQueryParam(appliedFilterClusterId),
+    location: appliedFilterLocation.trim() || undefined,
   });
   const { data: woredaData } = useWoredasQuery({ page: 1, pageSize: 200, searchQuery: "" });
   const { data: kebeleData } = useKebelesQuery({ page: 1, pageSize: 200, searchQuery: "" });
@@ -144,7 +162,7 @@ export function SHGManager() {
     page: 1,
     pageSize: 200,
     searchQuery: "",
-    woredaId: filterQueryParam(filterWoredaId),
+    woredaId: filterQueryParam(draftFilterWoredaId),
   });
   const { data: clustersData } = useClustersQuery({ page: 1, pageSize: 200 });
 
@@ -178,18 +196,113 @@ export function SHGManager() {
       (clustersData?.clusters ?? []).map((c) => ({ value: c.id, label: c.name })),
     [clustersData?.clusters]
   );
-  const resetForm = () => { setName(""); setDescription(""); setStatus("ACTIVE"); setWoredaId(""); setKebeleId(""); setClusterId(""); setLatitude(""); setLongitude(""); setEditingSHG(null); };
+  const clusterFormOptions = useMemo(
+    () => [
+      { value: "none", label: "No cluster (unassigned)" },
+      ...(clustersData?.clusters ?? []).map((c) => ({ value: c.id, label: c.name })),
+    ],
+    [clustersData?.clusters]
+  );
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setStatus("");
+    setWoredaId("none");
+    setKebeleId("none");
+    setClusterId("none");
+    setLatitude("");
+    setLongitude("");
+    setMapsUrl("");
+    setCoordinateMode("idle");
+    setEditingSHG(null);
+  };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
   const openEdit = (s: SHG) => {
-    setEditingSHG(s); setName(s.name); setDescription(s.description || ""); setStatus(s.status);
-    setWoredaId(s.woredaId || ""); setKebeleId(s.kebeleId || ""); setClusterId(s.clusterId || "");
-    setLatitude(s.latitude?.toString() || ""); setLongitude(s.longitude?.toString() || "");
+    setEditingSHG(s);
+    setName(s.name);
+    setDescription(s.description || "");
+    setStatus(s.status);
+    setWoredaId(s.woredaId || "none");
+    setKebeleId(s.kebeleId || "none");
+    setClusterId(s.clusterId || "none");
+    const latStr = s.latitude != null ? String(s.latitude) : "";
+    const lngStr = s.longitude != null ? String(s.longitude) : "";
+    setLatitude(latStr);
+    setLongitude(lngStr);
+    setMapsUrl("");
+    setCoordinateMode(latStr !== "" || lngStr !== "" ? "manual" : "idle");
     setIsFormOpen(true);
+  };
+
+  const applyMapsUrl = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return false;
+    const next = extractLatLngFromMapsUrl(trimmed);
+    if (next) {
+      setLatitude(String(next.lat));
+      setLongitude(String(next.lng));
+      setCoordinateMode("map");
+      return true;
+    }
+    return false;
+  };
+
+  const handleMapsUrlChange = (value: string) => {
+    setMapsUrl(value);
+    if (coordinateMode === "map" && !value.trim()) {
+      setCoordinateMode("idle");
+      setLatitude("");
+      setLongitude("");
+    }
+  };
+
+  const handleMapsUrlBlur = () => {
+    if (coordinateMode === "manual") return;
+    const trimmed = mapsUrl.trim();
+    if (!trimmed) return;
+    const ok = applyMapsUrl(trimmed);
+    if (!ok && /https?:|maps\.|apple\.|goo\.|google\.com\/maps/i.test(trimmed)) {
+      sileo.warning({
+        title: "Could not read coordinates",
+        description: "Try another link or enter latitude and longitude below.",
+      });
+    }
+  };
+
+  const handleMapsPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    if (coordinateMode === "manual") return;
+    const pasted = e.clipboardData.getData("text")?.trim();
+    if (!pasted) return;
+    const next = extractLatLngFromMapsUrl(pasted);
+    if (next) {
+      e.preventDefault();
+      setMapsUrl(pasted);
+      setLatitude(String(next.lat));
+      setLongitude(String(next.lng));
+      setCoordinateMode("map");
+    }
+  };
+
+  const handleManualCoordinateInput = (field: "lat" | "lng", value: string) => {
+    if (coordinateMode === "idle") {
+      setCoordinateMode("manual");
+      setMapsUrl("");
+    }
+    if (field === "lat") setLatitude(value);
+    else setLongitude(value);
+  };
+
+  const switchToMapLinkEntry = () => {
+    setCoordinateMode("idle");
+    setMapsUrl("");
+    setLatitude("");
+    setLongitude("");
   };
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) { sileo.warning({ title: "Missing name", description: "SHG name is required." }); return; }
+    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
     const resolvedWoredaId = woredaId && woredaId !== "none" ? woredaId : undefined;
     const resolvedKebeleId = kebeleId && kebeleId !== "none" ? kebeleId : undefined;
     const resolvedClusterId = clusterId && clusterId !== "none" ? clusterId : undefined;
@@ -200,7 +313,15 @@ export function SHGManager() {
         const result = await updateMutation.mutateAsync({ id: editingSHG.id, payload: { name: name.trim(), description: description.trim(), status, woredaId: resolvedWoredaId, kebeleId: resolvedKebeleId, clusterId: resolvedClusterId, latitude: lat, longitude: lng } });
         sileo.success({ title: "SHG updated", description: result.message });
       } else {
-        const result = await createMutation.mutateAsync({ name: name.trim(), description: description.trim(), status, woredaId: resolvedWoredaId, kebeleId: resolvedKebeleId, clusterId: resolvedClusterId, latitude: lat, longitude: lng });
+        const result = await createMutation.mutateAsync({
+          name: name.trim(),
+          description: description.trim(),
+          status,
+          woredaId: resolvedWoredaId,
+          kebeleId: resolvedKebeleId,
+          latitude: lat,
+          longitude: lng,
+        });
         sileo.success({ title: "SHG added", description: result.message });
       }
       setPage(1); setIsFormOpen(false); resetForm();
@@ -210,6 +331,20 @@ export function SHGManager() {
   };
 
   const shgs = shgsQuery.data?.selfHelpGroups ?? [];
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasFilters = Boolean(
+    appliedFilterStatus ||
+      appliedFilterWoredaId ||
+      appliedFilterKebeleId ||
+      appliedFilterClusterId ||
+      appliedFilterLocation.trim()
+  );
+  const emptyMessage = listEmptyMessage({
+    entityPlural: "self-help groups",
+    hasSearch,
+    hasFilters,
+    emptyCatalogHint: "No self-help groups yet. Add your first SHG to get started.",
+  });
 
   return (
     <div className="space-y-4">
@@ -221,13 +356,7 @@ export function SHGManager() {
         addLabel="Add SHG"
         showFilterButton
         onOpenFilters={() => setIsFilterOpen(true)}
-        hasActiveFilters={Boolean(
-          filterStatus ||
-            filterWoredaId ||
-            filterKebeleId ||
-            filterClusterId ||
-            filterLocation.trim()
-        )}
+        hasActiveFilters={hasFilters}
       />
 
       {shgsQuery.isLoading ? (
@@ -243,7 +372,7 @@ export function SHGManager() {
         </div>
       ) : shgs.length === 0 ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
-          <p className="text-sm text-muted-foreground">No self-help groups found. Add your first SHG to get started.</p>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -286,57 +415,56 @@ export function SHGManager() {
         />
       )}
 
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-        <DialogContent>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={(open) => {
+          setIsFilterOpen(open);
+          if (open) {
+            setDraftFilterStatus(appliedFilterStatus);
+            setDraftFilterWoredaId(appliedFilterWoredaId);
+            setDraftFilterKebeleId(appliedFilterKebeleId);
+            setDraftFilterClusterId(appliedFilterClusterId);
+            setDraftFilterLocation(appliedFilterLocation);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Filter self-help groups</DialogTitle>
-            <DialogDescription>Filter by status, geography, cluster, or location.</DialogDescription>
+            <DialogDescription>Filter by status, geography, cluster, or location. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto px-5 pb-4">
             <SelectField
-              value={filterStatus}
+              value={draftFilterStatus}
               placeholder="All statuses"
               options={STATUS_OPTIONS}
-              onValueChange={(v) => {
-                setFilterStatus(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterStatus}
             />
             <SelectField
-              value={filterWoredaId}
+              value={draftFilterWoredaId}
               placeholder="All woredas"
               options={woredaFilterOptions}
               onValueChange={(v) => {
-                setFilterWoredaId(v);
-                setFilterKebeleId("");
-                setPage(1);
+                setDraftFilterWoredaId(v);
+                setDraftFilterKebeleId("");
               }}
             />
             <SelectField
-              value={filterKebeleId}
+              value={draftFilterKebeleId}
               placeholder="All kebeles"
               options={kebeleFilterOptions}
-              onValueChange={(v) => {
-                setFilterKebeleId(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterKebeleId}
             />
             <SelectField
-              value={filterClusterId}
+              value={draftFilterClusterId}
               placeholder="All clusters"
               options={clusterFilterOptions}
-              onValueChange={(v) => {
-                setFilterClusterId(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterClusterId}
             />
             <Input
               placeholder="Location contains"
-              value={filterLocation}
-              onChange={(e) => {
-                setFilterLocation(e.target.value);
-                setPage(1);
-              }}
+              value={draftFilterLocation}
+              onChange={(e) => setDraftFilterLocation(e.target.value)}
               className={inputClass}
             />
           </div>
@@ -346,12 +474,18 @@ export function SHGManager() {
               variant="outline"
               className="h-11"
               onClick={() => {
-                setFilterStatus("");
-                setFilterWoredaId("");
-                setFilterKebeleId("");
-                setFilterClusterId("");
-                setFilterLocation("");
+                setAppliedFilterStatus("");
+                setAppliedFilterWoredaId("");
+                setAppliedFilterKebeleId("");
+                setAppliedFilterClusterId("");
+                setAppliedFilterLocation("");
+                setDraftFilterStatus("");
+                setDraftFilterWoredaId("");
+                setDraftFilterKebeleId("");
+                setDraftFilterClusterId("");
+                setDraftFilterLocation("");
                 setPage(1);
+                setIsFilterOpen(false);
               }}
             >
               Clear filters
@@ -359,7 +493,15 @@ export function SHGManager() {
             <Button
               type="button"
               className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => setIsFilterOpen(false)}
+              onClick={() => {
+                setAppliedFilterStatus(draftFilterStatus);
+                setAppliedFilterWoredaId(draftFilterWoredaId);
+                setAppliedFilterKebeleId(draftFilterKebeleId);
+                setAppliedFilterClusterId(draftFilterClusterId);
+                setAppliedFilterLocation(draftFilterLocation);
+                setPage(1);
+                setIsFilterOpen(false);
+              }}
             >
               Apply filters
             </Button>
@@ -368,25 +510,180 @@ export function SHGManager() {
       </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
-            <DialogHeader>
+            <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
               <DialogTitle>{editingSHG ? "Edit self-help group" : "Add self-help group"}</DialogTitle>
-              <DialogDescription>{editingSHG ? "Update SHG details, then save your changes." : "Add a new self-help group to the community structure."}</DialogDescription>
+              <DialogDescription>
+                {editingSHG
+                  ? "Update SHG details, then save your changes."
+                  : "Add a new self-help group to the community structure. Cluster can be linked when you edit this SHG."}
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input placeholder="SHG name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-              <SelectField value={woredaId || "none"} onValueChange={setWoredaId} options={woredaOptions} placeholder="Select woreda (optional)" className="h-11" />
-              <SelectField value={kebeleId || "none"} onValueChange={setKebeleId} options={kebeleOptions} placeholder="Select kebele (optional)" className="h-11" />
-              <SelectField value={status} onValueChange={(v) => setStatus(v as EntityStatus)} options={STATUS_OPTIONS} placeholder="Status" className="h-11" />
-              <div className="grid grid-cols-2 gap-3">
-                <Input placeholder="Latitude" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} className={inputClass} />
-                <Input placeholder="Longitude" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} className={inputClass} />
+            <div className="space-y-6 overflow-y-auto px-6 py-5">
+              <div className="space-y-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="shg-name">Name</Label>
+                  <Input
+                    id="shg-name"
+                    placeholder="SHG name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={inputClass}
+                    autoComplete="off"
+                  />
+                </div>
+                {editingSHG ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="shg-cluster">Cluster</Label>
+                    <p className="text-xs text-muted-foreground">Optional. Link this SHG to a cluster when assigned.</p>
+                    <SelectField
+                      id="shg-cluster"
+                      value={clusterId || "none"}
+                      onValueChange={setClusterId}
+                      options={clusterFormOptions}
+                      placeholder="Select cluster"
+                      className="h-11"
+                    />
+                  </div>
+                ) : null}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="shg-woreda">Woreda</Label>
+                    <SelectField
+                      id="shg-woreda"
+                      value={woredaId || "none"}
+                      onValueChange={setWoredaId}
+                      options={woredaOptions}
+                      placeholder="Select woreda (optional)"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="shg-status">Status</Label>
+                    <SelectField
+                      id="shg-status"
+                      value={status}
+                      onValueChange={(v) => setStatus(v as EntityStatus | "")}
+                      options={STATUS_OPTIONS}
+                      placeholder="Select status"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="shg-kebele">Kebele</Label>
+                  <SelectField
+                    id="shg-kebele"
+                    value={kebeleId || "none"}
+                    onValueChange={setKebeleId}
+                    options={kebeleOptions}
+                    placeholder="Select kebele (optional)"
+                    className="h-11"
+                  />
+                </div>
               </div>
-              <textarea className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <div className="space-y-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Coordinates</p>
+                <p className="text-xs text-muted-foreground">
+                  Use a map link (coordinates locked to the link) or enter latitude and longitude yourself — switch modes
+                  with the actions below.
+                </p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="shg-maps-url">Map link</Label>
+                  <Input
+                    id="shg-maps-url"
+                    type="text"
+                    placeholder="Paste a Google Maps or Apple Maps share link…"
+                    value={mapsUrl}
+                    onChange={(e) => handleMapsUrlChange(e.target.value)}
+                    onBlur={handleMapsUrlBlur}
+                    onPaste={handleMapsPaste}
+                    disabled={coordinateMode === "manual"}
+                    className={cn(
+                      inputClass,
+                      coordinateMode === "manual" && "cursor-not-allowed bg-muted/50 opacity-80",
+                    )}
+                    autoComplete="off"
+                  />
+                  {coordinateMode === "manual" ? (
+                    <p className="text-xs text-muted-foreground">
+                      Map link is disabled while entering coordinates manually.{" "}
+                      <button
+                        type="button"
+                        className="font-medium text-primary underline-offset-4 hover:underline"
+                        onClick={switchToMapLinkEntry}
+                      >
+                        Use map link instead
+                      </button>
+                    </p>
+                  ) : null}
+                  {coordinateMode === "map" ? (
+                    <button
+                      type="button"
+                      className="text-left text-xs font-medium text-primary underline-offset-4 hover:underline"
+                      onClick={() => {
+                        setCoordinateMode("manual");
+                        setMapsUrl("");
+                      }}
+                    >
+                      Edit coordinates manually
+                    </button>
+                  ) : null}
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="shg-latitude">Latitude</Label>
+                    <Input
+                      id="shg-latitude"
+                      placeholder="e.g. 9.03"
+                      type="number"
+                      step="any"
+                      value={latitude}
+                      onChange={(e) => handleManualCoordinateInput("lat", e.target.value)}
+                      readOnly={coordinateMode === "map"}
+                      className={cn(
+                        inputClass,
+                        coordinateMode === "map" && "cursor-not-allowed bg-muted/50",
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="shg-longitude">Longitude</Label>
+                    <Input
+                      id="shg-longitude"
+                      placeholder="e.g. 38.75"
+                      type="number"
+                      step="any"
+                      value={longitude}
+                      onChange={(e) => handleManualCoordinateInput("lng", e.target.value)}
+                      readOnly={coordinateMode === "map"}
+                      className={cn(
+                        inputClass,
+                        coordinateMode === "map" && "cursor-not-allowed bg-muted/50",
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="shg-description">Description</Label>
+                <textarea
+                  id="shg-description"
+                  className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                  placeholder="Optional notes about this self-help group"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
             </div>
-            <DialogFooter>
-              <SaveButton isPending={isSubmitting} idleLabel={editingSHG ? "Save SHG" : "Add SHG"} pendingLabel={editingSHG ? "Saving..." : "Adding..."} />
+            <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
+              <SaveButton
+                isPending={isSubmitting}
+                idleLabel={editingSHG ? "Save SHG" : "Add SHG"}
+                pendingLabel={editingSHG ? "Saving…" : "Adding…"}
+              />
             </DialogFooter>
           </form>
         </DialogContent>

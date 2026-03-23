@@ -11,6 +11,7 @@ import {
   useZonesQuery,
 } from "@/hooks/use-base-data";
 import type { Zone } from "@/lib/api/base-data";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -31,8 +32,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DescriptionTableCell } from "@/components/base-data/description-table-cell";
 import { SelectField } from "@/components/base-data/select-field";
 import {
   DataToolbar,
@@ -40,20 +43,45 @@ import {
   PaginationRow,
   SaveButton,
   TableShell,
-  descriptionCellClass,
+  baseDataDialogFieldGroupClass,
+  formTextareaClass,
   inputClass,
+  listEmptyMessage,
+  tableActionsCellClass,
+  tableRowActionsClass,
+  viewReadOnlyInputClass,
+  viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
+
+/** Normalize API values (boolean, string, number) so edit state matches the server. */
+function coerceSpecialWoreda(value: unknown): boolean {
+  if (value === true) return true;
+  if (value === false || value === null || value === undefined) return false;
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    return v === "true" || v === "1" || v === "yes";
+  }
+  if (typeof value === "number") return value === 1;
+  return false;
+}
+
+function zoneSpecialWoredaRaw(zone: Zone): unknown {
+  return zone.isSpecialWoreda ?? zone.specialWoreda;
+}
 
 export function ZoneManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [filterRegionId, setFilterRegionId] = useState("");
+  const [appliedFilterRegionId, setAppliedFilterRegionId] = useState("");
+  const [draftFilterRegionId, setDraftFilterRegionId] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [regionId, setRegionId] = useState("");
-  const [specialWoreda, setSpecialWoreda] = useState<boolean | null>(null);
+  /** Always a boolean so PATCH sends true/false reliably (no Select empty/false confusion). */
+  const [isSpecialWoreda, setIsSpecialWoreda] = useState(false);
   const [editingZone, setEditingZone] = useState<Zone | null>(null);
+  const [viewingZone, setViewingZone] = useState<Zone | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDeleteZone, setPendingDeleteZone] = useState<Zone | null>(null);
 
@@ -62,7 +90,7 @@ export function ZoneManager() {
     page,
     pageSize: 10,
     searchQuery,
-    regionId: filterRegionId || undefined,
+    regionId: appliedFilterRegionId || undefined,
   });
 
   const createMutation = useCreateZoneMutation();
@@ -83,11 +111,20 @@ export function ZoneManager() {
     setName("");
     setDescription("");
     setRegionId("");
-    setSpecialWoreda(null);
+    setIsSpecialWoreda(false);
     setEditingZone(null);
   };
 
-  const submitForm = async (event: FormEvent) => {
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasFilters = Boolean(appliedFilterRegionId);
+  const zonesEmptyMessage = listEmptyMessage({
+    entityPlural: "zones",
+    hasSearch,
+    hasFilters,
+    emptyCatalogHint: "No zones yet. Add your first zone to get started.",
+  });
+
+  const submitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!name.trim() || !regionId) {
@@ -106,7 +143,7 @@ export function ZoneManager() {
             name: name.trim(),
             description: description.trim(),
             regionId,
-            specialWoreda,
+            isSpecialWoreda,
           },
         });
         sileo.success({ title: "Zone updated", description: result.message });
@@ -115,7 +152,7 @@ export function ZoneManager() {
           name: name.trim(),
           description: description.trim(),
           regionId,
-          specialWoreda,
+          isSpecialWoreda,
         });
         sileo.success({ title: "Zone added", description: result.message });
       }
@@ -143,13 +180,14 @@ export function ZoneManager() {
             setPage(1);
           }}
           onAdd={() => {
+            setViewingZone(null);
             resetForm();
             setIsFormOpen(true);
           }}
           addLabel="Add zone"
           showFilterButton
           onOpenFilters={() => setIsFilterOpen(true)}
-          hasActiveFilters={Boolean(filterRegionId)}
+          hasActiveFilters={hasFilters}
         />
       </CardHeader>
       <CardContent>
@@ -160,32 +198,42 @@ export function ZoneManager() {
           isError={zonesQuery.isError}
           errorMessage={zonesQuery.error instanceof Error ? zonesQuery.error.message : undefined}
           onRetry={zonesQuery.refetch}
-          emptyState={<EmptyStateRow colSpan={5} message="No zones found. Add your first zone to get started." />}
+          emptyState={<EmptyStateRow colSpan={5} message={zonesEmptyMessage} />}
         >
           {zonesQuery.data?.zones?.map((zone) => (
             <TableRow key={zone.id}>
-              <TableCell className="font-medium">{zone.name}</TableCell>
-              <TableCell>{zone.regionName}</TableCell>
-              <TableCell>
-                {zone.specialWoreda === null || zone.specialWoreda === undefined
-                  ? "---"
-                  : zone.specialWoreda
-                    ? "Yes"
-                    : "No"}
+              <TableCell className="align-top font-medium">{zone.name}</TableCell>
+              <TableCell className="align-top">{zone.regionName}</TableCell>
+              <TableCell className="align-top">
+                {(() => {
+                  const raw = zoneSpecialWoredaRaw(zone);
+                  return raw === null || raw === undefined
+                    ? "---"
+                    : coerceSpecialWoreda(raw)
+                      ? "Yes"
+                      : "No";
+                })()}
               </TableCell>
-              <TableCell className={descriptionCellClass}>{zone.description || "---"}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
+              <DescriptionTableCell
+                description={zone.description}
+                onView={() => {
+                  setIsFormOpen(false);
+                  setViewingZone(zone);
+                }}
+              />
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => {
+                      setViewingZone(null);
                       setEditingZone(zone);
                       setName(zone.name);
                       setDescription(zone.description || "");
                       setRegionId(zone.regionId);
-                      setSpecialWoreda(zone.specialWoreda ?? null);
+                      setIsSpecialWoreda(coerceSpecialWoreda(zoneSpecialWoredaRaw(zone)));
                       setIsFormOpen(true);
                     }}
                   >
@@ -211,31 +259,41 @@ export function ZoneManager() {
         )}
       </CardContent>
 
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={(open) => {
+          setIsFilterOpen(open);
+          if (open) setDraftFilterRegionId(appliedFilterRegionId);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Filter zones</DialogTitle>
-            <DialogDescription>Narrow the list by region.</DialogDescription>
+            <DialogDescription>Narrow the list by region. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 px-5 pb-4">
-            <SelectField
-              value={filterRegionId}
-              placeholder="All regions"
-              options={regionOptions}
-              onValueChange={(value) => {
-                setFilterRegionId(value);
-                setPage(1);
-              }}
-            />
-          </div>
+          <FieldGroup className={baseDataDialogFieldGroupClass}>
+            <Field>
+              <FieldLabel htmlFor="zone-filter-region">Region</FieldLabel>
+              <SelectField
+                id="zone-filter-region"
+                value={draftFilterRegionId}
+                placeholder="All regions"
+                options={regionOptions}
+                onValueChange={setDraftFilterRegionId}
+                className={inputClass}
+              />
+            </Field>
+          </FieldGroup>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               className="h-11"
               onClick={() => {
-                setFilterRegionId("");
+                setAppliedFilterRegionId("");
+                setDraftFilterRegionId("");
                 setPage(1);
+                setIsFilterOpen(false);
               }}
             >
               Clear filters
@@ -243,11 +301,103 @@ export function ZoneManager() {
             <Button
               type="button"
               className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => setIsFilterOpen(false)}
+              onClick={() => {
+                setAppliedFilterRegionId(draftFilterRegionId);
+                setPage(1);
+                setIsFilterOpen(false);
+              }}
             >
               Apply filters
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!viewingZone}
+        onOpenChange={(open) => {
+          if (!open) setViewingZone(null);
+        }}
+      >
+        <DialogContent>
+          <div className="flex max-h-[85vh] flex-col overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>View zone</DialogTitle>
+              <DialogDescription>Read-only details for this zone.</DialogDescription>
+            </DialogHeader>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="zone-name-view">Zone name</FieldLabel>
+                <Input
+                  id="zone-name-view"
+                  readOnly
+                  value={viewingZone?.name ?? ""}
+                  className={viewReadOnlyInputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="zone-region-view">Region</FieldLabel>
+                <SelectField
+                  id="zone-region-view"
+                  value={viewingZone?.regionId ?? ""}
+                  placeholder="Select region"
+                  options={regionOptions}
+                  onValueChange={() => {}}
+                  className={viewReadOnlyInputClass}
+                  disabled
+                />
+              </Field>
+              <div className="pointer-events-none flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/10 px-3 py-3 opacity-80">
+                <div className="space-y-0.5">
+                  <FieldLabel htmlFor="zone-special-woreda-view" className="cursor-default">
+                    Is this a special woreda?
+                  </FieldLabel>
+                  <p className="text-xs text-muted-foreground">
+                    Enable only for zones that count as a special woreda in the program.
+                  </p>
+                </div>
+                <div
+                  id="zone-special-woreda-view"
+                  role="switch"
+                  aria-checked={
+                    viewingZone ? coerceSpecialWoreda(zoneSpecialWoredaRaw(viewingZone)) : false
+                  }
+                  aria-readonly="true"
+                  className={[
+                    "relative inline-flex h-7 w-12 shrink-0 rounded-full border border-transparent",
+                    viewingZone && coerceSpecialWoreda(zoneSpecialWoredaRaw(viewingZone))
+                      ? "bg-primary"
+                      : "bg-muted",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "pointer-events-none block size-6 translate-x-0.5 rounded-full bg-background shadow-sm ring-0 transition-transform",
+                      viewingZone && coerceSpecialWoreda(zoneSpecialWoredaRaw(viewingZone))
+                        ? "translate-x-5"
+                        : "translate-x-0",
+                    ].join(" ")}
+                  />
+                </div>
+              </div>
+              <Field>
+                <FieldLabel htmlFor="zone-description-view">Description</FieldLabel>
+                <textarea
+                  id="zone-description-view"
+                  readOnly
+                  className={viewReadOnlyTextareaClass}
+                  value={viewingZone?.description ?? ""}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" className="h-11" onClick={() => setViewingZone(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -262,51 +412,76 @@ export function ZoneManager() {
                   : "Add a new zone to your base data list."}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input
-                placeholder="Zone name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className={inputClass}
-              />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-              <SelectField
-                value={regionId}
-                placeholder="Select region"
-                options={regionOptions}
-                onValueChange={setRegionId}
-              />
-              <SelectField
-                value={
-                  specialWoreda === null
-                    ? ""
-                    : specialWoreda
-                      ? "true"
-                      : "false"
-                }
-                placeholder="Special woreda flag"
-                options={[
-                  { value: "true", label: "Yes" },
-                  { value: "false", label: "No" },
-                ]}
-                onValueChange={(value) => {
-                  if (value === "true") {
-                    setSpecialWoreda(true);
-                    return;
-                  }
-                  if (value === "false") {
-                    setSpecialWoreda(false);
-                    return;
-                  }
-                  setSpecialWoreda(null);
-                }}
-              />
-            </div>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="zone-name">Zone name</FieldLabel>
+                <Input
+                  id="zone-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className={inputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="zone-region">Region</FieldLabel>
+                <SelectField
+                  id="zone-region"
+                  value={regionId}
+                  placeholder="Select region"
+                  options={regionOptions}
+                  onValueChange={setRegionId}
+                  className={inputClass}
+                />
+              </Field>
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/10 px-3 py-3">
+                <div className="space-y-0.5">
+                  <label
+                    htmlFor="zone-special-woreda"
+                    id="zone-special-woreda-label"
+                    className="block cursor-pointer text-sm leading-none font-medium"
+                  >
+                    Is this a special woreda?
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable only for zones that count as a special woreda in the program.
+                  </p>
+                </div>
+                <label
+                  className={cn(
+                    "relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border border-transparent transition-colors",
+                    "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background focus-within:outline-none",
+                    isSpecialWoreda ? "bg-primary" : "bg-muted"
+                  )}
+                >
+                  <input
+                    id="zone-special-woreda"
+                    type="checkbox"
+                    role="switch"
+                    checked={isSpecialWoreda}
+                    onChange={(event) => setIsSpecialWoreda(event.target.checked)}
+                    className="peer sr-only"
+                    aria-labelledby="zone-special-woreda-label"
+                  />
+                  <span
+                    className={cn(
+                      "pointer-events-none block size-6 translate-x-0.5 rounded-full bg-background shadow-sm ring-0 transition-transform",
+                      isSpecialWoreda ? "translate-x-5" : "translate-x-0"
+                    )}
+                  />
+                </label>
+              </div>
+              <Field>
+                <FieldLabel htmlFor="zone-description">Description</FieldLabel>
+                <textarea
+                  id="zone-description"
+                  className={formTextareaClass}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}

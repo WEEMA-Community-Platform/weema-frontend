@@ -30,16 +30,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DescriptionTableCell } from "@/components/base-data/description-table-cell";
 import {
   DataToolbar,
   EmptyStateRow,
   PaginationRow,
   SaveButton,
   TableShell,
-  descriptionCellClass,
+  baseDataDialogFieldGroupClass,
+  formTextareaClass,
   inputClass,
+  listEmptyMessage,
+  tableActionsCellClass,
+  tableRowActionsClass,
+  viewReadOnlyInputClass,
+  viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function RegionManager() {
@@ -48,6 +56,7 @@ export function RegionManager() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
+  const [viewingRegion, setViewingRegion] = useState<Region | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDeleteRegion, setPendingDeleteRegion] = useState<Region | null>(null);
 
@@ -58,6 +67,14 @@ export function RegionManager() {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
+  const hasSearch = Boolean(searchQuery.trim());
+  const regionsEmptyMessage = listEmptyMessage({
+    entityPlural: "regions",
+    hasSearch,
+    hasFilters: false,
+    emptyCatalogHint: "No regions yet. Add your first region to get started.",
+  });
+
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -65,11 +82,13 @@ export function RegionManager() {
   };
 
   const openCreate = () => {
+    setViewingRegion(null);
     resetForm();
     setIsFormOpen(true);
   };
 
   const openEdit = (region: Region) => {
+    setViewingRegion(null);
     setEditingRegion(region);
     setName(region.name);
     setDescription(region.description || "");
@@ -133,14 +152,20 @@ export function RegionManager() {
           isError={regionsQuery.isError}
           errorMessage={regionsQuery.error instanceof Error ? regionsQuery.error.message : undefined}
           onRetry={regionsQuery.refetch}
-          emptyState={<EmptyStateRow colSpan={3} message="No regions found. Add your first region to get started." />}
+          emptyState={<EmptyStateRow colSpan={3} message={regionsEmptyMessage} />}
         >
           {regionsQuery.data?.regions?.map((region) => (
             <TableRow key={region.id}>
-              <TableCell className="font-medium">{region.name}</TableCell>
-              <TableCell className={descriptionCellClass}>{region.description || "---"}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
+              <TableCell className="align-top font-medium">{region.name}</TableCell>
+              <DescriptionTableCell
+                description={region.description}
+                onView={() => {
+                  setIsFormOpen(false);
+                  setViewingRegion(region);
+                }}
+              />
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button type="button" size="sm" variant="outline" onClick={() => openEdit(region)}>
                     Edit
                   </Button>
@@ -166,6 +191,49 @@ export function RegionManager() {
         )}
       </CardContent>
 
+      <Dialog
+        open={!!viewingRegion}
+        onOpenChange={(open) => {
+          if (!open) setViewingRegion(null);
+        }}
+      >
+        <DialogContent>
+          <div className="flex max-h-[85vh] flex-col overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>View region</DialogTitle>
+              <DialogDescription>Read-only details for this region.</DialogDescription>
+            </DialogHeader>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="region-name-view">Region name</FieldLabel>
+                <Input
+                  id="region-name-view"
+                  readOnly
+                  value={viewingRegion?.name ?? ""}
+                  className={viewReadOnlyInputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="region-description-view">Description</FieldLabel>
+                <textarea
+                  id="region-description-view"
+                  readOnly
+                  className={viewReadOnlyTextareaClass}
+                  value={viewingRegion?.description ?? ""}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" className="h-11" onClick={() => setViewingRegion(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
@@ -177,20 +245,28 @@ export function RegionManager() {
                   : "Add a new region to your base data list."}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input
-                placeholder="Region name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className={inputClass}
-              />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </div>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="region-name">Region name</FieldLabel>
+                <Input
+                  id="region-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className={inputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="region-description">Description</FieldLabel>
+                <textarea
+                  id="region-description"
+                  className={formTextareaClass}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}

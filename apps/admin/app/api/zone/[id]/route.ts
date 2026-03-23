@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   const { id } = await params;
-  const body = await request.json().catch(() => null);
+  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body?.name || !body?.regionId) {
     return NextResponse.json(
       { message: "Zone name and region are required." },

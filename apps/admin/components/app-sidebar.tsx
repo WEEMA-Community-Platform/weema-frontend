@@ -1,8 +1,10 @@
 "use client"
 
-import { Building2Icon, MapPinnedIcon, NetworkIcon } from "lucide-react"
+import { useMemo } from "react"
+import { Building2Icon, MapPinnedIcon, NetworkIcon, UsersIcon } from "lucide-react"
 import Link from "next/link"
 
+import { SUPER_ADMIN_ROLE } from "@/components/users/constants"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -13,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useCurrentUser } from "@/hooks/use-user"
 
-const navMain = [
+const baseNavMain = [
   {
     title: "Base Data",
     url: "/?section=region",
@@ -43,6 +45,21 @@ const navMain = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: currentUserData } = useCurrentUser()
+  const isSuperAdmin = currentUserData?.user?.role === SUPER_ADMIN_ROLE
+
+  const navMain = useMemo(() => {
+    const items = [...baseNavMain]
+    if (isSuperAdmin) {
+      items.push({
+        title: "User Management",
+        url: "/?section=users",
+        icon: <UsersIcon />,
+        isActive: false,
+        items: [{ title: "Users", url: "/?section=users" }],
+      })
+    }
+    return items
+  }, [isSuperAdmin])
 
   const user = currentUserData?.user
   const displayName = user ? `${user.firstName} ${user.lastName}` : "Loading..."
@@ -66,7 +83,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={navMain} key={isSuperAdmin ? "nav-with-users" : "nav"} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

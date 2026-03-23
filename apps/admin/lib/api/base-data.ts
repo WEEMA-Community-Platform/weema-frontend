@@ -15,6 +15,8 @@ export type Zone = {
   description: string;
   regionId: string;
   regionName: string;
+  isSpecialWoreda?: boolean | null;
+  /** Legacy key; prefer `isSpecialWoreda` (matches API). */
   specialWoreda?: boolean | null;
 };
 
@@ -109,7 +111,7 @@ export type ZonePayload = {
   name: string;
   description: string;
   regionId: string;
-  specialWoreda?: boolean | null;
+  isSpecialWoreda?: boolean | null;
 };
 
 export type WoredaPayload = {

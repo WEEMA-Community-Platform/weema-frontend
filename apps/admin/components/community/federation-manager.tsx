@@ -44,12 +44,14 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DataToolbar,
   PaginationRow,
   SaveButton,
   inputClass,
+  listEmptyMessage,
 } from "@/components/base-data/shared";
 import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 
@@ -128,7 +130,7 @@ function AssignClustersDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Assign clusters</DialogTitle>
           <DialogDescription>
@@ -240,7 +242,7 @@ function FederationDetailDialog({ id, open, onClose }: { id: string | null; open
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[min(100vw-1.5rem,42rem)] sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{fed?.name ?? "Federation details"}</DialogTitle>
             <DialogDescription>Full details for this federation.</DialogDescription>
@@ -338,13 +340,15 @@ function FederationDetailDialog({ id, open, onClose }: { id: string | null; open
 export function FederationManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterLocation, setFilterLocation] = useState("");
+  const [appliedFilterStatus, setAppliedFilterStatus] = useState("");
+  const [appliedFilterLocation, setAppliedFilterLocation] = useState("");
+  const [draftFilterStatus, setDraftFilterStatus] = useState("");
+  const [draftFilterLocation, setDraftFilterLocation] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [status, setStatus] = useState<EntityStatus>("ACTIVE");
+  const [status, setStatus] = useState<EntityStatus | "">("");
   const [editingFederation, setEditingFederation] = useState<Federation | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Federation | null>(null);
@@ -355,8 +359,8 @@ export function FederationManager() {
     page,
     pageSize: 12,
     searchQuery,
-    status: filterQueryParam(filterStatus) as EntityStatus | undefined,
-    location: filterLocation.trim() || undefined,
+    status: filterQueryParam(appliedFilterStatus) as EntityStatus | undefined,
+    location: appliedFilterLocation.trim() || undefined,
   });
 
   const { data: currentUserData } = useCurrentUser();
@@ -366,13 +370,14 @@ export function FederationManager() {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  const resetForm = () => { setName(""); setDescription(""); setLocation(""); setStatus("ACTIVE"); setEditingFederation(null); };
+  const resetForm = () => { setName(""); setDescription(""); setLocation(""); setStatus(""); setEditingFederation(null); };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
   const openEdit = (f: Federation) => { setEditingFederation(f); setName(f.name); setDescription(f.description || ""); setLocation(f.location || ""); setStatus(f.status); setIsFormOpen(true); };
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) { sileo.warning({ title: "Missing name", description: "Federation name is required." }); return; }
+    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
     const managerId = currentUserData?.user?.id;
     try {
       if (editingFederation) {
@@ -389,6 +394,14 @@ export function FederationManager() {
   };
 
   const federations = federationsQuery.data?.federations ?? [];
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasFilters = Boolean(appliedFilterStatus || appliedFilterLocation.trim());
+  const emptyMessage = listEmptyMessage({
+    entityPlural: "federations",
+    hasSearch,
+    hasFilters,
+    emptyCatalogHint: "No federations yet. Add your first federation to get started.",
+  });
 
   return (
     <div className="space-y-4">
@@ -400,7 +413,7 @@ export function FederationManager() {
         addLabel="Add federation"
         showFilterButton
         onOpenFilters={() => setIsFilterOpen(true)}
-        hasActiveFilters={Boolean(filterStatus || filterLocation.trim())}
+        hasActiveFilters={Boolean(appliedFilterStatus || appliedFilterLocation.trim())}
       />
 
       {federationsQuery.isLoading ? (
@@ -416,7 +429,7 @@ export function FederationManager() {
         </div>
       ) : federations.length === 0 ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
-          <p className="text-sm text-muted-foreground">No federations found. Add your first federation to get started.</p>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -455,29 +468,32 @@ export function FederationManager() {
         />
       )}
 
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-        <DialogContent>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={(open) => {
+          setIsFilterOpen(open);
+          if (open) {
+            setDraftFilterStatus(appliedFilterStatus);
+            setDraftFilterLocation(appliedFilterLocation);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Filter federations</DialogTitle>
-            <DialogDescription>Filter by status, location, or both.</DialogDescription>
+            <DialogDescription>Filter by status, location, or both. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 px-5 pb-4">
             <SelectField
-              value={filterStatus}
+              value={draftFilterStatus}
               placeholder="All statuses"
               options={STATUS_OPTIONS}
-              onValueChange={(v) => {
-                setFilterStatus(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterStatus}
             />
             <Input
               placeholder="Location contains"
-              value={filterLocation}
-              onChange={(e) => {
-                setFilterLocation(e.target.value);
-                setPage(1);
-              }}
+              value={draftFilterLocation}
+              onChange={(e) => setDraftFilterLocation(e.target.value)}
               className={inputClass}
             />
           </div>
@@ -487,9 +503,12 @@ export function FederationManager() {
               variant="outline"
               className="h-11"
               onClick={() => {
-                setFilterStatus("");
-                setFilterLocation("");
+                setAppliedFilterStatus("");
+                setAppliedFilterLocation("");
+                setDraftFilterStatus("");
+                setDraftFilterLocation("");
                 setPage(1);
+                setIsFilterOpen(false);
               }}
             >
               Clear filters
@@ -497,7 +516,12 @@ export function FederationManager() {
             <Button
               type="button"
               className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => setIsFilterOpen(false)}
+              onClick={() => {
+                setAppliedFilterStatus(draftFilterStatus);
+                setAppliedFilterLocation(draftFilterLocation);
+                setPage(1);
+                setIsFilterOpen(false);
+              }}
             >
               Apply filters
             </Button>
@@ -506,20 +530,72 @@ export function FederationManager() {
       </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
-            <DialogHeader>
+            <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
               <DialogTitle>{editingFederation ? "Edit federation" : "Add federation"}</DialogTitle>
-              <DialogDescription>{editingFederation ? "Update federation details, then save your changes." : "Add a new federation to the community structure."}</DialogDescription>
+              <DialogDescription>
+                {editingFederation
+                  ? "Update federation details, then save your changes."
+                  : "Add a new federation to the community structure."}
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input placeholder="Federation name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-              <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
-              <SelectField value={status} onValueChange={(v) => setStatus(v as EntityStatus)} options={STATUS_OPTIONS} placeholder="Status" className="h-11" />
-              <textarea className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <div className="space-y-6 overflow-y-auto px-6 py-5">
+              <div className="space-y-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="federation-name">Name</Label>
+                  <Input
+                    id="federation-name"
+                    placeholder="Federation name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={inputClass}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="federation-location">Location</Label>
+                    <Input
+                      id="federation-location"
+                      placeholder="Region, area, or other location label"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className={inputClass}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="federation-status">Status</Label>
+                    <SelectField
+                      id="federation-status"
+                      value={status}
+                      onValueChange={(v) => setStatus(v as EntityStatus | "")}
+                      options={STATUS_OPTIONS}
+                      placeholder="Select status"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="federation-description">Description</Label>
+                  <textarea
+                    id="federation-description"
+                    className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    placeholder="Optional notes about this federation"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-            <DialogFooter>
-              <SaveButton isPending={isSubmitting} idleLabel={editingFederation ? "Save federation" : "Add federation"} pendingLabel={editingFederation ? "Saving…" : "Adding…"} />
+            <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
+              <SaveButton
+                isPending={isSubmitting}
+                idleLabel={editingFederation ? "Save federation" : "Add federation"}
+                pendingLabel={editingFederation ? "Saving…" : "Adding…"}
+              />
             </DialogFooter>
           </form>
         </DialogContent>

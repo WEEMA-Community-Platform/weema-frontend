@@ -9,6 +9,8 @@ import {
   PaginationRow,
   TableShell,
   descriptionCellClass,
+  tableActionsCellClass,
+  tableRowActionsClass,
 } from "@/components/base-data/shared";
 import { StatusBadge } from "@/components/community/community-card";
 import type { Member } from "@/lib/api/members";
@@ -32,6 +34,7 @@ type MemberTableCardProps = {
   onView: (id: string) => void;
   onEdit: (member: Member) => void;
   onDelete: (member: Member) => void;
+  emptyMessage: string;
 };
 
 export function MemberTableCard({
@@ -52,6 +55,7 @@ export function MemberTableCard({
   onView,
   onEdit,
   onDelete,
+  emptyMessage,
 }: MemberTableCardProps) {
   return (
     <Card className="border-primary/10">
@@ -76,12 +80,7 @@ export function MemberTableCard({
           isError={isError}
           errorMessage={errorMessage}
           onRetry={onRetry}
-          emptyState={
-            <EmptyStateRow
-              colSpan={6}
-              message="No members found. Add a member once self-help groups exist."
-            />
-          }
+          emptyState={<EmptyStateRow colSpan={6} message={emptyMessage} />}
         >
           {members?.map((m) => (
             <TableRow key={m.id}>
@@ -94,8 +93,8 @@ export function MemberTableCard({
               <TableCell>
                 <StatusBadge status={m.status as EntityStatus} />
               </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button type="button" size="sm" variant="outline" onClick={() => onView(m.id)}>
                     View
                   </Button>

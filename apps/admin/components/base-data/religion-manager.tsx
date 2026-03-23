@@ -30,16 +30,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DescriptionTableCell } from "@/components/base-data/description-table-cell";
 import {
   DataToolbar,
   EmptyStateRow,
   PaginationRow,
   SaveButton,
   TableShell,
-  descriptionCellClass,
+  baseDataDialogFieldGroupClass,
+  formTextareaClass,
   inputClass,
+  listEmptyMessage,
+  tableActionsCellClass,
+  tableRowActionsClass,
+  viewReadOnlyInputClass,
+  viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function ReligionManager() {
@@ -48,6 +56,7 @@ export function ReligionManager() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [editingReligion, setEditingReligion] = useState<Religion | null>(null);
+  const [viewingReligion, setViewingReligion] = useState<Religion | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDeleteReligion, setPendingDeleteReligion] = useState<Religion | null>(
     null
@@ -58,6 +67,14 @@ export function ReligionManager() {
   const updateMutation = useUpdateReligionMutation();
   const deleteMutation = useDeleteReligionMutation();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  const hasSearch = Boolean(searchQuery.trim());
+  const religionsEmptyMessage = listEmptyMessage({
+    entityPlural: "religions",
+    hasSearch,
+    hasFilters: false,
+    emptyCatalogHint: "No religions yet. Add your first religion to get started.",
+  });
 
   const resetForm = () => {
     setName("");
@@ -111,6 +128,7 @@ export function ReligionManager() {
             setPage(1);
           }}
           onAdd={() => {
+            setViewingReligion(null);
             resetForm();
             setIsFormOpen(true);
           }}
@@ -125,24 +143,26 @@ export function ReligionManager() {
           isError={religionsQuery.isError}
           errorMessage={religionsQuery.error instanceof Error ? religionsQuery.error.message : undefined}
           onRetry={religionsQuery.refetch}
-          emptyState={
-            <EmptyStateRow
-              colSpan={3}
-              message="No religions found. Add your first religion to get started."
-            />
-          }
+          emptyState={<EmptyStateRow colSpan={3} message={religionsEmptyMessage} />}
         >
           {religionsQuery.data?.religions?.map((religion) => (
             <TableRow key={religion.id}>
-              <TableCell className="font-medium">{religion.name}</TableCell>
-              <TableCell className={descriptionCellClass}>{religion.description || "---"}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
+              <TableCell className="align-top font-medium">{religion.name}</TableCell>
+              <DescriptionTableCell
+                description={religion.description}
+                onView={() => {
+                  setIsFormOpen(false);
+                  setViewingReligion(religion);
+                }}
+              />
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => {
+                      setViewingReligion(null);
                       setEditingReligion(religion);
                       setName(religion.name);
                       setDescription(religion.description || "");
@@ -178,6 +198,49 @@ export function ReligionManager() {
         )}
       </CardContent>
 
+      <Dialog
+        open={!!viewingReligion}
+        onOpenChange={(open) => {
+          if (!open) setViewingReligion(null);
+        }}
+      >
+        <DialogContent>
+          <div className="flex max-h-[85vh] flex-col overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>View religion</DialogTitle>
+              <DialogDescription>Read-only details for this religion.</DialogDescription>
+            </DialogHeader>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="religion-name-view">Religion name</FieldLabel>
+                <Input
+                  id="religion-name-view"
+                  readOnly
+                  value={viewingReligion?.name ?? ""}
+                  className={viewReadOnlyInputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="religion-description-view">Description</FieldLabel>
+                <textarea
+                  id="religion-description-view"
+                  readOnly
+                  className={viewReadOnlyTextareaClass}
+                  value={viewingReligion?.description ?? ""}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" className="h-11" onClick={() => setViewingReligion(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
@@ -189,20 +252,28 @@ export function ReligionManager() {
                   : "Add a new religion to your base data list."}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input
-                placeholder="Religion name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className={inputClass}
-              />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </div>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="religion-name">Religion name</FieldLabel>
+                <Input
+                  id="religion-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className={inputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="religion-description">Description</FieldLabel>
+                <textarea
+                  id="religion-description"
+                  className={formTextareaClass}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}

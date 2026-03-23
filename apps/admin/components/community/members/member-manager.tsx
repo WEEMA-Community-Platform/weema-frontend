@@ -12,26 +12,30 @@ import {
 import { useReligionsQuery } from "@/hooks/use-base-data";
 import { useSHGsQuery } from "@/hooks/use-community";
 import type { Member } from "@/lib/api/members";
+import { listEmptyMessage } from "@/components/base-data/shared";
 import { MemberCreateDialog } from "@/components/community/members/member-create-dialog";
 import { MemberDeleteDialog } from "@/components/community/members/member-delete-dialog";
 import { MemberDetailDialog } from "@/components/community/members/member-detail-dialog";
 import { MemberEditDialog } from "@/components/community/members/member-edit-dialog";
-import { MemberFiltersDialog } from "@/components/community/members/member-filters-dialog";
+import {
+  MemberFiltersDialog,
+  type MemberAppliedFilters,
+} from "@/components/community/members/member-filters-dialog";
 import { MemberTableCard } from "@/components/community/members/member-table-card";
 
 export function MemberManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterGender, setFilterGender] = useState("");
-  const [filterMarital, setFilterMarital] = useState("");
-  const [filterShgId, setFilterShgId] = useState("");
-  const [filterReligionId, setFilterReligionId] = useState("");
-  const [filterDobFrom, setFilterDobFrom] = useState("");
-  const [filterDobTo, setFilterDobTo] = useState("");
-  const [filterAgeFrom, setFilterAgeFrom] = useState("");
-  const [filterAgeTo, setFilterAgeTo] = useState("");
+  const [appliedStatus, setAppliedStatus] = useState("");
+  const [appliedGender, setAppliedGender] = useState("");
+  const [appliedMarital, setAppliedMarital] = useState("");
+  const [appliedShgId, setAppliedShgId] = useState("");
+  const [appliedReligionId, setAppliedReligionId] = useState("");
+  const [appliedDobFrom, setAppliedDobFrom] = useState("");
+  const [appliedDobTo, setAppliedDobTo] = useState("");
+  const [appliedAgeFrom, setAppliedAgeFrom] = useState("");
+  const [appliedAgeTo, setAppliedAgeTo] = useState("");
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createDialogKey, setCreateDialogKey] = useState(0);
@@ -44,15 +48,15 @@ export function MemberManager() {
     page,
     pageSize: 10,
     searchQuery,
-    status: filterStatus || undefined,
-    gender: filterGender || undefined,
-    maritalStatus: filterMarital || undefined,
-    shgId: filterShgId || undefined,
-    religionId: filterReligionId || undefined,
-    dateOfBirthFrom: filterDobFrom || undefined,
-    dateOfBirthTo: filterDobTo || undefined,
-    ageFrom: filterAgeFrom ? parseInt(filterAgeFrom, 10) : undefined,
-    ageTo: filterAgeTo ? parseInt(filterAgeTo, 10) : undefined,
+    status: appliedStatus || undefined,
+    gender: appliedGender || undefined,
+    maritalStatus: appliedMarital || undefined,
+    shgId: appliedShgId || undefined,
+    religionId: appliedReligionId || undefined,
+    dateOfBirthFrom: appliedDobFrom || undefined,
+    dateOfBirthTo: appliedDobTo || undefined,
+    ageFrom: appliedAgeFrom ? parseInt(appliedAgeFrom, 10) : undefined,
+    ageTo: appliedAgeTo ? parseInt(appliedAgeTo, 10) : undefined,
   });
 
   const { data: religionsData } = useReligionsQuery({ page: 1, pageSize: 200 });
@@ -73,59 +77,72 @@ export function MemberManager() {
   const uploadIdMutation = useUploadMemberNationalIdMutation();
 
   const hasActiveFilters = Boolean(
-    filterStatus ||
-      filterGender ||
-      filterMarital ||
-      filterShgId ||
-      filterReligionId ||
-      filterDobFrom ||
-      filterDobTo ||
-      filterAgeFrom ||
-      filterAgeTo
+    appliedStatus ||
+      appliedGender ||
+      appliedMarital ||
+      appliedShgId ||
+      appliedReligionId ||
+      appliedDobFrom ||
+      appliedDobTo ||
+      appliedAgeFrom ||
+      appliedAgeTo
   );
+
+  const appliedFilters: MemberAppliedFilters = useMemo(
+    () => ({
+      status: appliedStatus,
+      gender: appliedGender,
+      marital: appliedMarital,
+      shgId: appliedShgId,
+      religionId: appliedReligionId,
+      dobFrom: appliedDobFrom,
+      dobTo: appliedDobTo,
+      ageFrom: appliedAgeFrom,
+      ageTo: appliedAgeTo,
+    }),
+    [
+      appliedStatus,
+      appliedGender,
+      appliedMarital,
+      appliedShgId,
+      appliedReligionId,
+      appliedDobFrom,
+      appliedDobTo,
+      appliedAgeFrom,
+      appliedAgeTo,
+    ]
+  );
+
+  const hasSearch = Boolean(searchQuery.trim());
+  const emptyMessage = listEmptyMessage({
+    entityPlural: "members",
+    hasSearch,
+    hasFilters: hasActiveFilters,
+    emptyCatalogHint: "No members yet. Add a member once self-help groups exist.",
+  });
 
   const isSubmittingCreate = createMutation.isPending;
   const isSubmittingEdit = updateMutation.isPending;
-
-  const filterState = useMemo(
-    () => ({
-      filterStatus,
-      setFilterStatus,
-      filterGender,
-      setFilterGender,
-      filterMarital,
-      setFilterMarital,
-      filterShgId,
-      setFilterShgId,
-      filterReligionId,
-      setFilterReligionId,
-      filterDobFrom,
-      setFilterDobFrom,
-      filterDobTo,
-      setFilterDobTo,
-      filterAgeFrom,
-      setFilterAgeFrom,
-      filterAgeTo,
-      setFilterAgeTo,
-    }),
-    [
-      filterStatus,
-      filterGender,
-      filterMarital,
-      filterShgId,
-      filterReligionId,
-      filterDobFrom,
-      filterDobTo,
-      filterAgeFrom,
-      filterAgeTo,
-    ]
-  );
 
   const list = membersQuery.data;
 
   const isFormOpen = isCreateOpen || !!editingMember;
   /** View dialog is independent: hidden while add/edit is open; never stacks with form. */
   const isViewOpen = !!viewingId && !isFormOpen;
+
+  const applyMemberFilters = (f: MemberAppliedFilters) => {
+    setAppliedStatus(f.status);
+    setAppliedGender(f.gender);
+    setAppliedMarital(f.marital);
+    setAppliedShgId(f.shgId);
+    setAppliedReligionId(f.religionId);
+    setAppliedDobFrom(f.dobFrom);
+    setAppliedDobTo(f.dobTo);
+    setAppliedAgeFrom(f.ageFrom);
+    setAppliedAgeTo(f.ageTo);
+    setPage(1);
+    setIsFilterOpen(false);
+  };
 
   return (
     <>
@@ -180,6 +197,7 @@ export function MemberManager() {
         totalPages={list?.totalPages ?? 1}
         totalElements={list?.totalElements ?? 0}
         onPageChange={setPage}
+        emptyMessage={emptyMessage}
         onView={(id) => {
           setIsCreateOpen(false);
           setEditingMember(null);
@@ -195,10 +213,10 @@ export function MemberManager() {
       <MemberFiltersDialog
         open={isFilterOpen}
         onOpenChange={setIsFilterOpen}
-        filters={filterState}
+        applied={appliedFilters}
+        onApply={applyMemberFilters}
         shgOptions={shgOptions}
         religionOptions={religionOptions}
-        onPageReset={() => setPage(1)}
       />
 
       <MemberDeleteDialog

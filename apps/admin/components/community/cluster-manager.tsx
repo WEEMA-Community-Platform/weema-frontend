@@ -46,12 +46,14 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DataToolbar,
   PaginationRow,
   SaveButton,
   inputClass,
+  listEmptyMessage,
 } from "@/components/base-data/shared";
 import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 
@@ -130,7 +132,7 @@ function AssignSHGsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Assign self-help groups</DialogTitle>
           <DialogDescription>
@@ -242,7 +244,7 @@ function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: b
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[min(100vw-1.5rem,42rem)] sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{cluster?.name ?? "Cluster details"}</DialogTitle>
             <DialogDescription>Full details for this cluster.</DialogDescription>
@@ -343,16 +345,21 @@ function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: b
 export function ClusterManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterWoredaId, setFilterWoredaId] = useState("");
-  const [filterFederationId, setFilterFederationId] = useState("");
-  const [filterLocation, setFilterLocation] = useState("");
+  const [appliedFilterStatus, setAppliedFilterStatus] = useState("");
+  const [appliedFilterWoredaId, setAppliedFilterWoredaId] = useState("");
+  const [appliedFilterFederationId, setAppliedFilterFederationId] = useState("");
+  const [appliedFilterLocation, setAppliedFilterLocation] = useState("");
+  const [draftFilterStatus, setDraftFilterStatus] = useState("");
+  const [draftFilterWoredaId, setDraftFilterWoredaId] = useState("");
+  const [draftFilterFederationId, setDraftFilterFederationId] = useState("");
+  const [draftFilterLocation, setDraftFilterLocation] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<EntityStatus>("ACTIVE");
+  const [status, setStatus] = useState<EntityStatus | "">("");
   const [woredaId, setWoredaId] = useState("");
-  const [federationId, setFederationId] = useState(""); // preserved on edit, not shown in form
+  /** Edit form only — new clusters are created without a federation; assign via Edit cluster. */
+  const [federationId, setFederationId] = useState("none");
   const [editingCluster, setEditingCluster] = useState<Cluster | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Cluster | null>(null);
@@ -363,10 +370,10 @@ export function ClusterManager() {
     page,
     pageSize: 12,
     searchQuery,
-    status: filterQueryParam(filterStatus) as EntityStatus | undefined,
-    woredaId: filterQueryParam(filterWoredaId),
-    federationId: filterQueryParam(filterFederationId),
-    location: filterLocation.trim() || undefined,
+    status: filterQueryParam(appliedFilterStatus) as EntityStatus | undefined,
+    woredaId: filterQueryParam(appliedFilterWoredaId),
+    federationId: filterQueryParam(appliedFilterFederationId),
+    location: appliedFilterLocation.trim() || undefined,
   });
   const { data: currentUserData } = useCurrentUser();
   const { data: woredaData } = useWoredasQuery({ page: 1, pageSize: 200, searchQuery: "" });
@@ -380,6 +387,14 @@ export function ClusterManager() {
 
   const woredaOptions = (woredaData?.woredas ?? []).map((w: { id: string; name: string }) => ({ value: w.id, label: w.name }));
 
+  const federationFormOptions = useMemo(
+    () => [
+      { value: "none", label: "No federation (unassigned)" },
+      ...(federationsData?.federations ?? []).map((f) => ({ value: f.id, label: f.name })),
+    ],
+    [federationsData?.federations]
+  );
+
   const federationFilterOptions = useMemo(
     () =>
       (federationsData?.federations ?? []).map((f) => ({ value: f.id, label: f.name })),
@@ -391,7 +406,14 @@ export function ClusterManager() {
     [woredaData?.woredas]
   );
 
-  const resetForm = () => { setName(""); setDescription(""); setStatus("ACTIVE"); setWoredaId(""); setFederationId(""); setEditingCluster(null); };
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setStatus("");
+    setWoredaId("");
+    setFederationId("none");
+    setEditingCluster(null);
+  };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
   const openEdit = (c: Cluster) => {
     setEditingCluster(c);
@@ -399,7 +421,7 @@ export function ClusterManager() {
     setDescription(c.description || "");
     setStatus(c.status);
     setWoredaId(c.woredaId || "");
-    setFederationId(c.federationId || ""); // preserve existing assignment silently
+    setFederationId(c.federationId || "none");
     setIsFormOpen(true);
   };
 
@@ -407,6 +429,7 @@ export function ClusterManager() {
     event.preventDefault();
     if (!name.trim()) { sileo.warning({ title: "Missing name", description: "Cluster name is required." }); return; }
     if (!woredaId) { sileo.warning({ title: "Missing woreda", description: "Please select a woreda for this cluster." }); return; }
+    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
     const managerId = currentUserData?.user?.id;
     const resolvedFederationId = federationId && federationId !== "none" ? federationId : undefined;
     try {
@@ -414,7 +437,13 @@ export function ClusterManager() {
         const result = await updateMutation.mutateAsync({ id: editingCluster.id, payload: { name: name.trim(), description: description.trim(), status, woredaId, federationId: resolvedFederationId, ...(managerId ? { managerId } : {}) } });
         sileo.success({ title: "Cluster updated", description: result.message });
       } else {
-        const result = await createMutation.mutateAsync({ name: name.trim(), description: description.trim(), status, woredaId, ...(managerId ? { managerId } : {}) });
+        const result = await createMutation.mutateAsync({
+          name: name.trim(),
+          description: description.trim(),
+          status,
+          woredaId,
+          ...(managerId ? { managerId } : {}),
+        });
         sileo.success({ title: "Cluster added", description: result.message });
       }
       setPage(1); setIsFormOpen(false); resetForm();
@@ -424,6 +453,19 @@ export function ClusterManager() {
   };
 
   const clusters = clustersQuery.data?.clusters ?? [];
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasFilters = Boolean(
+    appliedFilterStatus ||
+      appliedFilterWoredaId ||
+      appliedFilterFederationId ||
+      appliedFilterLocation.trim()
+  );
+  const emptyMessage = listEmptyMessage({
+    entityPlural: "clusters",
+    hasSearch,
+    hasFilters,
+    emptyCatalogHint: "No clusters yet. Add your first cluster to get started.",
+  });
 
   return (
     <div className="space-y-4">
@@ -435,12 +477,7 @@ export function ClusterManager() {
         addLabel="Add cluster"
         showFilterButton
         onOpenFilters={() => setIsFilterOpen(true)}
-        hasActiveFilters={Boolean(
-          filterStatus ||
-            filterWoredaId ||
-            filterFederationId ||
-            filterLocation.trim()
-        )}
+        hasActiveFilters={hasFilters}
       />
 
       {clustersQuery.isLoading ? (
@@ -456,7 +493,7 @@ export function ClusterManager() {
         </div>
       ) : clusters.length === 0 ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
-          <p className="text-sm text-muted-foreground">No clusters found. Add your first cluster to get started.</p>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -498,47 +535,46 @@ export function ClusterManager() {
         />
       )}
 
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-        <DialogContent>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={(open) => {
+          setIsFilterOpen(open);
+          if (open) {
+            setDraftFilterStatus(appliedFilterStatus);
+            setDraftFilterWoredaId(appliedFilterWoredaId);
+            setDraftFilterFederationId(appliedFilterFederationId);
+            setDraftFilterLocation(appliedFilterLocation);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Filter clusters</DialogTitle>
-            <DialogDescription>Filter by status, woreda, federation, or location.</DialogDescription>
+            <DialogDescription>Filter by status, woreda, federation, or location. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 px-5 pb-4">
             <SelectField
-              value={filterStatus}
+              value={draftFilterStatus}
               placeholder="All statuses"
               options={STATUS_OPTIONS}
-              onValueChange={(v) => {
-                setFilterStatus(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterStatus}
             />
             <SelectField
-              value={filterWoredaId}
+              value={draftFilterWoredaId}
               placeholder="All woredas"
               options={woredaFilterOptions}
-              onValueChange={(v) => {
-                setFilterWoredaId(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterWoredaId}
             />
             <SelectField
-              value={filterFederationId}
+              value={draftFilterFederationId}
               placeholder="All federations"
               options={federationFilterOptions}
-              onValueChange={(v) => {
-                setFilterFederationId(v);
-                setPage(1);
-              }}
+              onValueChange={setDraftFilterFederationId}
             />
             <Input
               placeholder="Location contains"
-              value={filterLocation}
-              onChange={(e) => {
-                setFilterLocation(e.target.value);
-                setPage(1);
-              }}
+              value={draftFilterLocation}
+              onChange={(e) => setDraftFilterLocation(e.target.value)}
               className={inputClass}
             />
           </div>
@@ -548,11 +584,16 @@ export function ClusterManager() {
               variant="outline"
               className="h-11"
               onClick={() => {
-                setFilterStatus("");
-                setFilterWoredaId("");
-                setFilterFederationId("");
-                setFilterLocation("");
+                setAppliedFilterStatus("");
+                setAppliedFilterWoredaId("");
+                setAppliedFilterFederationId("");
+                setAppliedFilterLocation("");
+                setDraftFilterStatus("");
+                setDraftFilterWoredaId("");
+                setDraftFilterFederationId("");
+                setDraftFilterLocation("");
                 setPage(1);
+                setIsFilterOpen(false);
               }}
             >
               Clear filters
@@ -560,7 +601,14 @@ export function ClusterManager() {
             <Button
               type="button"
               className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => setIsFilterOpen(false)}
+              onClick={() => {
+                setAppliedFilterStatus(draftFilterStatus);
+                setAppliedFilterWoredaId(draftFilterWoredaId);
+                setAppliedFilterFederationId(draftFilterFederationId);
+                setAppliedFilterLocation(draftFilterLocation);
+                setPage(1);
+                setIsFilterOpen(false);
+              }}
             >
               Apply filters
             </Button>
@@ -569,20 +617,88 @@ export function ClusterManager() {
       </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
-            <DialogHeader>
+            <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
               <DialogTitle>{editingCluster ? "Edit cluster" : "Add cluster"}</DialogTitle>
-              <DialogDescription>{editingCluster ? "Update cluster details, then save your changes." : "Add a new cluster to the community structure."}</DialogDescription>
+              <DialogDescription>
+                {editingCluster
+                  ? "Update cluster details, then save your changes."
+                  : "Add a new cluster to the community structure. Federation can be linked when you edit this cluster."}
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input placeholder="Cluster name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-              <SelectField value={woredaId} onValueChange={setWoredaId} options={woredaOptions} placeholder="Select woreda" className="h-11" />
-              <SelectField value={status} onValueChange={(v) => setStatus(v as EntityStatus)} options={STATUS_OPTIONS} placeholder="Status" className="h-11" />
-              <textarea className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <div className="space-y-6 overflow-y-auto px-6 py-5">
+              <div className="space-y-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cluster-name">Name</Label>
+                  <Input
+                    id="cluster-name"
+                    placeholder="Cluster name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={inputClass}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cluster-woreda">Woreda</Label>
+                    <SelectField
+                      id="cluster-woreda"
+                      value={woredaId}
+                      onValueChange={setWoredaId}
+                      options={woredaOptions}
+                      placeholder="Select woreda"
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cluster-status">Status</Label>
+                    <SelectField
+                      id="cluster-status"
+                      value={status}
+                      onValueChange={(v) => setStatus(v as EntityStatus | "")}
+                      options={STATUS_OPTIONS}
+                      placeholder="Select status"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+                {editingCluster ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cluster-federation">Federation</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Optional. Link this cluster to a federation when ready.
+                    </p>
+                    <SelectField
+                      id="cluster-federation"
+                      value={federationId || "none"}
+                      onValueChange={setFederationId}
+                      options={federationFormOptions}
+                      placeholder="Select federation"
+                      className="h-11"
+                    />
+                  </div>
+                ) : null}
+                <div className="space-y-1.5">
+                  <Label htmlFor="cluster-description">Description</Label>
+                  <textarea
+                    id="cluster-description"
+                    className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    placeholder="Optional notes about this cluster"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-            <DialogFooter>
-              <SaveButton isPending={isSubmitting} idleLabel={editingCluster ? "Save cluster" : "Add cluster"} pendingLabel={editingCluster ? "Saving…" : "Adding…"} />
+            <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
+              <SaveButton
+                isPending={isSubmitting}
+                idleLabel={editingCluster ? "Save cluster" : "Add cluster"}
+                pendingLabel={editingCluster ? "Saving…" : "Adding…"}
+              />
             </DialogFooter>
           </form>
         </DialogContent>

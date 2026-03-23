@@ -9,6 +9,8 @@ import {
   PaginationRow,
   TableShell,
   descriptionCellClass,
+  tableActionsCellClass,
+  tableRowActionsClass,
 } from "@/components/base-data/shared";
 import type { UserListItem } from "@/lib/api/users-admin";
 import { formatRoleLabel } from "@/components/users/constants";
@@ -30,6 +32,7 @@ type UserTableCardProps = {
   onPageChange: (page: number) => void;
   onView: (id: string) => void;
   onToggleActivation: (user: UserListItem) => void;
+  emptyMessage: string;
 };
 
 export function UserTableCard({
@@ -49,6 +52,7 @@ export function UserTableCard({
   onPageChange,
   onView,
   onToggleActivation,
+  emptyMessage,
 }: UserTableCardProps) {
   return (
     <Card className="border-primary/10">
@@ -73,12 +77,7 @@ export function UserTableCard({
           isError={isError}
           errorMessage={errorMessage}
           onRetry={onRetry}
-          emptyState={
-            <EmptyStateRow
-              colSpan={7}
-              message="No users found. Create a user to get started."
-            />
-          }
+          emptyState={<EmptyStateRow colSpan={7} message={emptyMessage} />}
         >
           {users?.map((u) => (
             <TableRow key={u.id}>
@@ -90,8 +89,8 @@ export function UserTableCard({
               <TableCell className={descriptionCellClass}>{u.phoneNumber ?? "—"}</TableCell>
               <TableCell>{u.active ? "Yes" : "No"}</TableCell>
               <TableCell>{u.firstTimeLogin ? "Yes" : "No"}</TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-2">
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button type="button" size="sm" variant="outline" onClick={() => onView(u.id)}>
                     View
                   </Button>

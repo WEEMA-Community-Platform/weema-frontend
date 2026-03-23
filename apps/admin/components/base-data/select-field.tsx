@@ -30,6 +30,7 @@ export function SelectField({
   className,
   placeholder,
   id,
+  disabled,
 }: {
   value: string;
   onValueChange: (value: string) => void;
@@ -38,12 +39,14 @@ export function SelectField({
   placeholder: string;
   /** For pairing with `<Label htmlFor={id}>`. */
   id?: string;
+  disabled?: boolean;
 }) {
   const selectValue = value || NONE_SELECTED_VALUE;
 
   return (
     <Select
       value={selectValue}
+      disabled={disabled}
       onValueChange={(nextValue) =>
         onValueChange(nextValue === NONE_SELECTED_VALUE ? "" : nextValue)
       }

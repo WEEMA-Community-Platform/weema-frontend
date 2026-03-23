@@ -32,8 +32,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DescriptionTableCell } from "@/components/base-data/description-table-cell";
 import { SelectField } from "@/components/base-data/select-field";
 import {
   DataToolbar,
@@ -41,8 +43,14 @@ import {
   PaginationRow,
   SaveButton,
   TableShell,
-  descriptionCellClass,
+  baseDataDialogFieldGroupClass,
+  formTextareaClass,
   inputClass,
+  listEmptyMessage,
+  tableActionsCellClass,
+  tableRowActionsClass,
+  viewReadOnlyInputClass,
+  viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function KebeleManager() {
@@ -51,26 +59,29 @@ export function KebeleManager() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedWoredaId, setSelectedWoredaId] = useState("");
-  const [zoneFilterId, setZoneFilterId] = useState("");
-  const [woredaFilterId, setWoredaFilterId] = useState("");
+  const [appliedFilterZoneId, setAppliedFilterZoneId] = useState("");
+  const [appliedFilterWoredaId, setAppliedFilterWoredaId] = useState("");
+  const [draftFilterZoneId, setDraftFilterZoneId] = useState("");
+  const [draftFilterWoredaId, setDraftFilterWoredaId] = useState("");
   const [editingKebele, setEditingKebele] = useState<Kebele | null>(null);
+  const [viewingKebele, setViewingKebele] = useState<Kebele | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [pendingDeleteKebele, setPendingDeleteKebele] = useState<Kebele | null>(null);
 
   const zonesQuery = useZonesQuery({ page: 1, pageSize: 100 });
   const woredasForCreateQuery = useWoredasQuery({ page: 1, pageSize: 100 });
-  const woredasForFilterQuery = useWoredasQuery({
+  const woredasForFilterDraftQuery = useWoredasQuery({
     page: 1,
     pageSize: 100,
-    zoneId: zoneFilterId || undefined,
+    zoneId: draftFilterZoneId || undefined,
   });
   const kebelesQuery = useKebelesQuery({
     page,
     pageSize: 10,
     searchQuery,
-    zoneId: zoneFilterId || undefined,
-    woredaId: woredaFilterId || undefined,
+    zoneId: appliedFilterZoneId || undefined,
+    woredaId: appliedFilterWoredaId || undefined,
   });
 
   const createMutation = useCreateKebeleMutation();
@@ -87,8 +98,8 @@ export function KebeleManager() {
     [woredasForCreateQuery.data?.woredas]
   );
   const woredaFilterOptions = useMemo(
-    () => (woredasForFilterQuery.data?.woredas ?? []).map((w) => ({ value: w.id, label: w.name })),
-    [woredasForFilterQuery.data?.woredas]
+    () => (woredasForFilterDraftQuery.data?.woredas ?? []).map((w) => ({ value: w.id, label: w.name })),
+    [woredasForFilterDraftQuery.data?.woredas]
   );
 
   const resetForm = () => {
@@ -135,6 +146,15 @@ export function KebeleManager() {
     }
   };
 
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasFilters = Boolean(appliedFilterZoneId || appliedFilterWoredaId);
+  const kebelesEmptyMessage = listEmptyMessage({
+    entityPlural: "kebeles",
+    hasSearch,
+    hasFilters,
+    emptyCatalogHint: "No kebeles yet. Add your first kebele to get started.",
+  });
+
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
@@ -147,13 +167,14 @@ export function KebeleManager() {
             setPage(1);
           }}
           onAdd={() => {
+            setViewingKebele(null);
             resetForm();
             setIsFormOpen(true);
           }}
           addLabel="Add kebele"
           showFilterButton
           onOpenFilters={() => setIsFilterOpen(true)}
-          hasActiveFilters={Boolean(zoneFilterId || woredaFilterId)}
+          hasActiveFilters={hasFilters}
         />
       </CardHeader>
       <CardContent>
@@ -164,20 +185,27 @@ export function KebeleManager() {
           isError={kebelesQuery.isError}
           errorMessage={kebelesQuery.error instanceof Error ? kebelesQuery.error.message : undefined}
           onRetry={kebelesQuery.refetch}
-          emptyState={<EmptyStateRow colSpan={4} message="No kebeles found. Add your first kebele to get started." />}
+          emptyState={<EmptyStateRow colSpan={4} message={kebelesEmptyMessage} />}
         >
           {kebelesQuery.data?.kebeles?.map((kebele) => (
             <TableRow key={kebele.id}>
-              <TableCell className="font-medium">{kebele.name}</TableCell>
-              <TableCell>{kebele.woredaName}</TableCell>
-              <TableCell className={descriptionCellClass}>{kebele.description || "---"}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
+              <TableCell className="align-top font-medium">{kebele.name}</TableCell>
+              <TableCell className="align-top">{kebele.woredaName}</TableCell>
+              <DescriptionTableCell
+                description={kebele.description}
+                onView={() => {
+                  setIsFormOpen(false);
+                  setViewingKebele(kebele);
+                }}
+              />
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => {
+                      setViewingKebele(null);
                       setEditingKebele(kebele);
                       setName(kebele.name);
                       setDescription(kebele.description || "");
@@ -207,6 +235,61 @@ export function KebeleManager() {
         )}
       </CardContent>
 
+      <Dialog
+        open={!!viewingKebele}
+        onOpenChange={(open) => {
+          if (!open) setViewingKebele(null);
+        }}
+      >
+        <DialogContent>
+          <div className="flex max-h-[85vh] flex-col overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>View kebele</DialogTitle>
+              <DialogDescription>Read-only details for this kebele.</DialogDescription>
+            </DialogHeader>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="kebele-name-view">Kebele name</FieldLabel>
+                <Input
+                  id="kebele-name-view"
+                  readOnly
+                  value={viewingKebele?.name ?? ""}
+                  className={viewReadOnlyInputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="kebele-woreda-view">Woreda</FieldLabel>
+                <SelectField
+                  id="kebele-woreda-view"
+                  value={viewingKebele?.woredaId ?? ""}
+                  placeholder="Select woreda"
+                  options={woredaCreateOptions}
+                  onValueChange={() => {}}
+                  className={viewReadOnlyInputClass}
+                  disabled
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="kebele-description-view">Description</FieldLabel>
+                <textarea
+                  id="kebele-description-view"
+                  readOnly
+                  className={viewReadOnlyTextareaClass}
+                  value={viewingKebele?.description ?? ""}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" className="h-11" onClick={() => setViewingKebele(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
@@ -218,16 +301,39 @@ export function KebeleManager() {
                   : "Add a new kebele to your base data list."}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input placeholder="Kebele name" value={name} onChange={(event) => setName(event.target.value)} className={inputClass} />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-              <SelectField value={selectedWoredaId} placeholder="Select woreda" options={woredaCreateOptions} onValueChange={setSelectedWoredaId} />
-            </div>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="kebele-name">Kebele name</FieldLabel>
+                <Input
+                  id="kebele-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className={inputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="kebele-woreda">Woreda</FieldLabel>
+                <SelectField
+                  id="kebele-woreda"
+                  value={selectedWoredaId}
+                  placeholder="Select woreda"
+                  options={woredaCreateOptions}
+                  onValueChange={setSelectedWoredaId}
+                  className={inputClass}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="kebele-description">Description</FieldLabel>
+                <textarea
+                  id="kebele-description"
+                  className={formTextareaClass}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}
@@ -239,47 +345,74 @@ export function KebeleManager() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={(open) => {
+          setIsFilterOpen(open);
+          if (open) {
+            setDraftFilterZoneId(appliedFilterZoneId);
+            setDraftFilterWoredaId(appliedFilterWoredaId);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Filter kebeles</DialogTitle>
-            <DialogDescription>Apply filters to narrow down the kebele list.</DialogDescription>
+            <DialogDescription>Narrow the kebele list. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 px-5 pb-4">
-            <SelectField
-              value={zoneFilterId}
-              placeholder="All zones"
-              options={zoneOptions}
-              onValueChange={(value) => {
-                setZoneFilterId(value);
-                setWoredaFilterId("");
-                setPage(1);
-              }}
-            />
-            <SelectField
-              value={woredaFilterId}
-              placeholder="All woredas"
-              options={woredaFilterOptions}
-              onValueChange={(value) => {
-                setWoredaFilterId(value);
-                setPage(1);
-              }}
-            />
-          </div>
+          <FieldGroup className={baseDataDialogFieldGroupClass}>
+            <Field>
+              <FieldLabel htmlFor="kebele-filter-zone">Zone</FieldLabel>
+              <SelectField
+                id="kebele-filter-zone"
+                value={draftFilterZoneId}
+                placeholder="All zones"
+                options={zoneOptions}
+                onValueChange={(value) => {
+                  setDraftFilterZoneId(value);
+                  setDraftFilterWoredaId("");
+                }}
+                className={inputClass}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="kebele-filter-woreda">Woreda</FieldLabel>
+              <SelectField
+                id="kebele-filter-woreda"
+                value={draftFilterWoredaId}
+                placeholder="All woredas"
+                options={woredaFilterOptions}
+                onValueChange={setDraftFilterWoredaId}
+                className={inputClass}
+              />
+            </Field>
+          </FieldGroup>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               className="h-11"
               onClick={() => {
-                setZoneFilterId("");
-                setWoredaFilterId("");
+                setAppliedFilterZoneId("");
+                setAppliedFilterWoredaId("");
+                setDraftFilterZoneId("");
+                setDraftFilterWoredaId("");
                 setPage(1);
+                setIsFilterOpen(false);
               }}
             >
               Clear filters
             </Button>
-            <Button type="button" className="h-11 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsFilterOpen(false)}>
+            <Button
+              type="button"
+              className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                setAppliedFilterZoneId(draftFilterZoneId);
+                setAppliedFilterWoredaId(draftFilterWoredaId);
+                setPage(1);
+                setIsFilterOpen(false);
+              }}
+            >
               Apply filters
             </Button>
           </DialogFooter>

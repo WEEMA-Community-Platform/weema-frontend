@@ -32,8 +32,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { DescriptionTableCell } from "@/components/base-data/description-table-cell";
 import { SelectField } from "@/components/base-data/select-field";
 import {
   DataToolbar,
@@ -41,8 +43,14 @@ import {
   PaginationRow,
   SaveButton,
   TableShell,
-  descriptionCellClass,
+  baseDataDialogFieldGroupClass,
+  formTextareaClass,
   inputClass,
+  listEmptyMessage,
+  tableActionsCellClass,
+  tableRowActionsClass,
+  viewReadOnlyInputClass,
+  viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function WoredaManager() {
@@ -51,26 +59,29 @@ export function WoredaManager() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
-  const [regionFilterId, setRegionFilterId] = useState("");
-  const [zoneFilterId, setZoneFilterId] = useState("");
+  const [appliedFilterRegionId, setAppliedFilterRegionId] = useState("");
+  const [appliedFilterZoneId, setAppliedFilterZoneId] = useState("");
+  const [draftFilterRegionId, setDraftFilterRegionId] = useState("");
+  const [draftFilterZoneId, setDraftFilterZoneId] = useState("");
   const [editingWoreda, setEditingWoreda] = useState<Woreda | null>(null);
+  const [viewingWoreda, setViewingWoreda] = useState<Woreda | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [pendingDeleteWoreda, setPendingDeleteWoreda] = useState<Woreda | null>(null);
 
   const regionsQuery = useRegionsQuery({ page: 1, pageSize: 100 });
   const zonesForCreateQuery = useZonesQuery({ page: 1, pageSize: 100 });
-  const zonesForFilterQuery = useZonesQuery({
+  const zonesForFilterDraftQuery = useZonesQuery({
     page: 1,
     pageSize: 100,
-    regionId: regionFilterId || undefined,
+    regionId: draftFilterRegionId || undefined,
   });
   const woredasQuery = useWoredasQuery({
     page,
     pageSize: 10,
     searchQuery,
-    regionId: regionFilterId || undefined,
-    zoneId: zoneFilterId || undefined,
+    regionId: appliedFilterRegionId || undefined,
+    zoneId: appliedFilterZoneId || undefined,
   });
 
   const createMutation = useCreateWoredaMutation();
@@ -87,8 +98,8 @@ export function WoredaManager() {
     [regionsQuery.data?.regions]
   );
   const zoneFilterOptions = useMemo(
-    () => (zonesForFilterQuery.data?.zones ?? []).map((z) => ({ value: z.id, label: z.name })),
-    [zonesForFilterQuery.data?.zones]
+    () => (zonesForFilterDraftQuery.data?.zones ?? []).map((z) => ({ value: z.id, label: z.name })),
+    [zonesForFilterDraftQuery.data?.zones]
   );
 
   const resetForm = () => {
@@ -132,6 +143,15 @@ export function WoredaManager() {
     }
   };
 
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasFilters = Boolean(appliedFilterRegionId || appliedFilterZoneId);
+  const woredasEmptyMessage = listEmptyMessage({
+    entityPlural: "woredas",
+    hasSearch,
+    hasFilters,
+    emptyCatalogHint: "No woredas yet. Add your first woreda to get started.",
+  });
+
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
@@ -144,13 +164,14 @@ export function WoredaManager() {
             setPage(1);
           }}
           onAdd={() => {
+            setViewingWoreda(null);
             resetForm();
             setIsFormOpen(true);
           }}
           addLabel="Add woreda"
           showFilterButton
           onOpenFilters={() => setIsFilterOpen(true)}
-          hasActiveFilters={Boolean(regionFilterId || zoneFilterId)}
+          hasActiveFilters={hasFilters}
         />
       </CardHeader>
       <CardContent>
@@ -161,20 +182,27 @@ export function WoredaManager() {
           isError={woredasQuery.isError}
           errorMessage={woredasQuery.error instanceof Error ? woredasQuery.error.message : undefined}
           onRetry={woredasQuery.refetch}
-          emptyState={<EmptyStateRow colSpan={4} message="No woredas found. Add your first woreda to get started." />}
+          emptyState={<EmptyStateRow colSpan={4} message={woredasEmptyMessage} />}
         >
           {woredasQuery.data?.woredas?.map((woreda) => (
             <TableRow key={woreda.id}>
-              <TableCell className="font-medium">{woreda.name}</TableCell>
-              <TableCell>{woreda.zoneName}</TableCell>
-              <TableCell className={descriptionCellClass}>{woreda.description || "---"}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
+              <TableCell className="align-top font-medium">{woreda.name}</TableCell>
+              <TableCell className="align-top">{woreda.zoneName}</TableCell>
+              <DescriptionTableCell
+                description={woreda.description}
+                onView={() => {
+                  setIsFormOpen(false);
+                  setViewingWoreda(woreda);
+                }}
+              />
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => {
+                      setViewingWoreda(null);
                       setEditingWoreda(woreda);
                       setName(woreda.name);
                       setDescription(woreda.description || "");
@@ -204,6 +232,61 @@ export function WoredaManager() {
         )}
       </CardContent>
 
+      <Dialog
+        open={!!viewingWoreda}
+        onOpenChange={(open) => {
+          if (!open) setViewingWoreda(null);
+        }}
+      >
+        <DialogContent>
+          <div className="flex max-h-[85vh] flex-col overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>View woreda</DialogTitle>
+              <DialogDescription>Read-only details for this woreda.</DialogDescription>
+            </DialogHeader>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="woreda-name-view">Woreda name</FieldLabel>
+                <Input
+                  id="woreda-name-view"
+                  readOnly
+                  value={viewingWoreda?.name ?? ""}
+                  className={viewReadOnlyInputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="woreda-zone-view">Zone</FieldLabel>
+                <SelectField
+                  id="woreda-zone-view"
+                  value={viewingWoreda?.zoneId ?? ""}
+                  placeholder="Select zone"
+                  options={zoneCreateOptions}
+                  onValueChange={() => {}}
+                  className={viewReadOnlyInputClass}
+                  disabled
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="woreda-description-view">Description</FieldLabel>
+                <textarea
+                  id="woreda-description-view"
+                  readOnly
+                  className={viewReadOnlyTextareaClass}
+                  value={viewingWoreda?.description ?? ""}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" className="h-11" onClick={() => setViewingWoreda(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
@@ -215,16 +298,39 @@ export function WoredaManager() {
                   : "Add a new woreda to your base data list."}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 overflow-auto px-5 pb-4">
-              <Input placeholder="Woreda name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-              <textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-              <SelectField value={selectedZoneId} placeholder="Select zone" options={zoneCreateOptions} onValueChange={setSelectedZoneId} />
-            </div>
+            <FieldGroup className={baseDataDialogFieldGroupClass}>
+              <Field>
+                <FieldLabel htmlFor="woreda-name">Woreda name</FieldLabel>
+                <Input
+                  id="woreda-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={inputClass}
+                  autoComplete="off"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="woreda-zone">Zone</FieldLabel>
+                <SelectField
+                  id="woreda-zone"
+                  value={selectedZoneId}
+                  placeholder="Select zone"
+                  options={zoneCreateOptions}
+                  onValueChange={setSelectedZoneId}
+                  className={inputClass}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="woreda-description">Description</FieldLabel>
+                <textarea
+                  id="woreda-description"
+                  className={formTextareaClass}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder="Optional details"
+                />
+              </Field>
+            </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}
@@ -236,47 +342,74 @@ export function WoredaManager() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={(open) => {
+          setIsFilterOpen(open);
+          if (open) {
+            setDraftFilterRegionId(appliedFilterRegionId);
+            setDraftFilterZoneId(appliedFilterZoneId);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Filter woredas</DialogTitle>
-            <DialogDescription>Apply filters to narrow down the woreda list.</DialogDescription>
+            <DialogDescription>Narrow the woreda list. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 px-5 pb-4">
-            <SelectField
-              value={regionFilterId}
-              placeholder="All regions"
-              options={regionFilterOptions}
-              onValueChange={(value) => {
-                setRegionFilterId(value);
-                setZoneFilterId("");
-                setPage(1);
-              }}
-            />
-            <SelectField
-              value={zoneFilterId}
-              placeholder="All zones"
-              options={zoneFilterOptions}
-              onValueChange={(value) => {
-                setZoneFilterId(value);
-                setPage(1);
-              }}
-            />
-          </div>
+          <FieldGroup className={baseDataDialogFieldGroupClass}>
+            <Field>
+              <FieldLabel htmlFor="woreda-filter-region">Region</FieldLabel>
+              <SelectField
+                id="woreda-filter-region"
+                value={draftFilterRegionId}
+                placeholder="All regions"
+                options={regionFilterOptions}
+                onValueChange={(value) => {
+                  setDraftFilterRegionId(value);
+                  setDraftFilterZoneId("");
+                }}
+                className={inputClass}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="woreda-filter-zone">Zone</FieldLabel>
+              <SelectField
+                id="woreda-filter-zone"
+                value={draftFilterZoneId}
+                placeholder="All zones"
+                options={zoneFilterOptions}
+                onValueChange={setDraftFilterZoneId}
+                className={inputClass}
+              />
+            </Field>
+          </FieldGroup>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               className="h-11"
               onClick={() => {
-                setRegionFilterId("");
-                setZoneFilterId("");
+                setAppliedFilterRegionId("");
+                setAppliedFilterZoneId("");
+                setDraftFilterRegionId("");
+                setDraftFilterZoneId("");
                 setPage(1);
+                setIsFilterOpen(false);
               }}
             >
               Clear filters
             </Button>
-            <Button type="button" className="h-11 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsFilterOpen(false)}>
+            <Button
+              type="button"
+              className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                setAppliedFilterRegionId(draftFilterRegionId);
+                setAppliedFilterZoneId(draftFilterZoneId);
+                setPage(1);
+                setIsFilterOpen(false);
+              }}
+            >
               Apply filters
             </Button>
           </DialogFooter>

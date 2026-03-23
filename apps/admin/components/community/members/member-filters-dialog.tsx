@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,80 +21,60 @@ import {
   STATUS_OPTIONS,
 } from "@/components/community/members/constants";
 
-export type MemberFilterState = {
-  filterStatus: string;
-  setFilterStatus: (v: string) => void;
-  filterGender: string;
-  setFilterGender: (v: string) => void;
-  filterMarital: string;
-  setFilterMarital: (v: string) => void;
-  filterShgId: string;
-  setFilterShgId: (v: string) => void;
-  filterReligionId: string;
-  setFilterReligionId: (v: string) => void;
-  filterDobFrom: string;
-  setFilterDobFrom: (v: string) => void;
-  filterDobTo: string;
-  setFilterDobTo: (v: string) => void;
-  filterAgeFrom: string;
-  setFilterAgeFrom: (v: string) => void;
-  filterAgeTo: string;
-  setFilterAgeTo: (v: string) => void;
+export type MemberAppliedFilters = {
+  status: string;
+  gender: string;
+  marital: string;
+  shgId: string;
+  religionId: string;
+  dobFrom: string;
+  dobTo: string;
+  ageFrom: string;
+  ageTo: string;
+};
+
+const emptyFilters: MemberAppliedFilters = {
+  status: "",
+  gender: "",
+  marital: "",
+  shgId: "",
+  religionId: "",
+  dobFrom: "",
+  dobTo: "",
+  ageFrom: "",
+  ageTo: "",
 };
 
 type MemberFiltersDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  filters: MemberFilterState;
+  /** Currently applied filters (synced into the dialog when it opens). */
+  applied: MemberAppliedFilters;
+  /** Called when the user clicks Apply filters. */
+  onApply: (filters: MemberAppliedFilters) => void;
   shgOptions: { value: string; label: string }[];
   religionOptions: { value: string; label: string }[];
-  onPageReset: () => void;
 };
 
 export function MemberFiltersDialog({
   open,
   onOpenChange,
-  filters,
+  applied,
+  onApply,
   shgOptions,
   religionOptions,
-  onPageReset,
 }: MemberFiltersDialogProps) {
-  const {
-    filterStatus,
-    setFilterStatus,
-    filterGender,
-    setFilterGender,
-    filterMarital,
-    setFilterMarital,
-    filterShgId,
-    setFilterShgId,
-    filterReligionId,
-    setFilterReligionId,
-    filterDobFrom,
-    setFilterDobFrom,
-    filterDobTo,
-    setFilterDobTo,
-    filterAgeFrom,
-    setFilterAgeFrom,
-    filterAgeTo,
-    setFilterAgeTo,
-  } = filters;
+  const [draft, setDraft] = useState<MemberAppliedFilters>(applied);
 
-  const bump = () => {
-    onPageReset();
-  };
+  useEffect(() => {
+    if (open) {
+      setDraft(applied);
+    }
+  }, [open, applied]);
 
-  const clearAll = () => {
-    setFilterStatus("");
-    setFilterGender("");
-    setFilterMarital("");
-    setFilterShgId("");
-    setFilterReligionId("");
-    setFilterDobFrom("");
-    setFilterDobTo("");
-    setFilterAgeFrom("");
-    setFilterAgeTo("");
-    onPageReset();
+  const clearAndApply = () => {
+    setDraft({ ...emptyFilters });
+    onApply(emptyFilters);
   };
 
   return (
@@ -101,7 +83,8 @@ export function MemberFiltersDialog({
         <DialogHeader className="space-y-1">
           <DialogTitle>Filter members</DialogTitle>
           <DialogDescription>
-            Narrow the list by status, demographics, self-help group, religion, or age range.
+            Narrow the list by status, demographics, self-help group, religion, or age range. Changes apply when you click
+            Apply filters.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-5 px-5 pb-2">
@@ -110,65 +93,50 @@ export function MemberFiltersDialog({
               <Label htmlFor="member-filter-status">Status</Label>
               <SelectField
                 id="member-filter-status"
-                value={filterStatus}
+                value={draft.status}
                 placeholder="All statuses"
                 options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                onValueChange={(v) => {
-                  setFilterStatus(v);
-                  bump();
-                }}
+                onValueChange={(v) => setDraft((d) => ({ ...d, status: v }))}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="member-filter-gender">Gender</Label>
               <SelectField
                 id="member-filter-gender"
-                value={filterGender}
+                value={draft.gender}
                 placeholder="All genders"
                 options={[...GENDER_OPTIONS]}
-                onValueChange={(v) => {
-                  setFilterGender(v);
-                  bump();
-                }}
+                onValueChange={(v) => setDraft((d) => ({ ...d, gender: v }))}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="member-filter-marital">Marital status</Label>
               <SelectField
                 id="member-filter-marital"
-                value={filterMarital}
+                value={draft.marital}
                 placeholder="All marital statuses"
                 options={[...MARITAL_OPTIONS]}
-                onValueChange={(v) => {
-                  setFilterMarital(v);
-                  bump();
-                }}
+                onValueChange={(v) => setDraft((d) => ({ ...d, marital: v }))}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="member-filter-shg">Self-help group</Label>
               <SelectField
                 id="member-filter-shg"
-                value={filterShgId}
+                value={draft.shgId}
                 placeholder="All self-help groups"
                 options={shgOptions}
-                onValueChange={(v) => {
-                  setFilterShgId(v);
-                  bump();
-                }}
+                onValueChange={(v) => setDraft((d) => ({ ...d, shgId: v }))}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="member-filter-religion">Religion</Label>
               <SelectField
                 id="member-filter-religion"
-                value={filterReligionId}
+                value={draft.religionId}
                 placeholder="All religions"
                 options={religionOptions}
-                onValueChange={(v) => {
-                  setFilterReligionId(v);
-                  bump();
-                }}
+                onValueChange={(v) => setDraft((d) => ({ ...d, religionId: v }))}
               />
             </div>
           </div>
@@ -184,11 +152,8 @@ export function MemberFiltersDialog({
                   id="member-filter-dob-from"
                   type="date"
                   className={inputClass}
-                  value={filterDobFrom}
-                  onChange={(e) => {
-                    setFilterDobFrom(e.target.value);
-                    bump();
-                  }}
+                  value={draft.dobFrom}
+                  onChange={(e) => setDraft((d) => ({ ...d, dobFrom: e.target.value }))}
                 />
               </div>
               <div className="space-y-1.5">
@@ -199,11 +164,8 @@ export function MemberFiltersDialog({
                   id="member-filter-dob-to"
                   type="date"
                   className={inputClass}
-                  value={filterDobTo}
-                  onChange={(e) => {
-                    setFilterDobTo(e.target.value);
-                    bump();
-                  }}
+                  value={draft.dobTo}
+                  onChange={(e) => setDraft((d) => ({ ...d, dobTo: e.target.value }))}
                 />
               </div>
             </div>
@@ -221,11 +183,8 @@ export function MemberFiltersDialog({
                   type="number"
                   min={0}
                   className={inputClass}
-                  value={filterAgeFrom}
-                  onChange={(e) => {
-                    setFilterAgeFrom(e.target.value);
-                    bump();
-                  }}
+                  value={draft.ageFrom}
+                  onChange={(e) => setDraft((d) => ({ ...d, ageFrom: e.target.value }))}
                 />
               </div>
               <div className="space-y-1.5">
@@ -237,26 +196,23 @@ export function MemberFiltersDialog({
                   type="number"
                   min={0}
                   className={inputClass}
-                  value={filterAgeTo}
-                  onChange={(e) => {
-                    setFilterAgeTo(e.target.value);
-                    bump();
-                  }}
+                  value={draft.ageTo}
+                  onChange={(e) => setDraft((d) => ({ ...d, ageTo: e.target.value }))}
                 />
               </div>
             </div>
           </fieldset>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" className="min-h-11" onClick={clearAll}>
+          <Button type="button" variant="outline" className="min-h-11" onClick={clearAndApply}>
             Clear filters
           </Button>
           <Button
             type="button"
             className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={() => onOpenChange(false)}
+            onClick={() => onApply(draft)}
           >
-            Done
+            Apply filters
           </Button>
         </DialogFooter>
       </DialogContent>

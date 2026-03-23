@@ -8,17 +8,18 @@ import {
   useUsersQuery,
 } from "@/hooks/use-users-admin";
 import type { UserListItem } from "@/lib/api/users-admin";
+import { listEmptyMessage } from "@/components/base-data/shared";
 import { UserCreateDialog } from "@/components/users/user-create-dialog";
 import { UserDetailDialog } from "@/components/users/user-detail-dialog";
-import { UserFiltersDialog } from "@/components/users/user-filters-dialog";
+import { UserFiltersDialog, type UserAppliedFilters } from "@/components/users/user-filters-dialog";
 import { UserTableCard } from "@/components/users/user-table-card";
 import { UserToggleDialog } from "@/components/users/user-toggle-dialog";
 
 export function UserManagementManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [filterRole, setFilterRole] = useState("");
-  const [filterActive, setFilterActive] = useState("");
+  const [appliedFilterRole, setAppliedFilterRole] = useState("");
+  const [appliedFilterActive, setAppliedFilterActive] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createKey, setCreateKey] = useState(0);
@@ -29,28 +30,38 @@ export function UserManagementManager() {
     page,
     pageSize: 10,
     searchQuery: searchQuery || undefined,
-    roles: filterRole ? [filterRole] : undefined,
-    isActive: filterActive === "" ? undefined : filterActive === "true",
+    roles: appliedFilterRole ? [appliedFilterRole] : undefined,
+    isActive: appliedFilterActive === "" ? undefined : appliedFilterActive === "true",
   });
 
   const createMutation = useCreateUserMutation();
   const toggleMutation = useToggleUserActivationMutation();
 
-  const hasActiveFilters = Boolean(filterRole || filterActive);
+  const hasActiveFilters = Boolean(appliedFilterRole || appliedFilterActive);
 
-  const filterState = useMemo(
-    () => ({
-      filterRole,
-      setFilterRole,
-      filterActive,
-      setFilterActive,
-    }),
-    [filterRole, filterActive]
+  const appliedFilters: UserAppliedFilters = useMemo(
+    () => ({ role: appliedFilterRole, active: appliedFilterActive }),
+    [appliedFilterRole, appliedFilterActive]
   );
+
+  const hasSearch = Boolean(searchQuery.trim());
+  const emptyMessage = listEmptyMessage({
+    entityPlural: "users",
+    hasSearch,
+    hasFilters: hasActiveFilters,
+    emptyCatalogHint: "No users yet. Create a user to get started.",
+  });
 
   const list = listQuery.data;
 
   const isViewOpen = !!viewingId && !isCreateOpen;
+
+  const applyUserFilters = (f: UserAppliedFilters) => {
+    setAppliedFilterRole(f.role);
+    setAppliedFilterActive(f.active);
+    setPage(1);
+    setIsFilterOpen(false);
+  };
 
   return (
     <>
@@ -98,6 +109,7 @@ export function UserManagementManager() {
         totalPages={list?.totalPages ?? 1}
         totalElements={list?.totalElements ?? 0}
         onPageChange={setPage}
+        emptyMessage={emptyMessage}
         onView={(id) => {
           setViewingId(id);
         }}
@@ -107,8 +119,8 @@ export function UserManagementManager() {
       <UserFiltersDialog
         open={isFilterOpen}
         onOpenChange={setIsFilterOpen}
-        filters={filterState}
-        onPageReset={() => setPage(1)}
+        applied={appliedFilters}
+        onApply={applyUserFilters}
       />
     </>
   );
