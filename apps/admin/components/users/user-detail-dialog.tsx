@@ -28,7 +28,7 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export function UserDetailDialog({ id, open, onClose }: UserDetailDialogProps) {
-  const { data, isPending } = useUserDetailQuery(id, { enabled: open && !!id });
+  const { data, isPending, isError, error, refetch } = useUserDetailQuery(id, { enabled: open && !!id });
   const u = data?.user;
 
   return (
@@ -47,6 +47,19 @@ export function UserDetailDialog({ id, open, onClose }: UserDetailDialogProps) {
                 <Skeleton key={i} className="h-4 w-full max-w-md" />
               ))}
             </div>
+          ) : isError ? (
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                {error instanceof Error ? error.message : "Could not load this user."}
+              </p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-medium text-primary hover:underline"
+              >
+                Retry
+              </button>
+            </div>
           ) : u ? (
             <dl className="grid gap-3">
               <Field label="Email" value={u.email} />
@@ -61,9 +74,7 @@ export function UserDetailDialog({ id, open, onClose }: UserDetailDialogProps) {
                 value={u.firstTimeLogin ? "Yes" : "No"}
               />
             </dl>
-          ) : (
-            <p className="text-sm text-muted-foreground">Could not load this user.</p>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

@@ -51,7 +51,7 @@ import {
   SaveButton,
   inputClass,
 } from "@/components/base-data/shared";
-import { SelectField } from "@/components/base-data/select-field";
+import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
@@ -177,6 +177,11 @@ function AssignClustersDialog({
               ))
             )}
           </div>
+          {allClustersData && allClusters.length < allClustersData.totalElements && (
+            <p className="text-xs text-amber-600 dark:text-amber-500">
+              Showing {allClusters.length} of {allClustersData.totalElements} clusters. Search above to find more.
+            </p>
+          )}
           {selectedIds.size > 0 && (
             <p className="text-xs text-muted-foreground">
               {selectedIds.size} cluster{selectedIds.size !== 1 ? "s" : ""} selected
@@ -201,7 +206,7 @@ function AssignClustersDialog({
 }
 
 function FederationDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
-  const { data, isLoading } = useFederationDetailQuery(id);
+  const { data, isLoading, isError, error, refetch } = useFederationDetailQuery(id);
   const { data: clustersData, isLoading: clustersLoading } = useQuery({
     queryKey: ["clusters", { federationId: id }],
     queryFn: () => getClusters({ federationId: id!, pageSize: 200 }),
@@ -244,6 +249,15 @@ function FederationDetailDialog({ id, open, onClose }: { id: string | null; open
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}
+              </div>
+            ) : isError ? (
+              <div className="py-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : "Could not load details."}
+                </p>
+                <button type="button" onClick={() => refetch()} className="mt-3 text-sm font-medium text-primary hover:underline">
+                  Retry
+                </button>
               </div>
             ) : fed ? (
               <>
@@ -296,9 +310,7 @@ function FederationDetailDialog({ id, open, onClose }: { id: string | null; open
                   )}
                 </div>
               </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Could not load details.</p>
-            )}
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
@@ -326,6 +338,9 @@ function FederationDetailDialog({ id, open, onClose }: { id: string | null; open
 export function FederationManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
@@ -336,7 +351,14 @@ export function FederationManager() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [assigningFederation, setAssigningFederation] = useState<Federation | null>(null);
 
-  const federationsQuery = useFederationsQuery({ page, pageSize: 12, searchQuery });
+  const federationsQuery = useFederationsQuery({
+    page,
+    pageSize: 12,
+    searchQuery,
+    status: filterQueryParam(filterStatus) as EntityStatus | undefined,
+    location: filterLocation.trim() || undefined,
+  });
+
   const { data: currentUserData } = useCurrentUser();
   const createMutation = useCreateFederationMutation();
   const updateMutation = useUpdateFederationMutation();
@@ -376,10 +398,22 @@ export function FederationManager() {
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
         addLabel="Add federation"
+        showFilterButton
+        onOpenFilters={() => setIsFilterOpen(true)}
+        hasActiveFilters={Boolean(filterStatus || filterLocation.trim())}
       />
 
       {federationsQuery.isLoading ? (
         <CommunityCardSkeleton rowCount={2} />
+      ) : federationsQuery.isError ? (
+        <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            {federationsQuery.error instanceof Error ? federationsQuery.error.message : "Failed to load federations."}
+          </p>
+          <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => federationsQuery.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : federations.length === 0 ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">No federations found. Add your first federation to get started.</p>
@@ -420,6 +454,56 @@ export function FederationManager() {
           onNext={() => setPage((p) => Math.min(federationsQuery.data?.totalPages ?? p, p + 1))}
         />
       )}
+
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter federations</DialogTitle>
+            <DialogDescription>Filter by status, location, or both.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 px-5 pb-4">
+            <SelectField
+              value={filterStatus}
+              placeholder="All statuses"
+              options={STATUS_OPTIONS}
+              onValueChange={(v) => {
+                setFilterStatus(v);
+                setPage(1);
+              }}
+            />
+            <Input
+              placeholder="Location contains"
+              value={filterLocation}
+              onChange={(e) => {
+                setFilterLocation(e.target.value);
+                setPage(1);
+              }}
+              className={inputClass}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => {
+                setFilterStatus("");
+                setFilterLocation("");
+                setPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+            <Button
+              type="button"
+              className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => setIsFilterOpen(false)}
+            >
+              Apply filters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>

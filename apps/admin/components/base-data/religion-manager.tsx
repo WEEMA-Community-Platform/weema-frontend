@@ -122,6 +122,9 @@ export function ReligionManager() {
           headers={["Name", "Description", "Actions"]}
           loading={religionsQuery.isLoading}
           loadingColumnCount={3}
+          isError={religionsQuery.isError}
+          errorMessage={religionsQuery.error instanceof Error ? religionsQuery.error.message : undefined}
+          onRetry={religionsQuery.refetch}
           emptyState={
             <EmptyStateRow
               colSpan={3}

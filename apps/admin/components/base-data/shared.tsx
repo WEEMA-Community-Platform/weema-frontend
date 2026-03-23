@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Plus, SlidersHorizontal } from "lucide-react";
-import { ReactNode } from "react";
+import { Children, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,12 +68,18 @@ export function TableShell({
   emptyState,
   loading,
   loadingColumnCount,
+  isError = false,
+  errorMessage,
+  onRetry,
 }: {
   headers: string[];
   children: ReactNode;
   emptyState: ReactNode;
   loading: boolean;
   loadingColumnCount: number;
+  isError?: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-primary/10">
@@ -90,12 +96,39 @@ export function TableShell({
         <TableBody>
           {loading ? (
             <TableLoadingRows columnCount={loadingColumnCount} />
+          ) : isError ? (
+            <QueryErrorRow colSpan={headers.length} message={errorMessage} onRetry={onRetry} />
+          ) : Children.count(children) === 0 ? (
+            emptyState
           ) : (
-            children || emptyState
+            children
           )}
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+function QueryErrorRow({
+  colSpan,
+  message,
+  onRetry,
+}: {
+  colSpan: number;
+  message?: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <tr className="border-t border-primary/5">
+      <td colSpan={colSpan} className="px-3 py-8 text-center">
+        <p className="text-sm text-muted-foreground">{message ?? "Failed to load data."}</p>
+        {onRetry && (
+          <Button type="button" size="sm" variant="outline" className="mt-3" onClick={onRetry}>
+            Retry
+          </Button>
+        )}
+      </td>
+    </tr>
   );
 }
 

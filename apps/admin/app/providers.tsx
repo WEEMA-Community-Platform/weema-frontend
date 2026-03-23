@@ -1,6 +1,6 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type PropsWithChildren } from "react";
 import { Toaster } from "sileo";
 import "sileo/styles.css";
@@ -10,6 +10,13 @@ export function Providers({ children }: PropsWithChildren) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error) => {
+            if (error instanceof Error && error.message === "Unauthorized") {
+              window.location.href = "/login";
+            }
+          },
+        }),
         defaultOptions: {
           queries: {
             /** Fresh longer; mutations still invalidate by query key. */

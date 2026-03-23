@@ -47,6 +47,8 @@ import {
 export function ZoneManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [filterRegionId, setFilterRegionId] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [regionId, setRegionId] = useState("");
@@ -56,7 +58,12 @@ export function ZoneManager() {
   const [pendingDeleteZone, setPendingDeleteZone] = useState<Zone | null>(null);
 
   const regionsQuery = useRegionsQuery({ page: 1, pageSize: 100 });
-  const zonesQuery = useZonesQuery({ page, pageSize: 10, searchQuery });
+  const zonesQuery = useZonesQuery({
+    page,
+    pageSize: 10,
+    searchQuery,
+    regionId: filterRegionId || undefined,
+  });
 
   const createMutation = useCreateZoneMutation();
   const updateMutation = useUpdateZoneMutation();
@@ -140,10 +147,21 @@ export function ZoneManager() {
             setIsFormOpen(true);
           }}
           addLabel="Add zone"
+          showFilterButton
+          onOpenFilters={() => setIsFilterOpen(true)}
+          hasActiveFilters={Boolean(filterRegionId)}
         />
       </CardHeader>
       <CardContent>
-        <TableShell headers={["Name", "Region", "Special Woreda", "Description", "Actions"]} loading={zonesQuery.isLoading} loadingColumnCount={5} emptyState={<EmptyStateRow colSpan={5} message="No zones found. Add your first zone to get started." />}>
+        <TableShell
+          headers={["Name", "Region", "Special Woreda", "Description", "Actions"]}
+          loading={zonesQuery.isLoading}
+          loadingColumnCount={5}
+          isError={zonesQuery.isError}
+          errorMessage={zonesQuery.error instanceof Error ? zonesQuery.error.message : undefined}
+          onRetry={zonesQuery.refetch}
+          emptyState={<EmptyStateRow colSpan={5} message="No zones found. Add your first zone to get started." />}
+        >
           {zonesQuery.data?.zones?.map((zone) => (
             <TableRow key={zone.id}>
               <TableCell className="font-medium">{zone.name}</TableCell>
@@ -192,6 +210,46 @@ export function ZoneManager() {
           />
         )}
       </CardContent>
+
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter zones</DialogTitle>
+            <DialogDescription>Narrow the list by region.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 px-5 pb-4">
+            <SelectField
+              value={filterRegionId}
+              placeholder="All regions"
+              options={regionOptions}
+              onValueChange={(value) => {
+                setFilterRegionId(value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => {
+                setFilterRegionId("");
+                setPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+            <Button
+              type="button"
+              className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => setIsFilterOpen(false)}
+            >
+              Apply filters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>

@@ -20,6 +20,9 @@ type UserTableCardProps = {
   onOpenFilters: () => void;
   hasActiveFilters: boolean;
   isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
   users: UserListItem[] | undefined;
   currentPage: number;
   totalPages: number;
@@ -36,6 +39,9 @@ export function UserTableCard({
   onOpenFilters,
   hasActiveFilters,
   isLoading,
+  isError,
+  errorMessage,
+  onRetry,
   users,
   currentPage,
   totalPages,
@@ -64,6 +70,9 @@ export function UserTableCard({
           headers={["Name", "Email", "Role", "Phone", "Active", "First login", "Actions"]}
           loading={isLoading}
           loadingColumnCount={7}
+          isError={isError}
+          errorMessage={errorMessage}
+          onRetry={onRetry}
           emptyState={
             <EmptyStateRow
               colSpan={7}

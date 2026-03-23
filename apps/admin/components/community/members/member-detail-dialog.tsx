@@ -43,7 +43,7 @@ export function MemberDetailDialog({
   onClose,
   uploadIdMutation,
 }: MemberDetailDialogProps) {
-  const { data, isPending, refetch } = useMemberDetailQuery(id, {
+  const { data, isPending, isError, error, refetch } = useMemberDetailQuery(id, {
     enabled: open && !!id,
   });
   const member = data?.member;
@@ -78,6 +78,19 @@ export function MemberDetailDialog({
         <div className="px-6 pb-6 pt-5">
           {showSkeleton ? (
             <DetailSkeleton />
+          ) : isError ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">
+                {error instanceof Error ? error.message : "Could not load this member."}
+              </p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-medium text-primary hover:underline"
+              >
+                Retry
+              </button>
+            </div>
           ) : member ? (
             <div className="space-y-6">
               <div className="grid gap-x-8 gap-y-3.5 md:grid-cols-2">
@@ -133,9 +146,7 @@ export function MemberDetailDialog({
                 </div>
               </section>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Could not load this member.</p>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

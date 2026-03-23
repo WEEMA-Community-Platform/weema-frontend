@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import type { LoginRequest, LoginResponse } from "@weema/auth";
+import { extractAuthErrorMessage } from "@weema/auth";
 import { getRoleFromToken, normalizeRole } from "@weema/auth";
 
 import {
@@ -41,10 +42,11 @@ export async function POST(request: Request) {
   );
 
   if (!backendResponse.ok || !payload) {
-    return NextResponse.json(
-      { message: payload?.message ?? "Login failed." },
-      { status: backendResponse.status || 500 }
-    );
+    const message =
+      payload != null
+        ? extractAuthErrorMessage(payload, backendResponse.status)
+        : "Login failed.";
+    return NextResponse.json({ message }, { status: backendResponse.status || 500 });
   }
 
   const role = getRoleFromToken(payload.accessToken) ?? normalizeRole(payload.role);

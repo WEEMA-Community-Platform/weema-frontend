@@ -157,7 +157,15 @@ export function KebeleManager() {
         />
       </CardHeader>
       <CardContent>
-        <TableShell headers={["Name", "Woreda", "Description", "Actions"]} loading={kebelesQuery.isLoading} loadingColumnCount={4} emptyState={<EmptyStateRow colSpan={4} message="No kebeles found. Add your first kebele to get started." />}>
+        <TableShell
+          headers={["Name", "Woreda", "Description", "Actions"]}
+          loading={kebelesQuery.isLoading}
+          loadingColumnCount={4}
+          isError={kebelesQuery.isError}
+          errorMessage={kebelesQuery.error instanceof Error ? kebelesQuery.error.message : undefined}
+          onRetry={kebelesQuery.refetch}
+          emptyState={<EmptyStateRow colSpan={4} message="No kebeles found. Add your first kebele to get started." />}
+        >
           {kebelesQuery.data?.kebeles?.map((kebele) => (
             <TableRow key={kebele.id}>
               <TableCell className="font-medium">{kebele.name}</TableCell>

@@ -41,9 +41,13 @@ export function LoginForm({
       router.refresh();
     },
     onError: (error) => {
+      const description =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "Something went wrong. Please try again.";
       sileo.error({
-        title: "Login failed",
-        description: error.message,
+        title: "Couldn't sign in",
+        description,
       });
     },
   });

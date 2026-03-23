@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { LayersIcon, MapPinIcon, UsersIcon, UserIcon } from "lucide-react";
 import { sileo } from "sileo";
 
 import {
+  useClustersQuery,
   useCreateSHGMutation,
   useDeleteSHGMutation,
   useSHGDetailQuery,
@@ -37,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -45,7 +47,7 @@ import {
   SaveButton,
   inputClass,
 } from "@/components/base-data/shared";
-import { SelectField } from "@/components/base-data/select-field";
+import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
@@ -64,7 +66,7 @@ function DetailField({ label, value }: { label: string; value: React.ReactNode }
 }
 
 function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
-  const { data, isLoading } = useSHGDetailQuery(id);
+  const { data, isLoading, isError, error, refetch } = useSHGDetailQuery(id);
   const shg = data?.selfHelpGroup;
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -76,6 +78,15 @@ function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boole
         <div className="px-5 pb-2">
           {isLoading ? (
             <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}</div>
+          ) : isError ? (
+            <div className="py-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                {error instanceof Error ? error.message : "Could not load details."}
+              </p>
+              <button type="button" onClick={() => refetch()} className="mt-3 text-sm font-medium text-primary hover:underline">
+                Retry
+              </button>
+            </div>
           ) : shg ? (
             <dl className="grid grid-cols-[140px_1fr] gap-x-6 gap-y-3.5">
               <DetailField label="Name" value={shg.name} />
@@ -88,9 +99,7 @@ function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boole
               <DetailField label="GPS" value={shg.latitude != null && shg.longitude != null ? `${shg.latitude}, ${shg.longitude}` : null} />
               <DetailField label="Description" value={shg.description} />
             </dl>
-          ) : (
-            <p className="text-sm text-muted-foreground">Could not load details.</p>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>
@@ -112,10 +121,32 @@ export function SHGManager() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<SHG | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterWoredaId, setFilterWoredaId] = useState("");
+  const [filterKebeleId, setFilterKebeleId] = useState("");
+  const [filterClusterId, setFilterClusterId] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const shgsQuery = useSHGsQuery({ page, pageSize: 12, searchQuery });
+  const shgsQuery = useSHGsQuery({
+    page,
+    pageSize: 12,
+    searchQuery,
+    status: filterQueryParam(filterStatus) as EntityStatus | undefined,
+    woredaId: filterQueryParam(filterWoredaId),
+    kebeleId: filterQueryParam(filterKebeleId),
+    clusterId: filterQueryParam(filterClusterId),
+    location: filterLocation.trim() || undefined,
+  });
   const { data: woredaData } = useWoredasQuery({ page: 1, pageSize: 200, searchQuery: "" });
   const { data: kebeleData } = useKebelesQuery({ page: 1, pageSize: 200, searchQuery: "" });
+  const { data: kebeleFilterData } = useKebelesQuery({
+    page: 1,
+    pageSize: 200,
+    searchQuery: "",
+    woredaId: filterQueryParam(filterWoredaId),
+  });
+  const { data: clustersData } = useClustersQuery({ page: 1, pageSize: 200 });
 
   const createMutation = useCreateSHGMutation();
   const updateMutation = useUpdateSHGMutation();
@@ -131,6 +162,22 @@ export function SHGManager() {
     { value: "none", label: "No kebele" },
     ...(kebeleData?.kebeles ?? []).map((k: { id: string; name: string }) => ({ value: k.id, label: k.name })),
   ];
+
+  const woredaFilterOptions = useMemo(
+    () =>
+      (woredaData?.woredas ?? []).map((w) => ({ value: w.id, label: w.name })),
+    [woredaData?.woredas]
+  );
+  const kebeleFilterOptions = useMemo(
+    () =>
+      (kebeleFilterData?.kebeles ?? []).map((k) => ({ value: k.id, label: k.name })),
+    [kebeleFilterData?.kebeles]
+  );
+  const clusterFilterOptions = useMemo(
+    () =>
+      (clustersData?.clusters ?? []).map((c) => ({ value: c.id, label: c.name })),
+    [clustersData?.clusters]
+  );
   const resetForm = () => { setName(""); setDescription(""); setStatus("ACTIVE"); setWoredaId(""); setKebeleId(""); setClusterId(""); setLatitude(""); setLongitude(""); setEditingSHG(null); };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
   const openEdit = (s: SHG) => {
@@ -172,10 +219,28 @@ export function SHGManager() {
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
         addLabel="Add SHG"
+        showFilterButton
+        onOpenFilters={() => setIsFilterOpen(true)}
+        hasActiveFilters={Boolean(
+          filterStatus ||
+            filterWoredaId ||
+            filterKebeleId ||
+            filterClusterId ||
+            filterLocation.trim()
+        )}
       />
 
       {shgsQuery.isLoading ? (
         <CommunityCardSkeleton rowCount={4} />
+      ) : shgsQuery.isError ? (
+        <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            {shgsQuery.error instanceof Error ? shgsQuery.error.message : "Failed to load self-help groups."}
+          </p>
+          <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => shgsQuery.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : shgs.length === 0 ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">No self-help groups found. Add your first SHG to get started.</p>
@@ -220,6 +285,87 @@ export function SHGManager() {
           onNext={() => setPage((p) => Math.min(shgsQuery.data?.totalPages ?? p, p + 1))}
         />
       )}
+
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter self-help groups</DialogTitle>
+            <DialogDescription>Filter by status, geography, cluster, or location.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto px-5 pb-4">
+            <SelectField
+              value={filterStatus}
+              placeholder="All statuses"
+              options={STATUS_OPTIONS}
+              onValueChange={(v) => {
+                setFilterStatus(v);
+                setPage(1);
+              }}
+            />
+            <SelectField
+              value={filterWoredaId}
+              placeholder="All woredas"
+              options={woredaFilterOptions}
+              onValueChange={(v) => {
+                setFilterWoredaId(v);
+                setFilterKebeleId("");
+                setPage(1);
+              }}
+            />
+            <SelectField
+              value={filterKebeleId}
+              placeholder="All kebeles"
+              options={kebeleFilterOptions}
+              onValueChange={(v) => {
+                setFilterKebeleId(v);
+                setPage(1);
+              }}
+            />
+            <SelectField
+              value={filterClusterId}
+              placeholder="All clusters"
+              options={clusterFilterOptions}
+              onValueChange={(v) => {
+                setFilterClusterId(v);
+                setPage(1);
+              }}
+            />
+            <Input
+              placeholder="Location contains"
+              value={filterLocation}
+              onChange={(e) => {
+                setFilterLocation(e.target.value);
+                setPage(1);
+              }}
+              className={inputClass}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => {
+                setFilterStatus("");
+                setFilterWoredaId("");
+                setFilterKebeleId("");
+                setFilterClusterId("");
+                setFilterLocation("");
+                setPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+            <Button
+              type="button"
+              className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => setIsFilterOpen(false)}
+            >
+              Apply filters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>

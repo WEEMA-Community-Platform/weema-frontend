@@ -90,6 +90,9 @@ export function UserManagementManager() {
         onOpenFilters={() => setIsFilterOpen(true)}
         hasActiveFilters={hasActiveFilters}
         isLoading={listQuery.isLoading}
+        isError={listQuery.isError}
+        errorMessage={listQuery.error instanceof Error ? listQuery.error.message : undefined}
+        onRetry={listQuery.refetch}
         users={list?.users}
         currentPage={list?.currentPage ?? 1}
         totalPages={list?.totalPages ?? 1}

@@ -21,6 +21,9 @@ type MemberTableCardProps = {
   onOpenFilters: () => void;
   hasActiveFilters: boolean;
   isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+  onRetry?: () => void;
   members: Member[] | undefined;
   currentPage: number;
   totalPages: number;
@@ -38,6 +41,9 @@ export function MemberTableCard({
   onOpenFilters,
   hasActiveFilters,
   isLoading,
+  isError,
+  errorMessage,
+  onRetry,
   members,
   currentPage,
   totalPages,
@@ -67,6 +73,9 @@ export function MemberTableCard({
           headers={["Name", "Phone", "Self-help group", "Gender", "Status", "Actions"]}
           loading={isLoading}
           loadingColumnCount={6}
+          isError={isError}
+          errorMessage={errorMessage}
+          onRetry={onRetry}
           emptyState={
             <EmptyStateRow
               colSpan={6}

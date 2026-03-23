@@ -154,7 +154,15 @@ export function WoredaManager() {
         />
       </CardHeader>
       <CardContent>
-        <TableShell headers={["Name", "Zone", "Description", "Actions"]} loading={woredasQuery.isLoading} loadingColumnCount={4} emptyState={<EmptyStateRow colSpan={4} message="No woredas found. Add your first woreda to get started." />}>
+        <TableShell
+          headers={["Name", "Zone", "Description", "Actions"]}
+          loading={woredasQuery.isLoading}
+          loadingColumnCount={4}
+          isError={woredasQuery.isError}
+          errorMessage={woredasQuery.error instanceof Error ? woredasQuery.error.message : undefined}
+          onRetry={woredasQuery.refetch}
+          emptyState={<EmptyStateRow colSpan={4} message="No woredas found. Add your first woreda to get started." />}
+        >
           {woredasQuery.data?.woredas?.map((woreda) => (
             <TableRow key={woreda.id}>
               <TableCell className="font-medium">{woreda.name}</TableCell>

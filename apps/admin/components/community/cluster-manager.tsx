@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { LayersIcon, LinkIcon, NetworkIcon, UserIcon, UsersIcon, XIcon } from "lucide-react";
 import { sileo } from "sileo";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import {
   useClustersQuery,
   useCreateClusterMutation,
   useDeleteClusterMutation,
+  useFederationsQuery,
   useRemoveSHGFromClusterMutation,
   useUpdateClusterMutation,
 } from "@/hooks/use-community";
@@ -52,7 +53,7 @@ import {
   SaveButton,
   inputClass,
 } from "@/components/base-data/shared";
-import { SelectField } from "@/components/base-data/select-field";
+import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
@@ -178,6 +179,11 @@ function AssignSHGsDialog({
               ))
             )}
           </div>
+          {allSHGsData && allSHGs.length < allSHGsData.totalElements && (
+            <p className="text-xs text-amber-600 dark:text-amber-500">
+              Showing {allSHGs.length} of {allSHGsData.totalElements} SHGs. Search above to find more.
+            </p>
+          )}
           {selectedIds.size > 0 && (
             <p className="text-xs text-muted-foreground">
               {selectedIds.size} SHG{selectedIds.size !== 1 ? "s" : ""} selected
@@ -202,7 +208,7 @@ function AssignSHGsDialog({
 }
 
 function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
-  const { data, isLoading } = useClusterDetailQuery(id);
+  const { data, isLoading, isError, error, refetch } = useClusterDetailQuery(id);
   const { data: shgsData, isLoading: shgsLoading } = useQuery({
     queryKey: ["shgs", { clusterId: id }],
     queryFn: () => getSHGs({ clusterId: id!, pageSize: 200 }),
@@ -245,6 +251,15 @@ function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: b
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}
+              </div>
+            ) : isError ? (
+              <div className="py-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : "Could not load details."}
+                </p>
+                <button type="button" onClick={() => refetch()} className="mt-3 text-sm font-medium text-primary hover:underline">
+                  Retry
+                </button>
               </div>
             ) : cluster ? (
               <>
@@ -300,9 +315,7 @@ function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: b
                   )}
                 </div>
               </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Could not load details.</p>
-            )}
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
@@ -330,6 +343,11 @@ function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: b
 export function ClusterManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterWoredaId, setFilterWoredaId] = useState("");
+  const [filterFederationId, setFilterFederationId] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<EntityStatus>("ACTIVE");
@@ -341,9 +359,18 @@ export function ClusterManager() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [assigningCluster, setAssigningCluster] = useState<Cluster | null>(null);
 
-  const clustersQuery = useClustersQuery({ page, pageSize: 12, searchQuery });
+  const clustersQuery = useClustersQuery({
+    page,
+    pageSize: 12,
+    searchQuery,
+    status: filterQueryParam(filterStatus) as EntityStatus | undefined,
+    woredaId: filterQueryParam(filterWoredaId),
+    federationId: filterQueryParam(filterFederationId),
+    location: filterLocation.trim() || undefined,
+  });
   const { data: currentUserData } = useCurrentUser();
   const { data: woredaData } = useWoredasQuery({ page: 1, pageSize: 200, searchQuery: "" });
+  const { data: federationsData } = useFederationsQuery({ page: 1, pageSize: 200 });
 
   const createMutation = useCreateClusterMutation();
   const updateMutation = useUpdateClusterMutation();
@@ -352,6 +379,17 @@ export function ClusterManager() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const woredaOptions = (woredaData?.woredas ?? []).map((w: { id: string; name: string }) => ({ value: w.id, label: w.name }));
+
+  const federationFilterOptions = useMemo(
+    () =>
+      (federationsData?.federations ?? []).map((f) => ({ value: f.id, label: f.name })),
+    [federationsData?.federations]
+  );
+  const woredaFilterOptions = useMemo(
+    () =>
+      (woredaData?.woredas ?? []).map((w) => ({ value: w.id, label: w.name })),
+    [woredaData?.woredas]
+  );
 
   const resetForm = () => { setName(""); setDescription(""); setStatus("ACTIVE"); setWoredaId(""); setFederationId(""); setEditingCluster(null); };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
@@ -395,10 +433,27 @@ export function ClusterManager() {
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
         addLabel="Add cluster"
+        showFilterButton
+        onOpenFilters={() => setIsFilterOpen(true)}
+        hasActiveFilters={Boolean(
+          filterStatus ||
+            filterWoredaId ||
+            filterFederationId ||
+            filterLocation.trim()
+        )}
       />
 
       {clustersQuery.isLoading ? (
         <CommunityCardSkeleton rowCount={3} />
+      ) : clustersQuery.isError ? (
+        <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            {clustersQuery.error instanceof Error ? clustersQuery.error.message : "Failed to load clusters."}
+          </p>
+          <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => clustersQuery.refetch()}>
+            Retry
+          </Button>
+        </div>
       ) : clusters.length === 0 ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">No clusters found. Add your first cluster to get started.</p>
@@ -442,6 +497,76 @@ export function ClusterManager() {
           onNext={() => setPage((p) => Math.min(clustersQuery.data?.totalPages ?? p, p + 1))}
         />
       )}
+
+      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Filter clusters</DialogTitle>
+            <DialogDescription>Filter by status, woreda, federation, or location.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 px-5 pb-4">
+            <SelectField
+              value={filterStatus}
+              placeholder="All statuses"
+              options={STATUS_OPTIONS}
+              onValueChange={(v) => {
+                setFilterStatus(v);
+                setPage(1);
+              }}
+            />
+            <SelectField
+              value={filterWoredaId}
+              placeholder="All woredas"
+              options={woredaFilterOptions}
+              onValueChange={(v) => {
+                setFilterWoredaId(v);
+                setPage(1);
+              }}
+            />
+            <SelectField
+              value={filterFederationId}
+              placeholder="All federations"
+              options={federationFilterOptions}
+              onValueChange={(v) => {
+                setFilterFederationId(v);
+                setPage(1);
+              }}
+            />
+            <Input
+              placeholder="Location contains"
+              value={filterLocation}
+              onChange={(e) => {
+                setFilterLocation(e.target.value);
+                setPage(1);
+              }}
+              className={inputClass}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => {
+                setFilterStatus("");
+                setFilterWoredaId("");
+                setFilterFederationId("");
+                setFilterLocation("");
+                setPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+            <Button
+              type="button"
+              className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => setIsFilterOpen(false)}
+            >
+              Apply filters
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>

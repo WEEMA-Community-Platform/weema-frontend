@@ -126,7 +126,15 @@ export function RegionManager() {
         />
       </CardHeader>
       <CardContent>
-        <TableShell headers={["Name", "Description", "Actions"]} loading={regionsQuery.isLoading} loadingColumnCount={3} emptyState={<EmptyStateRow colSpan={3} message="No regions found. Add your first region to get started." />}>
+        <TableShell
+          headers={["Name", "Description", "Actions"]}
+          loading={regionsQuery.isLoading}
+          loadingColumnCount={3}
+          isError={regionsQuery.isError}
+          errorMessage={regionsQuery.error instanceof Error ? regionsQuery.error.message : undefined}
+          onRetry={regionsQuery.refetch}
+          emptyState={<EmptyStateRow colSpan={3} message="No regions found. Add your first region to get started." />}
+        >
           {regionsQuery.data?.regions?.map((region) => (
             <TableRow key={region.id}>
               <TableCell className="font-medium">{region.name}</TableCell>

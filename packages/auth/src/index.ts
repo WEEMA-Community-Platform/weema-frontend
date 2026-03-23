@@ -7,7 +7,7 @@ export type {
   ResetPasswordRequest,
   WeemaRole,
 } from "./types";
-export { createAuthApiClient } from "./api";
+export { createAuthApiClient, extractAuthErrorMessage } from "./api";
 
 import type { WeemaRole } from "./types";
 

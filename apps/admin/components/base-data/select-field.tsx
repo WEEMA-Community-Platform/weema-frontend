@@ -10,6 +10,14 @@ import {
 
 const NONE_SELECTED_VALUE = "__WEEMA_NONE__";
 
+/** Use in filter dropdowns for "All …" options. Radix Select forbids `value=""` on items. */
+export const SELECT_FILTER_ALL = "__weema_all__";
+
+export function filterQueryParam(value: string): string | undefined {
+  if (!value || value === SELECT_FILTER_ALL) return undefined;
+  return value;
+}
+
 type SelectOption = {
   value: string;
   label: string;

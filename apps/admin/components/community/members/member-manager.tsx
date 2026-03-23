@@ -172,6 +172,9 @@ export function MemberManager() {
         onOpenFilters={() => setIsFilterOpen(true)}
         hasActiveFilters={hasActiveFilters}
         isLoading={membersQuery.isLoading}
+        isError={membersQuery.isError}
+        errorMessage={membersQuery.error instanceof Error ? membersQuery.error.message : undefined}
+        onRetry={membersQuery.refetch}
         members={list?.members}
         currentPage={list?.currentPage ?? 1}
         totalPages={list?.totalPages ?? 1}
