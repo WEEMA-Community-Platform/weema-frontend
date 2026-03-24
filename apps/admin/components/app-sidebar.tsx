@@ -73,7 +73,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <Link
-          href="/"
+          href="/?section=region"
           className="flex items-center gap-2 rounded-md border border-primary/10 bg-card px-3 py-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0"
         >
           <div className="rounded-md bg-primary p-1.5 text-primary-foreground">

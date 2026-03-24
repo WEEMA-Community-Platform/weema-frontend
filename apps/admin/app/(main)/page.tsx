@@ -1,5 +1,6 @@
 import { SECTION_META } from "@/components/section-meta"
 import { CommunityStructurePanel } from "@/components/community-structure-panel"
+import { redirect } from "next/navigation"
 
 type MainPageProps = {
   searchParams?: Promise<{
@@ -10,7 +11,10 @@ type MainPageProps = {
 export default async function MainPage({ searchParams }: MainPageProps) {
   const resolvedSearchParams = await searchParams
   const rawSection = resolvedSearchParams?.section
-  const section = (Array.isArray(rawSection) ? rawSection[0] : rawSection) ?? "region"
+  const section = Array.isArray(rawSection) ? rawSection[0] : rawSection
+  if (!section || !SECTION_META[section]) {
+    redirect("/?section=region")
+  }
   const meta = SECTION_META[section] ?? SECTION_META.region
 
   return (

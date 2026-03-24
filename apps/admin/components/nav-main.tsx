@@ -47,9 +47,11 @@ export function NavMain({ items }: { items: NavItem[] }) {
     Object.fromEntries(
       items.map((item) => [
         item.title,
-        item.items?.some((sub) => {
-          return isLinkActive(sub.url)
-        }) ?? item.isActive ?? false,
+        item.title === "Base Data"
+          ? true
+          : item.items?.some((sub) => {
+              return isLinkActive(sub.url)
+            }) ?? item.isActive ?? false,
       ])
     )
   )

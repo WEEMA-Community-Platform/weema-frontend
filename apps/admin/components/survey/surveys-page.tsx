@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheckBigIcon, LayersIcon, SendHorizonalIcon, TextIcon } from "lucide-react";
+import { CircleCheckBigIcon, LayersIcon, SendHorizonalIcon, TextIcon, RefreshCcwDot  } from "lucide-react";
 import { sileo } from "sileo";
 
 import { Button } from "@/components/ui/button";
@@ -199,6 +199,11 @@ export function SurveysPage() {
               <CardMetaRow icon={TextIcon} label="Questions">
                 {survey.totalQuestions ?? 0} question{survey.totalQuestions === 1 ? "" : "s"}
               </CardMetaRow>
+
+              <CardMetaRow icon={RefreshCcwDot} label="Version">
+                {survey.version || "-"}
+              </CardMetaRow>
+              
               <CardMetaRow icon={CircleCheckBigIcon} label="Status">
                 <SurveyStatusBadge status={survey.status} />
               </CardMetaRow>
