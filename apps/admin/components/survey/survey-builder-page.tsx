@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,14 +58,17 @@ import {
 import {
   getSurveyById,
   serializeQuestionPayload,
+  serializeSectionPayload,
 } from "@/lib/api/surveys";
 import {
+  type CreateSurveyPayload,
   normalizeSurveyResponse,
   serializeSurveyPayload,
   validateSurveyBuilderState,
 } from "@/lib/survey-builder/normalize";
 import type {
   ShowCondition,
+  SurveyBuilderState,
   SurveyQuestion,
   SurveyValidationIssue,
 } from "@/lib/survey-builder/types";
@@ -74,6 +78,8 @@ import { SurveySettingsForm } from "@/components/survey/survey-settings-form";
 import { QuestionCardsBoard } from "@/components/survey/builder/question-cards-board";
 import { QuestionEditor } from "@/components/survey/builder/question-editor";
 import {
+  buildSectionQuestionTree,
+  getFollowUpDepth,
   getQuestionParentId,
   type SurveyQuestionWithContext,
 } from "@/components/survey/builder/shared";
@@ -180,9 +186,161 @@ function SortableQuestionRow({
   );
 }
 
+function buildBuilderSnapshot(state: SurveyBuilderState) {
+  return JSON.stringify(serializeSurveyPayload(state));
+}
+
+function createFollowUpCondition(parentQuestion: SurveyQuestion): ShowCondition {
+  return {
+    parentQuestionClientId: parentQuestion.clientId,
+    operator: isChoiceType(parentQuestion.questionType) ? "EQUALS" : "CONTAINS",
+    optionClientId: isChoiceType(parentQuestion.questionType)
+      ? parentQuestion.options[0]?.clientId
+      : undefined,
+    expectedValue: isChoiceType(parentQuestion.questionType) ? undefined : "",
+    logicType: "AND",
+  };
+}
+
+type SaveAllEligibility = {
+  canSaveAll: boolean;
+  hasUnsavedChanges: boolean;
+  reason: string;
+};
+
+function getSaveAllEligibility(
+  currentSnapshot: string,
+  lastSyncedSnapshot: string | null
+): SaveAllEligibility {
+  if (!lastSyncedSnapshot) {
+    return {
+      canSaveAll: false,
+      hasUnsavedChanges: false,
+      reason:
+        "Save all changes is available after the survey is loaded and there are unsaved updates.",
+    };
+  }
+
+  if (currentSnapshot === lastSyncedSnapshot) {
+    return {
+      canSaveAll: false,
+      hasUnsavedChanges: false,
+      reason: "No unsaved changes. Save all is for bulk pending updates.",
+    };
+  }
+
+  try {
+    const currentPayload = JSON.parse(currentSnapshot) as CreateSurveyPayload;
+    const lastPayload = JSON.parse(lastSyncedSnapshot) as CreateSurveyPayload;
+
+    const currentQuestionRows = currentPayload.sections.flatMap((section, sectionIndex) =>
+      section.questions.map((question) => ({ sectionIndex, question }))
+    );
+    const lastQuestionRows = lastPayload.sections.flatMap((section, sectionIndex) =>
+      section.questions.map((question) => ({ sectionIndex, question }))
+    );
+
+    const currentByClientId = new Map(
+      currentQuestionRows.map(({ sectionIndex, question }) => [question.clientId, { sectionIndex, question }])
+    );
+    const lastByClientId = new Map(
+      lastQuestionRows.map(({ sectionIndex, question }) => [question.clientId, { sectionIndex, question }])
+    );
+    const currentParentByClientId = new Map<string, string>();
+    const lastParentByClientId = new Map<string, string>();
+
+    for (const { question } of currentQuestionRows) {
+      const parentId = question.showConditions?.[0]?.parentQuestionClientId;
+      if (parentId) currentParentByClientId.set(question.clientId, parentId);
+    }
+    for (const { question } of lastQuestionRows) {
+      const parentId = question.showConditions?.[0]?.parentQuestionClientId;
+      if (parentId) lastParentByClientId.set(question.clientId, parentId);
+    }
+
+    const getDepth = (clientId: string, parentMap: Map<string, string>) => {
+      let depth = 0;
+      let currentId: string | undefined = clientId;
+      let guard = 0;
+      while (currentId && guard < 100) {
+        const parentId = parentMap.get(currentId);
+        if (!parentId) break;
+        depth += 1;
+        currentId = parentId;
+        guard += 1;
+      }
+      return depth;
+    };
+
+    let addedQuestionCount = 0;
+    let changedQuestionCount = 0;
+    let nestedFollowUpTouched = false;
+    const changedSectionIndexes = new Set<number>();
+
+    for (const [clientId, currentEntry] of currentByClientId.entries()) {
+      const lastEntry = lastByClientId.get(clientId);
+      if (!lastEntry) {
+        addedQuestionCount += 1;
+        changedSectionIndexes.add(currentEntry.sectionIndex);
+        if (getDepth(clientId, currentParentByClientId) >= 2) {
+          nestedFollowUpTouched = true;
+        }
+        continue;
+      }
+      if (JSON.stringify(currentEntry.question) !== JSON.stringify(lastEntry.question)) {
+        changedQuestionCount += 1;
+        changedSectionIndexes.add(currentEntry.sectionIndex);
+        changedSectionIndexes.add(lastEntry.sectionIndex);
+        if (
+          getDepth(clientId, currentParentByClientId) >= 2 ||
+          getDepth(clientId, lastParentByClientId) >= 2
+        ) {
+          nestedFollowUpTouched = true;
+        }
+      }
+    }
+
+    for (const [clientId, lastEntry] of lastByClientId.entries()) {
+      if (!currentByClientId.has(clientId)) {
+        changedQuestionCount += 1;
+        changedSectionIndexes.add(lastEntry.sectionIndex);
+        if (getDepth(clientId, lastParentByClientId) >= 2) {
+          nestedFollowUpTouched = true;
+        }
+      }
+    }
+
+    const sectionCountChanged = currentPayload.sections.length !== lastPayload.sections.length;
+    const questionDelta = addedQuestionCount + changedQuestionCount;
+    const bulkByQuestionVolume = questionDelta >= 2;
+    const bulkByNewSectionAndQuestion = sectionCountChanged && addedQuestionCount >= 1;
+    const bulkByMultiSectionQuestionEdits = changedSectionIndexes.size >= 2 && questionDelta >= 2;
+    const bulkByNestedFollowUp = nestedFollowUpTouched;
+    const canSaveAll =
+      bulkByQuestionVolume ||
+      bulkByNewSectionAndQuestion ||
+      bulkByMultiSectionQuestionEdits ||
+      bulkByNestedFollowUp;
+
+    return {
+      canSaveAll,
+      hasUnsavedChanges: true,
+      reason: canSaveAll
+        ? "Save all applies bulk updates across sections/questions, including nested follow-ups."
+        : "Use Save all for 2+ unsaved question changes, a new section with questions, or nested follow-up changes.",
+    };
+  } catch {
+    return {
+      canSaveAll: true,
+      hasUnsavedChanges: true,
+      reason: "Save all applies bulk updates across sections/questions.",
+    };
+  }
+}
+
 export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: string | null }) {
   const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(Boolean(initialSurveyId));
-  const [editorMode, setEditorMode] = useState<EditorMode>("cards");
+  const [editorMode, setEditorMode] = useState<EditorMode>("settings");
   const [selectedSectionClientId, setSelectedSectionClientId] = useState<string | null>(null);
   const [selectedQuestionClientId, setSelectedQuestionClientId] = useState<string | null>(null);
   const [issues, setIssues] = useState<SurveyValidationIssue[]>([]);
@@ -206,6 +364,8 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
   const reorderQuestionsMutation = useReorderQuestionsMutation();
   const [savingSectionClientId, setSavingSectionClientId] = useState<string | null>(null);
   const [savingQuestionClientId, setSavingQuestionClientId] = useState<string | null>(null);
+  const [isSavingAllChanges, setIsSavingAllChanges] = useState(false);
+  const [lastSyncedSnapshot, setLastSyncedSnapshot] = useState<string | null>(null);
 
   const allQuestions = useMemo<SurveyQuestionWithContext[]>(
     () =>
@@ -251,6 +411,17 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
     }
     return map;
   }, [allQuestions]);
+  const builderSnapshot = useMemo(() => buildBuilderSnapshot(builder.state), [builder.state]);
+  const saveAllEligibility = useMemo(() => {
+    if (!initialSurveyId) {
+      return {
+        canSaveAll: false,
+        hasUnsavedChanges: false,
+        reason: "Save all changes is only for existing surveys.",
+      } satisfies SaveAllEligibility;
+    }
+    return getSaveAllEligibility(builderSnapshot, lastSyncedSnapshot);
+  }, [builderSnapshot, initialSurveyId, lastSyncedSnapshot]);
 
   const selectedSection =
     builder.state.sections.find((item) => item.clientId === selectedSectionClientId) ??
@@ -273,6 +444,7 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
     });
     const normalized = normalizeSurveyResponse(detail.survey);
     builder.setState(normalized);
+    setLastSyncedSnapshot(buildBuilderSnapshot(normalized));
     setSelectedSectionClientId((prev) =>
       normalized.sections.some((section) => section.clientId === prev)
         ? prev
@@ -299,7 +471,7 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
       try {
         setIsLoadingInitialSurvey(true);
         await reloadSurvey(initialSurveyId);
-        setEditorMode("cards");
+        setEditorMode("settings");
       } catch (error) {
         sileo.error({
           title: "Could not open survey",
@@ -329,9 +501,10 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
   const handleCreateNew = () => {
     const fresh = createEmptySurvey();
     builder.setState(fresh);
+    setLastSyncedSnapshot(initialSurveyId ? null : buildBuilderSnapshot(fresh));
     setSelectedSectionClientId(fresh.sections[0]?.clientId ?? null);
     setSelectedQuestionClientId(null);
-    setEditorMode("cards");
+    setEditorMode("settings");
     setIssues([]);
   };
 
@@ -350,6 +523,8 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
         const result = await createSurveyMutation.mutateAsync(
           serializeSurveyPayload(builder.state)
         );
+        await queryClient.invalidateQueries({ queryKey: ["surveys"] });
+        queryClient.removeQueries({ queryKey: ["surveys"] });
         sileo.success({
           title: "Survey created",
           description: result.message ?? "Survey has been created successfully.",
@@ -377,25 +552,173 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
     }
   };
 
-  const persistSectionMeta = async (sectionClientId: string, options?: { quiet?: boolean }) => {
-    if (!initialSurveyId) return;
-    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
-    if (!section?.id) return;
-    setSavingSectionClientId(sectionClientId);
+  const getIdMapsFromState = (state: SurveyBuilderState) => {
+    const nextQuestionIdByClientId = new Map<string, string>();
+    const nextOptionIdByClientId = new Map<string, string>();
+
+    for (const section of state.sections) {
+      for (const question of section.questions) {
+        if (question.id) {
+          nextQuestionIdByClientId.set(question.clientId, question.id);
+        }
+        for (const option of question.options) {
+          if (option.id) {
+            nextOptionIdByClientId.set(option.clientId, option.id);
+          }
+        }
+      }
+    }
+
+    return {
+      questionIdByClientId: nextQuestionIdByClientId,
+      optionIdByClientId: nextOptionIdByClientId,
+    };
+  };
+
+  const handleSaveAllChanges = async () => {
+    if (!initialSurveyId) {
+      await handleSaveSurvey();
+      return;
+    }
+    if (!saveAllEligibility.hasUnsavedChanges) {
+      sileo.info({
+        title: "No changes to save",
+        description: "Everything is already synced.",
+      });
+      return;
+    }
+    if (!saveAllEligibility.canSaveAll) {
+      sileo.info({
+        title: "Use Save all for bulk edits",
+        description:
+          "Save all is enabled for 2+ unsaved question changes, a new section with questions, or nested follow-up changes.",
+      });
+      return;
+    }
+
+    const validationIssues = validateSurveyBuilderState(builder.state);
+    setIssues(validationIssues);
+    if (validationIssues.length > 0) {
+      sileo.warning({
+        title: "Validation issues found",
+        description: validationIssues[0]?.message ?? "Fix the form before saving.",
+      });
+      return;
+    }
+
+    setIsSavingAllChanges(true);
     try {
-      const result = await updateSectionMutation.mutateAsync({
-        id: section.id,
+      await updateSurveyMutation.mutateAsync({
+        id: initialSurveyId,
         payload: {
-          title: section.title.trim(),
-          description: section.description.trim(),
+          title: builder.state.title.trim(),
+          description: builder.state.description.trim(),
+          targetType: builder.state.targetType,
         },
       });
-      if (!options?.quiet) {
+
+      const unsyncedSections = builder.state.sections.filter((section) => !section.id);
+      if (unsyncedSections.length > 0) {
+        await createSectionsMutation.mutateAsync({
+          surveyId: initialSurveyId,
+          payload: unsyncedSections.map((section) =>
+            serializeSectionPayload(section, getIdMapsFromState(builder.state))
+          ),
+        });
+        await reloadSurvey(initialSurveyId);
+      }
+
+      for (const section of builder.state.sections) {
+        if (!section.id) continue;
+        const unsyncedQuestions = section.questions.filter((question) => !question.id);
+        if (unsyncedQuestions.length === 0) continue;
+        await createQuestionMutation.mutateAsync({
+          sectionId: section.id,
+          payload: unsyncedQuestions.map((question) =>
+            serializeQuestionPayload(question, getIdMapsFromState(builder.state))
+          ),
+        });
+      }
+
+      await reloadSurvey(initialSurveyId);
+
+      for (const section of builder.state.sections) {
+        if (!section.id) continue;
+        await updateSectionMutation.mutateAsync({
+          id: section.id,
+          payload: {
+            title: section.title.trim(),
+            description: section.description.trim(),
+          },
+        });
+      }
+
+      const idMaps = getIdMapsFromState(builder.state);
+      for (const section of builder.state.sections) {
+        for (const question of section.questions) {
+          if (!question.id) continue;
+          await updateQuestionMutation.mutateAsync({
+            id: question.id,
+            payload: serializeQuestionPayload(question, idMaps),
+          });
+        }
+      }
+
+      await reloadSurvey(initialSurveyId);
+      sileo.success({
+        title: "All changes saved",
+        description: "Survey settings, sections, and questions are now synced.",
+      });
+    } catch (error) {
+      sileo.error({
+        title: "Failed to save all changes",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    } finally {
+      setIsSavingAllChanges(false);
+    }
+  };
+
+  const saveSection = async (sectionClientId: string) => {
+    if (!initialSurveyId) {
+      sileo.info({
+        title: "Create survey first",
+        description: "Create the survey first, then save sections.",
+      });
+      return;
+    }
+    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
+    if (!section) return;
+    setSavingSectionClientId(sectionClientId);
+    try {
+      if (section.id) {
+        const result = await updateSectionMutation.mutateAsync({
+          id: section.id,
+          payload: {
+            title: section.title.trim(),
+            description: section.description.trim(),
+          },
+        });
         sileo.success({
           title: "Section saved",
           description: result.message ?? "Section has been updated.",
         });
+      } else {
+        const result = await createSectionsMutation.mutateAsync({
+          surveyId: initialSurveyId,
+          payload: [
+            serializeSectionPayload(section, {
+              questionIdByClientId,
+              optionIdByClientId,
+            }),
+          ],
+        });
+        sileo.success({
+          title: "Section created",
+          description: result.message ?? "Section has been added.",
+        });
       }
+      await reloadSurvey(initialSurveyId);
     } catch (error) {
       sileo.error({
         title: "Failed to save section",
@@ -407,39 +730,8 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
   };
 
   const handleAddSection = async () => {
-    if (!initialSurveyId) {
-      builder.addSection();
-      return;
-    }
-
-    const defaultTitle = `Section ${builder.state.sections.length + 1}`;
-    try {
-      const result = await createSectionsMutation.mutateAsync({
-        surveyId: initialSurveyId,
-        payload: [
-          {
-            title: defaultTitle,
-            description: "",
-            questions: [],
-          },
-        ],
-      });
-      sileo.success({
-        title: "Section created",
-        description: result.message ?? "Section has been added.",
-      });
-      const normalized = await reloadSurvey(initialSurveyId);
-      const newestSection = normalized.sections[normalized.sections.length - 1];
-      if (newestSection) {
-        setSelectedSectionClientId(newestSection.clientId);
-      }
-      setEditorMode("cards");
-    } catch (error) {
-      sileo.error({
-        title: "Failed to add section",
-        description: error instanceof Error ? error.message : "Unexpected error",
-      });
-    }
+    builder.addSection();
+    setEditorMode("cards");
   };
 
   const saveQuestion = async (sectionClientId: string, questionClientId: string) => {
@@ -748,21 +1040,45 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
             <PlusIcon className="size-4" />
             New survey
           </Button>
-          <Button
-            type="button"
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={handleSaveSurvey}
-            disabled={createSurveyMutation.isPending || updateSurveyMutation.isPending}
-          >
-            <SaveIcon className="size-4" />
-            {!initialSurveyId
-              ? createSurveyMutation.isPending
-                ? "Creating..."
-                : "Create survey"
-              : updateSurveyMutation.isPending
-                ? "Saving settings..."
-                : "Save settings"}
-          </Button>
+          {!initialSurveyId ? (
+            <Button
+              type="button"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleSaveSurvey}
+              disabled={
+                createSurveyMutation.isPending || editorMode === "question" || isSavingAllChanges
+              }
+            >
+              <SaveIcon className="size-4" />
+              {createSurveyMutation.isPending ? "Creating..." : "Create survey"}
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    className={`bg-primary text-primary-foreground hover:bg-primary/90 ${
+                      !saveAllEligibility.canSaveAll ? "cursor-not-allowed opacity-60" : ""
+                    }`}
+                    onClick={() => void handleSaveAllChanges()}
+                    disabled={isSavingAllChanges}
+                    aria-disabled={!saveAllEligibility.canSaveAll}
+                  />
+                }
+              >
+                <SaveIcon className="size-4" />
+                {isSavingAllChanges
+                  ? "Saving all..."
+                  : saveAllEligibility.canSaveAll
+                    ? "Save all changes"
+                    : saveAllEligibility.hasUnsavedChanges
+                      ? "Save all changes"
+                      : "All changes saved"}
+              </TooltipTrigger>
+              <TooltipContent>{saveAllEligibility.reason}</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </header>
 
@@ -811,7 +1127,7 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
                       }`}
                       onClick={() => {
                         setSelectedSectionClientId(section.clientId);
-                        if (editorMode !== "settings") setEditorMode("cards");
+                        setEditorMode("cards");
                       }}
                     >
                       {({ dragHandleListeners, dragHandleAttributes, isDragging, isOver }) => (
@@ -834,12 +1150,29 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
                                 onChange={(event) =>
                                   builder.updateSection(section.clientId, { title: event.target.value })
                                 }
-                                onBlur={() => void persistSectionMeta(section.clientId, { quiet: true })}
                                 onClick={(event) => event.stopPropagation()}
                                 placeholder={`Section ${sectionIndex + 1}`}
                                 className="h-9"
-                                disabled={savingSectionClientId === section.clientId}
+                                disabled={
+                                  savingSectionClientId === section.clientId || isSavingAllChanges
+                                }
                               />
+                              {initialSurveyId ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon-sm"
+                                  disabled={
+                                    savingSectionClientId === section.clientId || isSavingAllChanges
+                                  }
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void saveSection(section.clientId);
+                                  }}
+                                >
+                                  <SaveIcon className="size-3.5" />
+                                </Button>
+                              ) : null}
                               <Button
                                 type="button"
                                 variant="destructive"
@@ -868,24 +1201,9 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
                                 strategy={verticalListSortingStrategy}
                               >
                                 {(() => {
-                                  const sectionQuestionIds = new Set(
-                                    section.questions.map((item) => item.clientId)
+                                  const { rootIds, childMap, questionById } = buildSectionQuestionTree(
+                                    section.questions
                                   );
-                                  const childMap = new Map<string, string[]>();
-                                  const rootIds: string[] = [];
-                                  const questionById = new Map(
-                                    section.questions.map((item) => [item.clientId, item])
-                                  );
-
-                                  for (const question of section.questions) {
-                                    const parentId = getQuestionParentId(question, sectionQuestionIds);
-                                    if (parentId) {
-                                      const current = childMap.get(parentId) ?? [];
-                                      childMap.set(parentId, [...current, question.clientId]);
-                                    } else {
-                                      rootIds.push(question.clientId);
-                                    }
-                                  }
 
                                   const renderQuestionNode = (questionId: string, depth = 0): ReactNode => {
                                     const question = questionById.get(questionId);
@@ -944,7 +1262,11 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
                                                   setEditorMode("question");
                                                 }}
                                               >
-                                                {depth > 0 ? "Follow-up:" : `Q${questionIndex + 1}:`}{" "}
+                                                {depth === 0
+                                                  ? `Q${questionIndex + 1}:`
+                                                  : depth === 1
+                                                    ? "Follow-up:"
+                                                    : `Nested follow-up (L${depth}):`}{" "}
                                                 {question.questionText || "Untitled question"}
                                               </button>
                                             </>
@@ -1035,9 +1357,22 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
               questionByClientId={questionByClientId}
               dependentsMap={dependentsMap}
               onBackToCards={() => setEditorMode("cards")}
-              onSave={() => void saveQuestion(selectedSection.clientId, selectedQuestion.clientId)}
-              isSaving={savingQuestionClientId === selectedQuestion.clientId}
-              canSave={Boolean(initialSurveyId)}
+              onPrimaryAction={() => {
+                if (!initialSurveyId) {
+                  void handleSaveSurvey();
+                  return;
+                }
+                void saveQuestion(selectedSection.clientId, selectedQuestion.clientId);
+              }}
+              primaryActionLabel={initialSurveyId ? "Save question" : "Create survey"}
+              isPrimaryActionPending={
+                initialSurveyId
+                  ? savingQuestionClientId === selectedQuestion.clientId || isSavingAllChanges
+                  : createSurveyMutation.isPending
+              }
+              isPrimaryActionDisabled={
+                initialSurveyId ? isSavingAllChanges : updateSurveyMutation.isPending
+              }
               onUpdate={(patch) =>
                 builder.updateQuestion(selectedSection.clientId, selectedQuestion.clientId, (prev) => ({
                   ...prev,
@@ -1074,32 +1409,14 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
                   questionConfig
                 )
               }
-              onAddCondition={() => {
+              onAddFollowUpQuestion={() => {
                 const sectionQuestionIds = new Set(
                   selectedSection.questions.map((item) => item.clientId)
                 );
-                const parentQuestionId = getQuestionParentId(selectedQuestion, sectionQuestionIds);
-                if (!parentQuestionId) {
-                  sileo.warning({
-                    title: "No parent question",
-                    description: "Create this as a follow-up question before adding rules.",
-                  });
-                  return;
-                }
-                const parent = allQuestions.find((item) => item.clientId === parentQuestionId);
-                if (!parent) return;
-                const nextCondition: ShowCondition = {
-                  parentQuestionClientId: parentQuestionId,
-                  operator: "EQUALS",
-                  optionClientId: isChoiceType(parent.questionType)
-                    ? parent.options[0]?.clientId
-                    : undefined,
-                  expectedValue: "",
-                  logicType: "AND",
-                };
-                builder.addCondition(selectedSection.clientId, selectedQuestion.clientId, nextCondition);
-              }}
-              onAddFollowUpQuestion={() => {
+                const directParentQuestionId =
+                  getQuestionParentId(selectedQuestion, sectionQuestionIds) ?? selectedQuestion.clientId;
+                const directParentQuestion =
+                  allQuestions.find((item) => item.clientId === directParentQuestionId) ?? selectedQuestion;
                 const nextQuestionClientId = builder.addQuestion(selectedSection.clientId);
                 builder.updateQuestion(
                   selectedSection.clientId,
@@ -1107,19 +1424,43 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
                   (question) => ({
                     ...question,
                     questionText: "",
-                    showConditions: [
-                      {
-                        parentQuestionClientId: selectedQuestion.clientId,
-                        operator: isChoiceType(selectedQuestion.questionType)
-                          ? "EQUALS"
-                          : "CONTAINS",
-                        optionClientId: isChoiceType(selectedQuestion.questionType)
-                          ? selectedQuestion.options[0]?.clientId
-                          : undefined,
-                        expectedValue: isChoiceType(selectedQuestion.questionType) ? undefined : "",
-                        logicType: "AND",
-                      },
-                    ],
+                    showConditions: [createFollowUpCondition(directParentQuestion)],
+                  })
+                );
+                setSelectedQuestionClientId(nextQuestionClientId);
+                setEditorMode("question");
+              }}
+              onAddNestedFollowUpQuestion={() => {
+                const sectionQuestionIds = new Set(
+                  selectedSection.questions.map((item) => item.clientId)
+                );
+                const followUpDepth = getFollowUpDepth(
+                  selectedQuestion.clientId,
+                  questionByClientId,
+                  sectionQuestionIds
+                );
+                if (followUpDepth === 0) {
+                  sileo.warning({
+                    title: "Select a follow-up question",
+                    description: "Nested follow-up can only be added from a follow-up question.",
+                  });
+                  return;
+                }
+                if (followUpDepth >= 2) {
+                  sileo.info({
+                    title: "Maximum nesting reached",
+                    description: "Only one nested follow-up level is allowed.",
+                  });
+                  return;
+                }
+                const nextQuestionClientId = builder.addQuestion(selectedSection.clientId);
+                builder.updateQuestion(
+                  selectedSection.clientId,
+                  nextQuestionClientId,
+                  (question) => ({
+                    ...question,
+                    questionText: "",
+                    showConditions: [createFollowUpCondition(selectedQuestion)],
                   })
                 );
                 setSelectedQuestionClientId(nextQuestionClientId);

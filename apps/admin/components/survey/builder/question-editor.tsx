@@ -26,6 +26,7 @@ import {
   LOGIC_TYPE_OPTIONS,
   OPERATOR_OPTIONS,
   describeCondition,
+  getFollowUpDepth,
   getQuestionParentId,
   getQuestionText,
   type SurveyQuestionWithContext,
@@ -38,9 +39,10 @@ export function QuestionEditor(props: {
   questionByClientId: Map<string, SurveyQuestion>;
   dependentsMap: Map<string, string[]>;
   onBackToCards: () => void;
-  onSave: () => void;
-  isSaving: boolean;
-  canSave: boolean;
+  onPrimaryAction: () => void;
+  primaryActionLabel: string;
+  isPrimaryActionPending: boolean;
+  isPrimaryActionDisabled?: boolean;
   onUpdate: (patch: Partial<SurveyQuestion>) => void;
   onTypeChange: (type: SurveyQuestion["questionType"]) => void;
   onDelete: () => void;
@@ -48,8 +50,8 @@ export function QuestionEditor(props: {
   onUpdateOption: (optionClientId: string, patch: { text?: string; value?: string }) => void;
   onDeleteOption: (optionClientId: string) => void;
   onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"]) => void;
-  onAddCondition: () => void;
   onAddFollowUpQuestion: () => void;
+  onAddNestedFollowUpQuestion: () => void;
   onUpdateCondition: (
     conditionIndex: number,
     updater: (condition: ShowCondition) => ShowCondition
@@ -64,6 +66,11 @@ export function QuestionEditor(props: {
   const parentQuestionId = getQuestionParentId(props.question, sectionQuestionIds);
   const isFollowUpQuestion = Boolean(parentQuestionId);
   const parentQuestion = parentQuestionId ? props.questionByClientId.get(parentQuestionId) : null;
+  const followUpDepth = getFollowUpDepth(
+    props.question.clientId,
+    props.questionByClientId,
+    sectionQuestionIds
+  );
 
   return (
     <Card className="border-primary/15">
@@ -75,10 +82,10 @@ export function QuestionEditor(props: {
           </Button>
           <Button
             type="button"
-            onClick={props.onSave}
-            disabled={!props.canSave || props.isSaving}
+            onClick={props.onPrimaryAction}
+            disabled={props.isPrimaryActionDisabled || props.isPrimaryActionPending}
           >
-            {props.isSaving ? "Saving..." : "Save question"}
+            {props.isPrimaryActionPending ? "Saving..." : props.primaryActionLabel}
           </Button>
           <Button type="button" variant="destructive" onClick={props.onDelete}>
             Delete question
@@ -188,15 +195,24 @@ export function QuestionEditor(props: {
                 This question appears only when these conditions match.
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={isFollowUpQuestion ? props.onAddCondition : props.onAddFollowUpQuestion}
-            >
-              <PlusIcon className="size-3.5" />
-              {isFollowUpQuestion ? "Add rule" : "Add follow-up question"}
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={props.onAddFollowUpQuestion}>
+                <PlusIcon className="size-3.5" />
+                {isFollowUpQuestion ? "Add sibling follow-up" : "Add follow-up question"}
+              </Button>
+              {isFollowUpQuestion ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={props.onAddNestedFollowUpQuestion}
+                  disabled={followUpDepth >= 2}
+                >
+                  <PlusIcon className="size-3.5" />
+                  Add nested follow-up
+                </Button>
+              ) : null}
+            </div>
           </div>
           {!isFollowUpQuestion ? (
             <p className="text-xs text-muted-foreground">
@@ -204,12 +220,25 @@ export function QuestionEditor(props: {
             </p>
           ) : null}
           {isFollowUpQuestion && parentQuestion ? (
-            <p className="text-xs text-muted-foreground">
-              Parent question:{" "}
-              <span className="font-medium text-foreground wrap-break-word whitespace-normal">
-                {parentQuestion.questionText || "Untitled question"}
-              </span>
-            </p>
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>
+                Follow-up type:{" "}
+                <span className="font-medium text-foreground">
+                  {followUpDepth <= 1
+                    ? "Direct follow-up (original question)"
+                    : `Nested follow-up (level ${followUpDepth})`}
+                </span>
+              </p>
+              <p>
+                Parent question:{" "}
+                <span className="font-medium text-foreground wrap-break-word whitespace-normal">
+                  {parentQuestion.questionText || "Untitled question"}
+                </span>
+              </p>
+              {followUpDepth >= 2 ? (
+                <p>Maximum nesting reached. Only one nested level is allowed.</p>
+              ) : null}
+            </div>
           ) : null}
           {isFollowUpQuestion && props.question.showConditions.length === 0 ? (
             <p className="text-xs text-muted-foreground">

@@ -51,14 +51,12 @@ const baseNavMain = [
     url: "/survey",
     icon: <ClipboardListIcon />,
     isActive: false,
-    items: [{ title: "Survey", url: "/survey" }],
   },
   {
     title: "User Management",
     url: "/?section=users",
     icon: <UsersIcon />,
     isActive: false,
-    items: [{ title: "Users", url: "/?section=users" }],
   },
 ]
 

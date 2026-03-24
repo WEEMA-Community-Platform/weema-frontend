@@ -35,7 +35,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
   const activeSection = searchParams.get("section")
   const { state } = useSidebar()
 
-  const isSubItemActive = (url: string) => {
+  const isLinkActive = (url: string) => {
     if (url.startsWith("/?section=")) {
       return pathname === "/" && !!activeSection && url.includes(`section=${activeSection}`)
     }
@@ -48,10 +48,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
       items.map((item) => [
         item.title,
         item.items?.some((sub) => {
-          if (sub.url.startsWith("/?section=")) {
-            return pathname === "/" && !!activeSection && sub.url.includes(`section=${activeSection}`)
-          }
-          return pathname === sub.url || pathname.startsWith(`${sub.url}/`)
+          return isLinkActive(sub.url)
         }) ?? item.isActive ?? false,
       ])
     )
@@ -68,7 +65,22 @@ export function NavMain({ items }: { items: NavItem[] }) {
         {items.map((item) =>
           state === "collapsed" ? (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title} render={<Link href={item.url} />}>
+              <SidebarMenuButton
+                tooltip={item.title}
+                isActive={isLinkActive(item.url)}
+                render={<Link href={item.url} />}
+              >
+                {item.icon}
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ) : !item.items?.length ? (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton
+                tooltip={item.title}
+                isActive={isLinkActive(item.url)}
+                render={<Link href={item.url} />}
+              >
                 {item.icon}
                 <span>{item.title}</span>
               </SidebarMenuButton>
@@ -93,7 +105,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
-                        isActive={isSubItemActive(subItem.url)}
+                        isActive={isLinkActive(subItem.url)}
                         render={<Link href={subItem.url} />}
                       >
                         <span>{subItem.title}</span>

@@ -4,6 +4,11 @@ export type SurveyQuestionWithContext = SurveyQuestion & {
   sectionClientId: string;
   sectionTitle: string;
 };
+export type SectionQuestionTree = {
+  rootIds: string[];
+  childMap: Map<string, string[]>;
+  questionById: Map<string, SurveyQuestion>;
+};
 
 export const OPERATOR_OPTIONS: Array<{ value: ShowCondition["operator"]; label: string }> = [
   { value: "EQUALS", label: "Equals" },
@@ -46,4 +51,47 @@ export function getQuestionParentId(question: SurveyQuestion, sectionQuestionIds
       .map((condition) => condition.parentQuestionClientId)
       .find((parentId) => sectionQuestionIds.has(parentId)) ?? null
   );
+}
+
+export function getFollowUpDepth(
+  questionClientId: string,
+  questionByClientId: Map<string, SurveyQuestion>,
+  sectionQuestionIds: Set<string>
+) {
+  let depth = 0;
+  let current = questionByClientId.get(questionClientId);
+  let guard = 0;
+
+  while (current && guard < 100) {
+    const parentId = getQuestionParentId(current, sectionQuestionIds);
+    if (!parentId) break;
+    depth += 1;
+    current = questionByClientId.get(parentId);
+    guard += 1;
+  }
+
+  return depth;
+}
+
+export function buildSectionQuestionTree(questions: SurveyQuestion[]): SectionQuestionTree {
+  const sectionQuestionIds = new Set(questions.map((item) => item.clientId));
+  const childMap = new Map<string, string[]>();
+  const rootIds: string[] = [];
+  const questionById = new Map(questions.map((item) => [item.clientId, item]));
+
+  for (const question of questions) {
+    const parentId = getQuestionParentId(question, sectionQuestionIds);
+    if (parentId) {
+      const current = childMap.get(parentId) ?? [];
+      childMap.set(parentId, [...current, question.clientId]);
+    } else {
+      rootIds.push(question.clientId);
+    }
+  }
+
+  return {
+    rootIds,
+    childMap,
+    questionById,
+  };
 }

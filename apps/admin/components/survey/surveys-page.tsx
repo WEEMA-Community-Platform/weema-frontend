@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheckBigIcon, LayersIcon, TextIcon } from "lucide-react";
+import { CircleCheckBigIcon, LayersIcon, SendHorizonalIcon, TextIcon } from "lucide-react";
 import { sileo } from "sileo";
 
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,16 @@ import {
   listEmptyMessage,
 } from "@/components/base-data/shared";
 import {
+  SurveyFiltersDialog,
+  type SurveyAppliedFilters,
+} from "@/components/survey/survey-filters-dialog";
+import {
   useDeleteSurveyMutation,
   usePublishSurveyMutation,
   useSurveysQuery,
 } from "@/hooks/use-surveys";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 function SurveyStatusBadge({ status }: { status?: string }) {
   const normalized = (status ?? "").toUpperCase();
@@ -61,6 +65,10 @@ export function SurveysPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [appliedStatus, setAppliedStatus] = useState("");
+  const [appliedTargetType, setAppliedTargetType] = useState("");
+  const [appliedActivity, setAppliedActivity] = useState("");
   const [pendingDeleteSurvey, setPendingDeleteSurvey] = useState<{
     id: string;
     title: string;
@@ -69,19 +77,46 @@ export function SurveysPage() {
     id: string;
     title: string;
   } | null>(null);
+  const isActiveFilter = useMemo(() => {
+    if (appliedActivity === "ACTIVE") return true;
+    if (appliedActivity === "INACTIVE") return false;
+    return undefined;
+  }, [appliedActivity]);
+
   const surveysQuery = useSurveysQuery({
     page,
     pageSize: PAGE_SIZE,
     searchQuery: searchQuery.trim() || undefined,
+    status: appliedStatus || undefined,
+    targetType: appliedTargetType || undefined,
+    isActive: isActiveFilter,
   });
   const deleteMutation = useDeleteSurveyMutation();
   const publishMutation = usePublishSurveyMutation();
   const surveys = surveysQuery.data?.surveys ?? [];
+  const hasActiveFilters = Boolean(appliedStatus || appliedTargetType || appliedActivity);
+  const appliedFilters: SurveyAppliedFilters = useMemo(
+    () => ({
+      status: appliedStatus,
+      targetType: appliedTargetType,
+      activity: appliedActivity,
+    }),
+    [appliedStatus, appliedTargetType, appliedActivity]
+  );
+
+  const applySurveyFilters = (filters: SurveyAppliedFilters) => {
+    setAppliedStatus(filters.status);
+    setAppliedTargetType(filters.targetType);
+    setAppliedActivity(filters.activity);
+    setPage(1);
+    setIsFilterOpen(false);
+  };
+
   const hasSearch = Boolean(searchQuery.trim());
   const emptyMessage = listEmptyMessage({
     entityPlural: "surveys",
     hasSearch,
-    hasFilters: false,
+    hasFilters: hasActiveFilters,
     emptyCatalogHint: "No surveys yet. Add your first survey to get started.",
   });
 
@@ -96,6 +131,9 @@ export function SurveysPage() {
         }}
         onAdd={() => router.push("/survey/builder")}
         addLabel="Add Survey"
+        onOpenFilters={() => setIsFilterOpen(true)}
+        showFilterButton
+        hasActiveFilters={hasActiveFilters}
       />
 
       {surveysQuery.isLoading ? (
@@ -141,6 +179,7 @@ export function SurveysPage() {
               extraMenuItems={
                 (survey.status ?? "").toUpperCase() === "DRAFT" ? (
                   <DropdownMenuItem
+                    className="text-[12px]"
                     onClick={() =>
                       setPendingPublishSurvey({
                         id: survey.id,
@@ -148,6 +187,7 @@ export function SurveysPage() {
                       })
                     }
                   >
+                    <SendHorizonalIcon className="size-4" />
                     Publish survey
                   </DropdownMenuItem>
                 ) : null
@@ -180,6 +220,13 @@ export function SurveysPage() {
           }
         />
       ) : null}
+
+      <SurveyFiltersDialog
+        open={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+        applied={appliedFilters}
+        onApply={applySurveyFilters}
+      />
 
       <AlertDialog
         open={!!pendingDeleteSurvey}

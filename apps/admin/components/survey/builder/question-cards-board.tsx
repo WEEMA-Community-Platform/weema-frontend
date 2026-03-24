@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import type { SurveyQuestion, SurveySection } from "@/lib/survey-builder/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { describeCondition, getQuestionParentId, getQuestionText } from "./shared";
+import { describeCondition, getFollowUpDepth, getQuestionParentId, getQuestionText } from "./shared";
 
 export function QuestionCardsBoard(props: {
   section: SurveySection | null;
@@ -27,6 +29,27 @@ export function QuestionCardsBoard(props: {
   const rootQuestions = props.section.questions.filter(
     (question) => !getQuestionParentId(question, sectionQuestionIds)
   );
+  const renderDependentNode = (questionClientId: string): ReactNode => {
+    const question = props.questionByClientId.get(questionClientId);
+    if (!question) return null;
+    const nestedDependents = props.dependentsMap.get(questionClientId) ?? [];
+    const followUpDepth = getFollowUpDepth(questionClientId, props.questionByClientId, sectionQuestionIds);
+    const followUpLabel =
+      followUpDepth >= 2 ? `Nested follow-up (L${followUpDepth})` : "Follow-up";
+
+    return (
+      <li key={questionClientId} className="space-y-1 wrap-break-word whitespace-normal">
+        <span>
+          - {followUpLabel}: {getQuestionText(question)}
+        </span>
+        {nestedDependents.length > 0 ? (
+          <ul className="space-y-1 pl-3">
+            {nestedDependents.map((nestedId) => renderDependentNode(nestedId))}
+          </ul>
+        ) : null}
+      </li>
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -39,7 +62,7 @@ export function QuestionCardsBoard(props: {
         return (
           <Card
             key={question.clientId}
-            className="cursor-pointer border-primary/15 transition-colors hover:border-amber-300 hover:bg-amber-50/40 dark:hover:border-amber-400/40 dark:hover:bg-amber-500/10"
+            className="cursor-pointer border-primary/15 transition-colors hover:border-orange-300 hover:bg-orange-500/8 dark:hover:border-orange-400/50 dark:hover:bg-orange-500/10"
             onClick={() => props.onOpen(question.clientId)}
           >
             <CardContent className="space-y-3 p-4">
@@ -99,11 +122,7 @@ export function QuestionCardsBoard(props: {
                 <div className="rounded-md border border-primary/10 p-2 text-xs">
                   <p className="mb-1 font-medium">Follow-up questions triggered by this question:</p>
                   <ul className="space-y-1">
-                    {dependentIds.map((dependentId) => (
-                      <li key={dependentId} className="wrap-break-word whitespace-normal">
-                        - {getQuestionText(props.questionByClientId.get(dependentId))}
-                      </li>
-                    ))}
+                    {dependentIds.map((dependentId) => renderDependentNode(dependentId))}
                   </ul>
                 </div>
               ) : null}
