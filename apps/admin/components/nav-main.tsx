@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,17 +30,29 @@ type NavItem = {
 }
 
 export function NavMain({ items }: { items: NavItem[] }) {
+  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const activeSection = searchParams.get("section") ?? "region"
+  const activeSection = searchParams.get("section")
   const { state } = useSidebar()
+
+  const isSubItemActive = (url: string) => {
+    if (url.startsWith("/?section=")) {
+      return pathname === "/" && !!activeSection && url.includes(`section=${activeSection}`)
+    }
+
+    return pathname === url || pathname.startsWith(`${url}/`)
+  }
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(
       items.map((item) => [
         item.title,
-        item.items?.some((sub) => sub.url.includes(`section=${activeSection}`)) ??
-          item.isActive ??
-          false,
+        item.items?.some((sub) => {
+          if (sub.url.startsWith("/?section=")) {
+            return pathname === "/" && !!activeSection && sub.url.includes(`section=${activeSection}`)
+          }
+          return pathname === sub.url || pathname.startsWith(`${sub.url}/`)
+        }) ?? item.isActive ?? false,
       ])
     )
   )
@@ -81,7 +93,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
-                        isActive={subItem.url.includes(`section=${activeSection}`)}
+                        isActive={isSubItemActive(subItem.url)}
                         render={<Link href={subItem.url} />}
                       >
                         <span>{subItem.title}</span>

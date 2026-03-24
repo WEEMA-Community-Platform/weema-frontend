@@ -44,6 +44,10 @@ export function CommunityCard({
   onEdit,
   onDelete,
   extraMenuItems,
+  showViewAction = true,
+  showEditAction = true,
+  viewActionLabel = "View details",
+  editActionLabel = "Edit",
 }: {
   title: string;
   status: EntityStatus;
@@ -52,7 +56,12 @@ export function CommunityCard({
   onEdit: () => void;
   onDelete: () => void;
   extraMenuItems?: React.ReactNode;
+  showViewAction?: boolean;
+  showEditAction?: boolean;
+  viewActionLabel?: string;
+  editActionLabel?: string;
 }) {
+  const hasPrimaryActions = showViewAction || showEditAction;
   return (
     <Card className=" py-0 overflow-hidden transition-colors hover:ring-primary/50">
       <CardHeader className="px-4 pt-4  flex flex-row items-center justify-between gap-2">
@@ -69,13 +78,19 @@ export function CommunityCard({
             }
           />
           <DropdownMenuContent align="center" side="bottom" >
-            <DropdownMenuGroup >
-              <DropdownMenuItem className="text-[12px]" onClick={onView}><EyeIcon />View details</DropdownMenuItem>
-              <DropdownMenuItem className="text-[12px]" onClick={onEdit}><PencilIcon />Edit</DropdownMenuItem>
-            </DropdownMenuGroup>
+            {hasPrimaryActions ? (
+              <DropdownMenuGroup >
+                {showViewAction ? (
+                  <DropdownMenuItem className="text-[12px]" onClick={onView}><EyeIcon />{viewActionLabel}</DropdownMenuItem>
+                ) : null}
+                {showEditAction ? (
+                  <DropdownMenuItem className="text-[12px]" onClick={onEdit}><PencilIcon />{editActionLabel}</DropdownMenuItem>
+                ) : null}
+              </DropdownMenuGroup>
+            ) : null}
             {extraMenuItems && (
               <>
-                <DropdownMenuSeparator />
+                {hasPrimaryActions ? <DropdownMenuSeparator /> : null}
                 <DropdownMenuGroup>{extraMenuItems}</DropdownMenuGroup>
               </>
             )}

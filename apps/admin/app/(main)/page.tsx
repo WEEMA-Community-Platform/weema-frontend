@@ -1,13 +1,16 @@
-"use client"
-
-import { useSearchParams } from "next/navigation"
-
-import { SECTION_META } from "@/components/app-header"
+import { SECTION_META } from "@/components/section-meta"
 import { CommunityStructurePanel } from "@/components/community-structure-panel"
 
-export default function MainPage() {
-  const searchParams = useSearchParams()
-  const section = searchParams.get("section") ?? "region"
+type MainPageProps = {
+  searchParams?: Promise<{
+    section?: string | string[]
+  }>
+}
+
+export default async function MainPage({ searchParams }: MainPageProps) {
+  const resolvedSearchParams = await searchParams
+  const rawSection = resolvedSearchParams?.section
+  const section = (Array.isArray(rawSection) ? rawSection[0] : rawSection) ?? "region"
   const meta = SECTION_META[section] ?? SECTION_META.region
 
   return (

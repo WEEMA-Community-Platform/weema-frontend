@@ -1,10 +1,15 @@
 "use client"
 
 import { useMemo } from "react"
-import { Building2Icon, MapPinnedIcon, NetworkIcon, UsersIcon } from "lucide-react"
+import {
+  Building2Icon,
+  ClipboardListIcon,
+  MapPinnedIcon,
+  NetworkIcon,
+  UsersIcon,
+} from "lucide-react"
 import Link from "next/link"
 
-import { SUPER_ADMIN_ROLE } from "@/components/users/constants"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -41,25 +46,25 @@ const baseNavMain = [
       { title: "Members", url: "/?section=member" },
     ],
   },
+  {
+    title: "Survey",
+    url: "/survey",
+    icon: <ClipboardListIcon />,
+    isActive: false,
+    items: [{ title: "Survey", url: "/survey" }],
+  },
+  {
+    title: "User Management",
+    url: "/?section=users",
+    icon: <UsersIcon />,
+    isActive: false,
+    items: [{ title: "Users", url: "/?section=users" }],
+  },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: currentUserData } = useCurrentUser()
-  const isSuperAdmin = currentUserData?.user?.role === SUPER_ADMIN_ROLE
-
-  const navMain = useMemo(() => {
-    const items = [...baseNavMain]
-    if (isSuperAdmin) {
-      items.push({
-        title: "User Management",
-        url: "/?section=users",
-        icon: <UsersIcon />,
-        isActive: false,
-        items: [{ title: "Users", url: "/?section=users" }],
-      })
-    }
-    return items
-  }, [isSuperAdmin])
+  const navMain = useMemo(() => [...baseNavMain], [])
 
   const user = currentUserData?.user
   const displayName = user ? `${user.firstName} ${user.lastName}` : "Loading..."
@@ -83,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} key={isSuperAdmin ? "nav-with-users" : "nav"} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
