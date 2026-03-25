@@ -338,8 +338,9 @@ function getSaveAllEligibility(
   }
 }
 
-export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: string | null }) {
-  const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(Boolean(initialSurveyId));
+export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialSurveyId?: string | null }) {
+  const [initialSurveyId, setInitialSurveyId] = useState<string | null>(routeSurveyId ?? null);
+  const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(Boolean(routeSurveyId));
   const [editorMode, setEditorMode] = useState<EditorMode>("settings");
   const [selectedSectionClientId, setSelectedSectionClientId] = useState<string | null>(null);
   const [selectedQuestionClientId, setSelectedQuestionClientId] = useState<string | null>(null);
@@ -462,15 +463,17 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
   };
 
   useEffect(() => {
-    if (!initialSurveyId) {
-      handleCreateNew();
+    if (!routeSurveyId) {
+      setInitialSurveyId(null);
+      setIsLoadingInitialSurvey(false);
       return;
     }
 
     const loadInitialSurvey = async () => {
       try {
+        setInitialSurveyId(routeSurveyId);
         setIsLoadingInitialSurvey(true);
-        await reloadSurvey(initialSurveyId);
+        await reloadSurvey(routeSurveyId);
         setEditorMode("settings");
       } catch (error) {
         sileo.error({
@@ -484,7 +487,7 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
 
     void loadInitialSurvey();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSurveyId]);
+  }, [routeSurveyId]);
 
   useEffect(() => {
     if (!lastMovedSectionClientId) return;
@@ -500,8 +503,10 @@ export function SurveyBuilderPage({ initialSurveyId }: { initialSurveyId?: strin
 
   const handleCreateNew = () => {
     const fresh = createEmptySurvey();
+    setInitialSurveyId(null);
+    setIsLoadingInitialSurvey(false);
     builder.setState(fresh);
-    setLastSyncedSnapshot(initialSurveyId ? null : buildBuilderSnapshot(fresh));
+    setLastSyncedSnapshot(buildBuilderSnapshot(fresh));
     setSelectedSectionClientId(fresh.sections[0]?.clientId ?? null);
     setSelectedQuestionClientId(null);
     setEditorMode("settings");
