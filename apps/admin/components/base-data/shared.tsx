@@ -26,8 +26,9 @@ export const formTextareaClass =
 export const descriptionCellClass =
   "max-w-[34ch] whitespace-normal break-words text-muted-foreground line-clamp-2";
 
-/** Row action buttons — matches `member-table-card` (left-aligned with the Actions header). */
-export const tableRowActionsClass = "flex w-full min-w-0 flex-wrap justify-start gap-2 sm:flex-nowrap";
+/** Row action buttons — keep horizontal even on small screens. */
+export const tableRowActionsClass =
+  "flex w-full min-w-0 flex-nowrap items-center justify-start gap-2 overflow-x-auto whitespace-nowrap";
 
 /** Last column: keep text and controls left-aligned with the Actions header (avoids odd centering). */
 export const tableActionsCellClass = "align-top text-left";

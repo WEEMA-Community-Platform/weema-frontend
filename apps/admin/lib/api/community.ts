@@ -79,6 +79,8 @@ export type ClusterListQuery = {
   managerId?: string;
   woredaId?: string;
   federationId?: string;
+  /** When true, only clusters not linked to a federation (backend query param). */
+  unAssignedFederation?: boolean;
   location?: string;
 };
 
@@ -272,6 +274,10 @@ export async function getClusters(query: ClusterListQuery = {}) {
     "manager-id": query.managerId,
     "woreda-id": query.woredaId,
     "federation-id": query.federationId,
+    "un-assigned-federation":
+      query.unAssignedFederation === undefined
+        ? undefined
+        : String(query.unAssignedFederation),
     location: query.location,
   });
   const response = await fetch(`/api/cluster?${qs}`, { cache: "no-store" });
