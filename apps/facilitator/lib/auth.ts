@@ -1,0 +1,37 @@
+import {
+  getRoleFromToken,
+  hasAllowedRole,
+  type WeemaRole,
+} from "@weema/auth";
+import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
+
+export const ACCESS_TOKEN_COOKIE = "weema_access_token";
+export const REFRESH_TOKEN_COOKIE = "weema_refresh_token";
+
+export const AUTH_API_BASE_URL = process.env.AUTH_API_BASE_URL;
+export const API_BASE_URL =
+  process.env.API_BASE_URL ?? process.env.AUTH_API_BASE_URL;
+export const AUTH_API_PREFIX = "/api/auth";
+
+export const FACILITATOR_ALLOWED_ROLES: WeemaRole[] = ["facilitator"];
+
+export function getSecureCookieOptions(
+  expiresAt?: Date
+): Partial<ResponseCookie> {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: expiresAt,
+  };
+}
+
+export function isAllowedFacilitatorRole(role: WeemaRole | null) {
+  return hasAllowedRole(role, FACILITATOR_ALLOWED_ROLES);
+}
+
+export function getTokenRole(token: string | undefined) {
+  if (!token) return null;
+  return getRoleFromToken(token);
+}

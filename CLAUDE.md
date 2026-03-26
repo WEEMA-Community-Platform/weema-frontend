@@ -43,6 +43,9 @@ MVP scope to preserve in design decisions:
 ### Core Interaction Patterns
 - Dashboard-first web landing for Admin and Cluster Admin with clear status at a glance.
 - Hierarchy-aware navigation and drill-down for community structures.
+- Base data workflow is list-first: users should see existing records in a table before creating or editing.
+- Create and edit actions for base data open in a modal/sheet surface, not inline in the list.
+- Filters for base data are hidden behind a dedicated Filter action and opened in a filter dialog/sheet.
 - Survey lifecycle clarity: Draft vs Active (locked after responses begin).
 - One-click survey cloning for safe versioning.
 - Facilitator mobile flows limited to survey submission and member registration.
@@ -56,3 +59,4 @@ MVP scope to preserve in design decisions:
 5. Survey integrity: clearly communicate survey state, lock behavior, conditional logic outcomes, and versioning path.
 6. Calm premium execution: maintain minimal visual language with precise spacing, strong hierarchy, and restrained motion.
 7. Accessibility by default: enforce strong contrast, touch-friendly controls, scalable text/layout, and reduced-motion-safe interactions.
+8. Base data clarity first: prioritize readable tables, explicit action buttons, and modal forms with progressive disclosure for filters.
