@@ -3,12 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  assignSurveyTargets,
   createQuestions,
   createSurvey,
   createSurveySections,
   deleteQuestion,
   deleteSurveySection,
   deleteSurvey,
+  getSurveyAssignmentTargets,
   getSurveyById,
   getSurveys,
   publishSurvey,
@@ -82,6 +84,32 @@ export function usePublishSurveyMutation() {
   return useMutation({
     mutationFn: (id: string) => publishSurvey(id),
     onSuccess: () => {
+      invalidateSurveyQueries(queryClient);
+    },
+  });
+}
+
+export function useSurveyAssignmentTargetsQuery(
+  surveyId: string | null,
+  options?: { enabled?: boolean }
+) {
+  const enabled = (options?.enabled ?? true) && !!surveyId;
+  return useQuery({
+    queryKey: ["survey", surveyId, "assignment-targets"],
+    queryFn: () => getSurveyAssignmentTargets(surveyId!),
+    enabled,
+  });
+}
+
+export function useAssignSurveyTargetsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ surveyId, targetIds }: { surveyId: string; targetIds: string[] }) =>
+      assignSurveyTargets(surveyId, targetIds),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey", variables.surveyId, "assignment-targets"],
+      });
       invalidateSurveyQueries(queryClient);
     },
   });

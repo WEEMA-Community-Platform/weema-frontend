@@ -186,6 +186,44 @@ export async function publishSurvey(id: string): Promise<BaseApiResponse> {
   return parseResponse<BaseApiResponse>(response);
 }
 
+/** Single row from GET /api/survey/{id}/assignment-targets (assigned or available). */
+export type SurveyAssignmentTargetRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+};
+
+export type SurveyAssignmentData = {
+  assignedTargets: SurveyAssignmentTargetRow[];
+  availableTargets: SurveyAssignmentTargetRow[];
+};
+
+export type SurveyAssignmentTargetsResponse = BaseApiResponse & {
+  assignmentData: SurveyAssignmentData;
+};
+
+export async function getSurveyAssignmentTargets(
+  surveyId: string
+): Promise<SurveyAssignmentTargetsResponse> {
+  const response = await fetch(`/api/survey/${surveyId}/assignment-targets`, {
+    cache: "no-store",
+  });
+  return parseResponse<SurveyAssignmentTargetsResponse>(response);
+}
+
+export async function assignSurveyTargets(
+  surveyId: string,
+  targetIds: string[]
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey/${surveyId}/assign`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetIds }),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
 export async function createSurveySections(
   surveyId: string,
   payload: CreateSectionPayload

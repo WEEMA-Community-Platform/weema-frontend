@@ -1,8 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleCheckBigIcon, LayersIcon, SendHorizonalIcon, TextIcon, RefreshCcwDot  } from "lucide-react";
+import {
+  CircleCheckBigIcon,
+  LayersIcon,
+  Link2Icon,
+  SendHorizonalIcon,
+  TextIcon,
+  RefreshCcwDot,
+} from "lucide-react";
 import { sileo } from "sileo";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +39,7 @@ import {
   SurveyFiltersDialog,
   type SurveyAppliedFilters,
 } from "@/components/survey/survey-filters-dialog";
+import { SurveyAssignTargetsDialog } from "@/components/survey/survey-assign-targets-dialog";
 import {
   useDeleteSurveyMutation,
   usePublishSurveyMutation,
@@ -77,6 +85,45 @@ export function SurveysPage() {
     id: string;
     title: string;
   } | null>(null);
+  const [assignTargetsSurvey, setAssignTargetsSurvey] = useState<{
+    id: string;
+    title: string;
+    targetType: string;
+  } | null>(null);
+  const [assignTargetsOpen, setAssignTargetsOpen] = useState(false);
+  /** Defer clearing survey payload until after dialog exit animation (Dialog overlay/content use duration-150). */
+  const assignTargetsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openAssignTargets = (payload: { id: string; title: string; targetType: string }) => {
+    if (assignTargetsCloseTimerRef.current) {
+      clearTimeout(assignTargetsCloseTimerRef.current);
+      assignTargetsCloseTimerRef.current = null;
+    }
+    setAssignTargetsSurvey(payload);
+    setAssignTargetsOpen(true);
+  };
+
+  const handleAssignTargetsOpenChange = (open: boolean) => {
+    if (open) {
+      setAssignTargetsOpen(true);
+      return;
+    }
+    setAssignTargetsOpen(false);
+    if (assignTargetsCloseTimerRef.current) clearTimeout(assignTargetsCloseTimerRef.current);
+    assignTargetsCloseTimerRef.current = setTimeout(() => {
+      assignTargetsCloseTimerRef.current = null;
+      setAssignTargetsSurvey(null);
+    }, 220);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (assignTargetsCloseTimerRef.current) {
+        clearTimeout(assignTargetsCloseTimerRef.current);
+      }
+    };
+  }, []);
+
   const isActiveFilter = useMemo(() => {
     if (appliedActivity === "ACTIVE") return true;
     if (appliedActivity === "INACTIVE") return false;
@@ -161,7 +208,41 @@ export function SurveysPage() {
         </div>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-          {surveys.map((survey) => (
+          {surveys.map((survey) => {
+            const statusUpper = (survey.status ?? "").toUpperCase();
+            /** Assignment uses the survey’s target type (MEMBER → SHGs, etc.); it is not tied to publish status. */
+            const extraMenuItems = (
+              <>
+                {statusUpper === "DRAFT" ? (
+                  <DropdownMenuItem
+                    className="text-[12px]"
+                    onClick={() =>
+                      setPendingPublishSurvey({
+                        id: survey.id,
+                        title: survey.title || "Untitled survey",
+                      })
+                    }
+                  >
+                    <SendHorizonalIcon className="size-4" />
+                    Publish survey
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem
+                  className="text-[12px]"
+                  onClick={() =>
+                    openAssignTargets({
+                      id: survey.id,
+                      title: survey.title || "Untitled survey",
+                      targetType: survey.targetType ?? "",
+                    })
+                  }
+                >
+                  <Link2Icon className="size-4" />
+                  Assign targets
+                </DropdownMenuItem>
+              </>
+            );
+            return (
             <CommunityCard
               key={survey.id}
               title={survey.title || "Untitled survey"}
@@ -176,22 +257,7 @@ export function SurveysPage() {
               }
               showEditAction={false}
               viewActionLabel="Open survey"
-              extraMenuItems={
-                (survey.status ?? "").toUpperCase() === "DRAFT" ? (
-                  <DropdownMenuItem
-                    className="text-[12px]"
-                    onClick={() =>
-                      setPendingPublishSurvey({
-                        id: survey.id,
-                        title: survey.title || "Untitled survey",
-                      })
-                    }
-                  >
-                    <SendHorizonalIcon className="size-4" />
-                    Publish survey
-                  </DropdownMenuItem>
-                ) : null
-              }
+              extraMenuItems={extraMenuItems}
             >
               <CardMetaRow icon={LayersIcon} label="Target">
                 {survey.targetType || "-"}
@@ -208,7 +274,8 @@ export function SurveysPage() {
                 <SurveyStatusBadge status={survey.status} />
               </CardMetaRow>
             </CommunityCard>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -231,6 +298,14 @@ export function SurveysPage() {
         onOpenChange={setIsFilterOpen}
         applied={appliedFilters}
         onApply={applySurveyFilters}
+      />
+
+      <SurveyAssignTargetsDialog
+        open={assignTargetsOpen}
+        onOpenChange={handleAssignTargetsOpenChange}
+        surveyId={assignTargetsSurvey?.id ?? null}
+        surveyTitle={assignTargetsSurvey?.title ?? ""}
+        targetType={assignTargetsSurvey?.targetType ?? ""}
       />
 
       <AlertDialog
