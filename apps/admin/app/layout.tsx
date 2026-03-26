@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lato } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Analytics } from "@vercel/analytics/next"
 
 const lato = Lato({
   variable: "--font-lato",
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={lato.variable}>
       <body className="antialiased font-medium font-sans">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
