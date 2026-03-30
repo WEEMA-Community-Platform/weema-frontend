@@ -26,9 +26,9 @@ export const formTextareaClass =
 export const descriptionCellClass =
   "max-w-[34ch] whitespace-normal break-words text-muted-foreground line-clamp-2";
 
-/** Row action buttons — keep horizontal even on small screens. */
+/** Row action buttons — keep horizontal even on small screens. Avoid nested `overflow-x-auto` here: it flashes a scrollbar when focus rings shift layout; the table container already scrolls horizontally when needed. */
 export const tableRowActionsClass =
-  "flex w-full min-w-0 flex-nowrap items-center justify-start gap-2 overflow-x-auto whitespace-nowrap";
+  "flex w-full min-w-0 flex-nowrap items-center justify-start gap-2 whitespace-nowrap";
 
 /** Last column: keep text and controls left-aligned with the Actions header (avoids odd centering). */
 export const tableActionsCellClass = "align-top text-left";
@@ -113,6 +113,7 @@ export function TableShell({
   isError = false,
   errorMessage,
   onRetry,
+  variant = "default",
 }: {
   headers: string[];
   children: ReactNode;
@@ -122,9 +123,16 @@ export function TableShell({
   isError?: boolean;
   errorMessage?: string;
   onRetry?: () => void;
+  /** `embedded`: full-width inside a `Card` — avoids double borders / corner mismatch with nested `rounded-lg` boxes. */
+  variant?: "default" | "embedded";
 }) {
+  const shellClass =
+    variant === "embedded"
+      ? "overflow-hidden rounded-b-xl"
+      : "overflow-hidden rounded-lg border border-primary/10";
+
   return (
-    <div className="overflow-hidden rounded-lg border border-primary/10">
+    <div className={shellClass}>
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow className="border-b border-primary/10 hover:bg-transparent">

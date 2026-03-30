@@ -88,6 +88,10 @@ export type SurveySubmissionDetailResponse = BaseApiResponse & {
   submission: SurveySubmissionRecord | null;
 };
 
+export type RejectSurveyAssignmentPayload = {
+  rejectionReason?: string;
+};
+
 export type UpsertSubmissionAnswerPayload = {
   questionId: string;
   answerText?: string;
@@ -246,9 +250,12 @@ export async function publishSurvey(id: string): Promise<BaseApiResponse> {
 /** Single row from GET /api/survey/{id}/assignment-targets (assigned or available). */
 export type SurveyAssignmentTargetRow = {
   id: string;
+  assignmentId: string | null;
   name: string;
   description: string | null;
   type: string;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | string | null;
+  rejectionReason?: string | null;
 };
 
 export type SurveyAssignmentData = {
@@ -301,6 +308,50 @@ export async function getSurveySubmissionsBySurveyId(
       ? ((payload as { data: SurveySubmissionRecord[] }).data ?? [])
       : [],
   };
+}
+
+export type SurveySubmissionsByAssignmentResponse = BaseApiResponse & {
+  submissions: SurveySubmissionRecord[];
+};
+
+export async function getSurveySubmissionsByAssignmentId(
+  assignmentId: string
+): Promise<SurveySubmissionsByAssignmentResponse> {
+  const response = await fetch(`/api/survey-submissions/assignment/${assignmentId}`, {
+    cache: "no-store",
+  });
+  const payload = await parseResponse<
+    SurveySubmissionsByAssignmentResponse | (BaseApiResponse & { data?: SurveySubmissionRecord[] })
+  >(response);
+  if ("submissions" in payload && Array.isArray(payload.submissions)) {
+    return payload as SurveySubmissionsByAssignmentResponse;
+  }
+  return {
+    message: payload.message,
+    statusCode: payload.statusCode,
+    submissions: Array.isArray((payload as { data?: unknown[] }).data)
+      ? ((payload as { data: SurveySubmissionRecord[] }).data ?? [])
+      : [],
+  };
+}
+
+export async function approveSurveyAssignment(assignmentId: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/assignments/${assignmentId}/approve`, {
+    method: "PATCH",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function rejectSurveyAssignment(
+  assignmentId: string,
+  payload: RejectSurveyAssignmentPayload
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/assignments/${assignmentId}/reject`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
 }
 
 export async function getSurveySubmissionById(

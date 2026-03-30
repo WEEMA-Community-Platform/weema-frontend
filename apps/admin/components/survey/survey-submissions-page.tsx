@@ -1,86 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftIcon, RefreshCcwDotIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
+import { sileo } from "sileo";
 
-import {
-  EmptyStateRow,
-  TableShell,
-  tableActionsCellClass,
-  tableRowActionsClass,
-} from "@/components/base-data/shared";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TableCell, TableRow } from "@/components/ui/table";
+import { type QuestionTemplate } from "@/components/survey/survey-submission-answer-workspace";
+import { SubmissionWorkspacePanel } from "@/components/survey/survey-submission-workspace-panel";
 import {
-  SurveySubmissionAnswerWorkspace,
-  type QuestionTemplate,
-} from "@/components/survey/survey-submission-answer-workspace";
+  AssignedTargetsTableCard,
+  MemberSubmissionsTableCard,
+  RejectAssignmentDialog,
+} from "@/components/survey/survey-submissions-tables";
 import {
+  useApproveSurveyAssignmentMutation,
+  useRejectSurveyAssignmentMutation,
+  useSurveyAssignmentTargetsQuery,
   useSurveyDetailQuery,
   useSurveySubmissionDetailQuery,
-  useSurveySubmissionsBySurveyQuery,
+  useSurveySubmissionsByAssignmentQuery,
 } from "@/hooks/use-surveys";
-import type { SurveySubmissionRecord } from "@/lib/api/surveys";
+import type { SurveyAssignmentTargetRow, SurveySubmissionRecord } from "@/lib/api/surveys";
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function SubmissionStatusBadge({ status }: { status: string }) {
-  const normalized = status.toUpperCase();
-  if (normalized === "FINISHED" || normalized === "SUBMITTED") {
-    return (
-      <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-        Submitted
-      </Badge>
-    );
-  }
-  if (normalized === "NOT_STARTED" || normalized === "NOT STARTED") {
-    return (
-      <Badge className="border-transparent bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300">
-        Not started
-      </Badge>
-    );
-  }
-  if (normalized === "IN_PROGRESS" || normalized === "IN PROGRESS") {
-    return (
-      <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-        In progress
-      </Badge>
-    );
-  }
-  return <Badge variant="outline">{status.replaceAll("_", " ")}</Badge>;
-}
 
 export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const surveyTitleFromQuery = searchParams.get("surveyTitle")?.trim() || "";
+  const surveyTitle = searchParams.get("surveyTitle")?.trim() || "Selected survey";
   const selectedSubmissionId = searchParams.get("submissionId");
+  const selectedAssignmentId = searchParams.get("assignmentId");
+  const selectedAssignmentName = searchParams.get("assignmentName")?.trim() || "";
 
-  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
+  const [rejectDialogTarget, setRejectDialogTarget] = useState<SurveyAssignmentTargetRow | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(surveyId);
+  const assignedTargets = assignmentTargetsQuery.data?.assignmentData?.assignedTargets ?? [];
+  const submissionsQuery = useSurveySubmissionsByAssignmentQuery(selectedAssignmentId, {
+    enabled: !!selectedAssignmentId,
+  });
   const submissions = submissionsQuery.data?.submissions ?? [];
-  const surveyTitle =
-    surveyTitleFromQuery || submissions[0]?.surveyTitle?.trim() || "Selected survey";
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
   const surveyDetailQuery = useSurveyDetailQuery(surveyId, { enabled: !!selectedSubmissionId });
+
+  const approveAssignmentMutation = useApproveSurveyAssignmentMutation();
+  const rejectAssignmentMutation = useRejectSurveyAssignmentMutation();
+
   const questionTemplates: QuestionTemplate[] = (() => {
     const backendSurvey = surveyDetailQuery.data?.survey;
     if (!backendSurvey) return [];
@@ -100,12 +70,28 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
     );
   })();
 
+  const setRouteSearch = (next: URLSearchParams) => {
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const chooseAssignment = (target: SurveyAssignmentTargetRow) => {
+    if (!target.assignmentId) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("assignmentId", target.assignmentId);
+    next.set("assignmentName", target.name || "Self Help Group");
+    next.delete("submissionId");
+    next.delete("memberName");
+    next.delete("view");
+    setRouteSearch(next);
+  };
+
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("submissionId", submission.id);
     next.set("memberName", submission.memberName || "Member");
     next.set("view", "answers");
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+    setRouteSearch(next);
   };
 
   const backToTable = () => {
@@ -113,8 +99,63 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
     next.delete("submissionId");
     next.delete("memberName");
     next.delete("view");
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    setRouteSearch(next);
+  };
+
+  const handleApproveAssignment = async (target: SurveyAssignmentTargetRow) => {
+    if (!target.assignmentId) return;
+    try {
+      const result = await approveAssignmentMutation.mutateAsync(target.assignmentId);
+      const refreshTasks: Array<Promise<unknown>> = [assignmentTargetsQuery.refetch()];
+      if (selectedAssignmentId && selectedAssignmentId === target.assignmentId) {
+        refreshTasks.push(submissionsQuery.refetch());
+      }
+      await Promise.all(refreshTasks);
+      sileo.success({
+        title: "Assignment approved",
+        description: result.message || `${target.name} assignment has been approved.`,
+      });
+    } catch (error) {
+      sileo.error({
+        title: "Failed to approve assignment",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
+
+  const openRejectDialog = (target: SurveyAssignmentTargetRow) => {
+    setRejectDialogTarget(target);
+    setRejectionReason(target.rejectionReason ?? "");
+  };
+
+  const closeRejectDialog = () => {
+    setRejectDialogTarget(null);
+    setRejectionReason("");
+  };
+
+  const handleRejectAssignment = async () => {
+    if (!rejectDialogTarget?.assignmentId) return;
+    try {
+      const result = await rejectAssignmentMutation.mutateAsync({
+        assignmentId: rejectDialogTarget.assignmentId,
+        payload: { rejectionReason: rejectionReason.trim() || undefined },
+      });
+      const refreshTasks: Array<Promise<unknown>> = [assignmentTargetsQuery.refetch()];
+      if (selectedAssignmentId && selectedAssignmentId === rejectDialogTarget.assignmentId) {
+        refreshTasks.push(submissionsQuery.refetch());
+      }
+      await Promise.all(refreshTasks);
+      sileo.success({
+        title: "Assignment rejected",
+        description: result.message || `${rejectDialogTarget.name} assignment has been rejected.`,
+      });
+      closeRejectDialog();
+    } catch (error) {
+      sileo.error({
+        title: "Failed to reject assignment",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
   };
 
   return (
@@ -127,127 +168,71 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
       </div>
 
       {selectedSubmissionId ? (
-        detailQuery.isLoading || surveyDetailQuery.isLoading ? (
-          <Card className="border-primary/10">
-            <CardHeader className="pb-3">
-              <CardTitle>
-                <div className="flex items-center gap-2 text-base text-muted-foreground">
-                  <RefreshCcwDotIcon className="size-4 animate-spin" />
-                  Loading submission details...
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-36 w-full rounded-lg" />
-              <Skeleton className="h-36 w-full rounded-lg" />
-            </CardContent>
-          </Card>
-        ) : detailQuery.isError ? (
-          <div className="space-y-3 rounded-lg border border-primary/10 px-4 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              {detailQuery.error instanceof Error
-                ? detailQuery.error.message
-                : "Failed to load submission details."}
-            </p>
-            <div className="flex items-center justify-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => detailQuery.refetch()}>
-                Retry
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={backToTable}>
-                Back to submissions table
-              </Button>
-            </div>
-          </div>
-        ) : !selectedSubmission ? (
-          <div className="space-y-3 rounded-lg border border-primary/10 px-4 py-8 text-center">
-            <p className="text-sm text-muted-foreground">Submission not found.</p>
-            <Button type="button" variant="outline" size="sm" onClick={backToTable}>
-              Back to submissions table
-            </Button>
-          </div>
-        ) : (
-          <SurveySubmissionAnswerWorkspace
-            key={selectedSubmission.id}
-            submission={selectedSubmission}
-            questionTemplates={questionTemplates}
-            onBackToTable={backToTable}
-            onSubmissionUpdated={async () => {
-              await Promise.all([
-                detailQuery.refetch(),
-                submissionsQuery.refetch(),
-              ]);
-            }}
-          />
-        )
+        <SubmissionWorkspacePanel
+          selectedSubmissionId={selectedSubmissionId}
+          loading={detailQuery.isLoading || surveyDetailQuery.isLoading}
+          isError={detailQuery.isError}
+          errorMessage={detailQuery.error instanceof Error ? detailQuery.error.message : undefined}
+          selectedSubmission={selectedSubmission}
+          questionTemplates={questionTemplates}
+          onRetry={() => detailQuery.refetch()}
+          onBackToTable={backToTable}
+          onSubmissionUpdated={async () => {
+            await Promise.all([detailQuery.refetch(), submissionsQuery.refetch()]);
+          }}
+        />
       ) : (
-        <Card className="border-primary/10">
-          <CardHeader className="pb-3">
-            <CardTitle>Submissions for {surveyTitle}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <TableShell
-              headers={["Member", "Status", "Progress", "Submitted", "Actions"]}
-              loading={submissionsQuery.isLoading}
-              loadingColumnCount={5}
-              isError={submissionsQuery.isError}
-              errorMessage={
-                submissionsQuery.error instanceof Error
-                  ? submissionsQuery.error.message
-                  : "Failed to load submissions."
-              }
-              onRetry={() => submissionsQuery.refetch()}
-              emptyState={<EmptyStateRow colSpan={5} message="No submissions yet for this survey." />}
-            >
-              {submissions.map((submission) => {
-                const progress =
-                  submission.totalQuestions > 0
-                    ? Math.round((submission.answeredQuestions / submission.totalQuestions) * 100)
-                    : 0;
-                return (
-                  <TableRow key={submission.id}>
-                    <TableCell>
-                      <p className="truncate text-sm font-medium">
-                        {submission.memberName || "Unknown member"}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-sm"><SubmissionStatusBadge status={submission.submissionStatus} /></TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">
-                          {submission.answeredQuestions}/{submission.totalQuestions} answered
-                        </p>
-                        <div className="h-1.5 w-full rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full bg-primary"
-                            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                          />
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDateTime(submission.submittedAt)}
-                    </TableCell>
-                    <TableCell className={tableActionsCellClass}>
-                      <div className={tableRowActionsClass}>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => openAnswerWorkspace(submission)}
-                        >
-                          View answers
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableShell>
-          </CardContent>
-        </Card>
+        <>
+          <AssignedTargetsTableCard
+            surveyTitle={surveyTitle}
+            targets={assignedTargets}
+            loading={assignmentTargetsQuery.isLoading}
+            isError={assignmentTargetsQuery.isError}
+            errorMessage={
+              assignmentTargetsQuery.error instanceof Error
+                ? assignmentTargetsQuery.error.message
+                : "Failed to load survey assignment targets."
+            }
+            onRetry={() => assignmentTargetsQuery.refetch()}
+            onChooseAssignment={chooseAssignment}
+            onApproveAssignment={(target) => void handleApproveAssignment(target)}
+            onRejectAssignment={openRejectDialog}
+            approvingAssignmentId={
+              approveAssignmentMutation.isPending ? approveAssignmentMutation.variables : undefined
+            }
+            rejectingAssignmentId={
+              rejectAssignmentMutation.isPending
+                ? rejectAssignmentMutation.variables?.assignmentId
+                : undefined
+            }
+          />
+
+          <MemberSubmissionsTableCard
+            selectedAssignmentId={selectedAssignmentId}
+            selectedAssignmentName={selectedAssignmentName}
+            submissions={submissions}
+            loading={submissionsQuery.isLoading}
+            isError={submissionsQuery.isError}
+            errorMessage={
+              submissionsQuery.error instanceof Error
+                ? submissionsQuery.error.message
+                : "Failed to load submissions."
+            }
+            onRetry={() => submissionsQuery.refetch()}
+            onViewAnswers={openAnswerWorkspace}
+          />
+        </>
       )}
+
+      <RejectAssignmentDialog
+        open={Boolean(rejectDialogTarget)}
+        targetName={rejectDialogTarget?.name || ""}
+        value={rejectionReason}
+        submitting={rejectAssignmentMutation.isPending}
+        onChange={setRejectionReason}
+        onClose={closeRejectDialog}
+        onSubmit={() => void handleRejectAssignment()}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  approveSurveyAssignment,
   assignSurveyTargets,
   createQuestions,
   createSurvey,
@@ -13,9 +14,11 @@ import {
   getSurveyAssignmentTargets,
   getSurveyById,
   getSurveySubmissionById,
+  getSurveySubmissionsByAssignmentId,
   getSurveySubmissionsBySurveyId,
   getSurveys,
   publishSurvey,
+  rejectSurveyAssignment,
   reorderQuestions,
   reorderSurveySections,
   updateQuestion,
@@ -27,6 +30,7 @@ import {
   type SurveysListQuery,
   type CreateSectionPayload,
   type UpsertQuestionPayload,
+  type RejectSurveyAssignmentPayload,
   type UpsertSubmissionAnswerPayload,
   type UpdateSurveyPayload,
 } from "@/lib/api/surveys";
@@ -56,6 +60,18 @@ export function useSurveySubmissionsBySurveyQuery(
   return useQuery({
     queryKey: ["survey", surveyId, "submissions"],
     queryFn: () => getSurveySubmissionsBySurveyId(surveyId!),
+    enabled,
+  });
+}
+
+export function useSurveySubmissionsByAssignmentQuery(
+  assignmentId: string | null,
+  options?: { enabled?: boolean }
+) {
+  const enabled = (options?.enabled ?? true) && !!assignmentId;
+  return useQuery({
+    queryKey: ["survey-assignment", assignmentId, "submissions"],
+    queryFn: () => getSurveySubmissionsByAssignmentId(assignmentId!),
     enabled,
   });
 }
@@ -119,6 +135,36 @@ export function useSubmitSurveySubmissionMutation() {
     onSuccess: (_result, submissionId) => {
       queryClient.invalidateQueries({
         queryKey: ["survey-submission", submissionId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
+  });
+}
+
+export function useApproveSurveyAssignmentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (assignmentId: string) => approveSurveyAssignment(assignmentId),
+    onSuccess: (_result, assignmentId) => {
+      queryClient.invalidateQueries({ queryKey: ["survey-assignment", assignmentId, "submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
+  });
+}
+
+export function useRejectSurveyAssignmentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      assignmentId,
+      payload,
+    }: {
+      assignmentId: string;
+      payload: RejectSurveyAssignmentPayload;
+    }) => rejectSurveyAssignment(assignmentId, payload),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey-assignment", variables.assignmentId, "submissions"],
       });
       queryClient.invalidateQueries({ queryKey: ["survey"] });
     },

@@ -281,14 +281,16 @@ export function MemberEditDialog({
           </div>
           <DialogFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
             <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={approveMutation.isPending || rejectMutation.isPending || isSubmitting}
-                onClick={() => void handleApprove()}
-              >
-                {approveMutation.isPending ? "Approving..." : "Approve"}
-              </Button>
+              {!isApproved ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={approveMutation.isPending || rejectMutation.isPending || isSubmitting}
+                  onClick={() => void handleApprove()}
+                >
+                  {approveMutation.isPending ? "Approving..." : "Approve"}
+                </Button>
+              ) : null}
               {!isApproved ? (
                 <Button
                   type="button"
