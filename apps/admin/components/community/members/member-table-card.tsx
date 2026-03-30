@@ -13,6 +13,7 @@ import {
   tableRowActionsClass,
 } from "@/components/base-data/shared";
 import { StatusBadge } from "@/components/community/community-card";
+import { Badge } from "@/components/ui/badge";
 import type { Member } from "@/lib/api/members";
 import type { EntityStatus } from "@/lib/api/community";
 
@@ -74,13 +75,13 @@ export function MemberTableCard({
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Phone", "Self-help group", "Gender", "Status", "Actions"]}
+          headers={["Name", "Phone", "Self-help group", "Gender", "Status", "Approval", "Actions"]}
           loading={isLoading}
-          loadingColumnCount={6}
+          loadingColumnCount={7}
           isError={isError}
           errorMessage={errorMessage}
           onRetry={onRetry}
-          emptyState={<EmptyStateRow colSpan={6} message={emptyMessage} />}
+          emptyState={<EmptyStateRow colSpan={7} message={emptyMessage} />}
         >
           {members?.map((m) => (
             <TableRow key={m.id}>
@@ -92,6 +93,9 @@ export function MemberTableCard({
               <TableCell>{m.gender}</TableCell>
               <TableCell>
                 <StatusBadge status={m.status as EntityStatus} />
+              </TableCell>
+              <TableCell>
+                <ApprovalStatusBadge approvalStatus={m.approvalStatus} />
               </TableCell>
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
@@ -121,5 +125,28 @@ export function MemberTableCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ApprovalStatusBadge({ approvalStatus }: { approvalStatus?: string }) {
+  const normalized = (approvalStatus ?? "PENDING").toUpperCase();
+  if (normalized === "APPROVED") {
+    return (
+      <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
+        Approved
+      </Badge>
+    );
+  }
+  if (normalized === "REJECTED") {
+    return (
+      <Badge className="border-transparent bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+        Rejected
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+      Pending
+    </Badge>
   );
 }

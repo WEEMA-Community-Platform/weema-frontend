@@ -3,12 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  approveMember,
   createMember,
   deleteMember,
   getMemberById,
   getMembers,
+  rejectMember,
   updateMember,
   uploadMemberNationalId,
+  type RejectMemberPayload,
   type MemberListQuery,
   type MemberPatchPayload,
 } from "@/lib/api/members";
@@ -72,6 +75,29 @@ export function useUploadMemberNationalIdMutation() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["member", variables.memberId] });
+    },
+  });
+}
+
+export function useApproveMemberMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => approveMember(id),
+    onSuccess: (_data, memberId) => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["member", memberId] });
+    },
+  });
+}
+
+export function useRejectMemberMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: RejectMemberPayload }) =>
+      rejectMember(id, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["member", variables.id] });
     },
   });
 }

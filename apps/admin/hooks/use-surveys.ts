@@ -12,16 +12,22 @@ import {
   deleteSurvey,
   getSurveyAssignmentTargets,
   getSurveyById,
+  getSurveySubmissionById,
+  getSurveySubmissionsBySurveyId,
   getSurveys,
   publishSurvey,
   reorderQuestions,
   reorderSurveySections,
   updateQuestion,
+  saveSurveySubmissionAnswer,
+  submitSurveySubmission,
+  updateSurveySubmissionAnswer,
   updateSurvey,
   updateSurveySection,
   type SurveysListQuery,
   type CreateSectionPayload,
   type UpsertQuestionPayload,
+  type UpsertSubmissionAnswerPayload,
   type UpdateSurveyPayload,
 } from "@/lib/api/surveys";
 import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
@@ -39,6 +45,83 @@ export function useSurveyDetailQuery(id: string | null, options?: { enabled?: bo
     queryKey: ["survey", id],
     queryFn: () => getSurveyById(id!),
     enabled,
+  });
+}
+
+export function useSurveySubmissionsBySurveyQuery(
+  surveyId: string | null,
+  options?: { enabled?: boolean }
+) {
+  const enabled = (options?.enabled ?? true) && !!surveyId;
+  return useQuery({
+    queryKey: ["survey", surveyId, "submissions"],
+    queryFn: () => getSurveySubmissionsBySurveyId(surveyId!),
+    enabled,
+  });
+}
+
+export function useSurveySubmissionDetailQuery(
+  submissionId: string | null,
+  options?: { enabled?: boolean }
+) {
+  const enabled = (options?.enabled ?? true) && !!submissionId;
+  return useQuery({
+    queryKey: ["survey-submission", submissionId],
+    queryFn: () => getSurveySubmissionById(submissionId!),
+    enabled,
+  });
+}
+
+export function useSaveSurveySubmissionAnswerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      submissionId,
+      payload,
+    }: {
+      submissionId: string;
+      payload: UpsertSubmissionAnswerPayload;
+    }) => saveSurveySubmissionAnswer(submissionId, payload),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey-submission", variables.submissionId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
+  });
+}
+
+export function useUpdateSurveySubmissionAnswerMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      submissionId,
+      answerId,
+      payload,
+    }: {
+      submissionId: string;
+      answerId: string;
+      payload: UpsertSubmissionAnswerPayload;
+    }) => updateSurveySubmissionAnswer(submissionId, answerId, payload),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey-submission", variables.submissionId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
+  });
+}
+
+export function useSubmitSurveySubmissionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (submissionId: string) => submitSurveySubmission(submissionId),
+    onSuccess: (_result, submissionId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey-submission", submissionId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
   });
 }
 

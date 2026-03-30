@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ClipboardListIcon,
   CircleCheckBigIcon,
   LayersIcon,
   Link2Icon,
@@ -215,7 +216,7 @@ export function SurveysPage() {
               <>
                 {statusUpper === "DRAFT" ? (
                   <DropdownMenuItem
-                    className="text-[12px]"
+                    className="text-[12px] whitespace-nowrap"
                     onClick={() =>
                       setPendingPublishSurvey({
                         id: survey.id,
@@ -228,7 +229,7 @@ export function SurveysPage() {
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuItem
-                  className="text-[12px]"
+                  className="text-[12px] whitespace-nowrap"
                   onClick={() =>
                     openAssignTargets({
                       id: survey.id,
@@ -239,6 +240,19 @@ export function SurveysPage() {
                 >
                   <Link2Icon className="size-4" />
                   Assign targets
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-[12px] whitespace-nowrap"
+                  onClick={() =>
+                    router.push(
+                      `/survey/${survey.id}/submissions?surveyTitle=${encodeURIComponent(
+                        survey.title || "Untitled survey"
+                      )}`
+                    )
+                  }
+                >
+                  <ClipboardListIcon className="size-4" />
+                  View submission
                 </DropdownMenuItem>
               </>
             );

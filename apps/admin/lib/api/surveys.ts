@@ -41,6 +41,63 @@ export type SurveyDetailResponse = BaseApiResponse & {
   survey: BackendSurveyRecord;
 };
 
+export type SubmissionStatus = "IN_PROGRESS" | "SUBMITTED" | string;
+
+export type SubmissionSelectedOption = {
+  optionId: string;
+  optionText: string;
+};
+
+export type SurveySubmissionAnswer = {
+  id: string;
+  questionId: string;
+  questionText: string;
+  questionType: string;
+  answerText: string | null;
+  answerNumber: number | null;
+  answerDate: string | null;
+  answerBoolean: boolean | null;
+  answerJson: unknown;
+  selectedOptions: SubmissionSelectedOption[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SurveySubmissionRecord = {
+  id: string;
+  surveyAssignmentId: string;
+  surveyId: string;
+  surveyTitle: string;
+  memberId: string;
+  memberName: string;
+  submissionStatus: SubmissionStatus;
+  startedAt: string | null;
+  submittedAt: string | null;
+  totalQuestions: number;
+  answeredQuestions: number;
+  answers: SurveySubmissionAnswer[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SurveySubmissionsBySurveyResponse = BaseApiResponse & {
+  submissions: SurveySubmissionRecord[];
+};
+
+export type SurveySubmissionDetailResponse = BaseApiResponse & {
+  submission: SurveySubmissionRecord | null;
+};
+
+export type UpsertSubmissionAnswerPayload = {
+  questionId: string;
+  answerText?: string;
+  answerNumber?: number;
+  answerDate?: string;
+  answerBoolean?: boolean;
+  answerJson?: unknown;
+  selectedOptionIds?: string[];
+};
+
 export type UpdateSurveyPayload = {
   title: string;
   description: string;
@@ -220,6 +277,80 @@ export async function assignSurveyTargets(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ targetIds }),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function getSurveySubmissionsBySurveyId(
+  surveyId: string
+): Promise<SurveySubmissionsBySurveyResponse> {
+  const response = await fetch(`/api/survey-submissions/survey/${surveyId}`, {
+    cache: "no-store",
+  });
+  const payload = await parseResponse<
+    SurveySubmissionsBySurveyResponse | (BaseApiResponse & { data?: SurveySubmissionRecord[] })
+  >(response);
+  if ("submissions" in payload && Array.isArray(payload.submissions)) {
+    return payload as SurveySubmissionsBySurveyResponse;
+  }
+
+  return {
+    message: payload.message,
+    statusCode: payload.statusCode,
+    submissions: Array.isArray((payload as { data?: unknown[] }).data)
+      ? ((payload as { data: SurveySubmissionRecord[] }).data ?? [])
+      : [],
+  };
+}
+
+export async function getSurveySubmissionById(
+  submissionId: string
+): Promise<SurveySubmissionDetailResponse> {
+  const response = await fetch(`/api/survey-submissions/${submissionId}`, {
+    cache: "no-store",
+  });
+  const payload = await parseResponse<
+    SurveySubmissionDetailResponse | (BaseApiResponse & { data?: SurveySubmissionRecord | null })
+  >(response);
+  if ("submission" in payload) {
+    return payload as SurveySubmissionDetailResponse;
+  }
+
+  return {
+    message: payload.message,
+    statusCode: payload.statusCode,
+    submission: (payload as { data?: SurveySubmissionRecord | null }).data ?? null,
+  };
+}
+
+export async function saveSurveySubmissionAnswer(
+  submissionId: string,
+  payload: UpsertSubmissionAnswerPayload
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/${submissionId}/answers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function updateSurveySubmissionAnswer(
+  submissionId: string,
+  answerId: string,
+  payload: UpsertSubmissionAnswerPayload
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/${submissionId}/answers/${answerId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function submitSurveySubmission(submissionId: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/${submissionId}/submit`, {
+    method: "POST",
   });
   return parseResponse<BaseApiResponse>(response);
 }

@@ -65,4 +65,9 @@ export const PATH_META: Record<string, { group: string; label: string; descripti
     label: "Surveys",
     description: "Browse, create, and manage surveys.",
   },
+  "/survey/submissions": {
+    group: "Survey",
+    label: "Survey submissions",
+    description: "Review submitted answers and submission progress by survey.",
+  },
 };

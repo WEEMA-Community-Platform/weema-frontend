@@ -77,14 +77,14 @@ export function CommunityCard({
               </Button>
             }
           />
-          <DropdownMenuContent align="center" side="bottom" >
+          <DropdownMenuContent align="end" side="bottom" className="min-w-48">
             {hasPrimaryActions ? (
               <DropdownMenuGroup >
                 {showViewAction ? (
-                  <DropdownMenuItem className="text-[12px]" onClick={onView}><EyeIcon />{viewActionLabel}</DropdownMenuItem>
+                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><EyeIcon />{viewActionLabel}</DropdownMenuItem>
                 ) : null}
                 {showEditAction ? (
-                  <DropdownMenuItem className="text-[12px]" onClick={onEdit}><PencilIcon />{editActionLabel}</DropdownMenuItem>
+                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{editActionLabel}</DropdownMenuItem>
                 ) : null}
               </DropdownMenuGroup>
             ) : null}
@@ -96,7 +96,7 @@ export function CommunityCard({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="text-[12px]" variant="destructive" onClick={onDelete}><Trash2Icon />Delete</DropdownMenuItem>
+              <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />Delete</DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

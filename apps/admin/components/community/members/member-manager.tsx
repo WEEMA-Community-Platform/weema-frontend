@@ -3,9 +3,11 @@
 import { useMemo, useState } from "react";
 
 import {
+  useApproveMemberMutation,
   useCreateMemberMutation,
   useDeleteMemberMutation,
   useMembersQuery,
+  useRejectMemberMutation,
   useUpdateMemberMutation,
   useUploadMemberNationalIdMutation,
 } from "@/hooks/use-members";
@@ -28,6 +30,7 @@ export function MemberManager() {
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedStatus, setAppliedStatus] = useState("");
+  const [appliedApprovalStatus, setAppliedApprovalStatus] = useState("");
   const [appliedGender, setAppliedGender] = useState("");
   const [appliedMarital, setAppliedMarital] = useState("");
   const [appliedShgId, setAppliedShgId] = useState("");
@@ -49,6 +52,7 @@ export function MemberManager() {
     pageSize: 10,
     searchQuery,
     status: appliedStatus || undefined,
+    approvalStatus: appliedApprovalStatus || undefined,
     gender: appliedGender || undefined,
     maritalStatus: appliedMarital || undefined,
     shgId: appliedShgId || undefined,
@@ -73,11 +77,14 @@ export function MemberManager() {
 
   const createMutation = useCreateMemberMutation();
   const updateMutation = useUpdateMemberMutation();
+  const approveMutation = useApproveMemberMutation();
+  const rejectMutation = useRejectMemberMutation();
   const deleteMutation = useDeleteMemberMutation();
   const uploadIdMutation = useUploadMemberNationalIdMutation();
 
   const hasActiveFilters = Boolean(
     appliedStatus ||
+      appliedApprovalStatus ||
       appliedGender ||
       appliedMarital ||
       appliedShgId ||
@@ -91,6 +98,7 @@ export function MemberManager() {
   const appliedFilters: MemberAppliedFilters = useMemo(
     () => ({
       status: appliedStatus,
+      approvalStatus: appliedApprovalStatus,
       gender: appliedGender,
       marital: appliedMarital,
       shgId: appliedShgId,
@@ -102,6 +110,7 @@ export function MemberManager() {
     }),
     [
       appliedStatus,
+      appliedApprovalStatus,
       appliedGender,
       appliedMarital,
       appliedShgId,
@@ -132,6 +141,7 @@ export function MemberManager() {
 
   const applyMemberFilters = (f: MemberAppliedFilters) => {
     setAppliedStatus(f.status);
+    setAppliedApprovalStatus(f.approvalStatus);
     setAppliedGender(f.gender);
     setAppliedMarital(f.marital);
     setAppliedShgId(f.shgId);
@@ -165,6 +175,8 @@ export function MemberManager() {
         religionOptions={religionOptions}
         shgOptions={shgOptions}
         updateMutation={updateMutation}
+        approveMutation={approveMutation}
+        rejectMutation={rejectMutation}
         isSubmitting={isSubmittingEdit}
       />
 

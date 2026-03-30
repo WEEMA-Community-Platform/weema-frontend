@@ -16,7 +16,18 @@ export function AppHeader() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const section = searchParams.get("section") ?? "region"
-  const meta = PATH_META[pathname] ?? SECTION_META[section] ?? SECTION_META.region
+  const surveyTitle = searchParams.get("surveyTitle")
+  const isSurveySubmissionsPath = pathname.startsWith("/survey/") && pathname.endsWith("/submissions")
+  const inAnswerWorkspace = searchParams.get("view") === "answers"
+  const memberName = searchParams.get("memberName")
+  const meta = isSurveySubmissionsPath
+    ? {
+        ...PATH_META["/survey/submissions"],
+        label: surveyTitle
+          ? `${PATH_META["/survey/submissions"].label} - ${surveyTitle}`
+          : PATH_META["/survey/submissions"].label,
+      }
+    : PATH_META[pathname] ?? SECTION_META[section] ?? SECTION_META.region
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-primary/10 bg-background/80 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -35,6 +46,14 @@ export function AppHeader() {
             <BreadcrumbItem>
               <BreadcrumbPage>{meta.label}</BreadcrumbPage>
             </BreadcrumbItem>
+            {isSurveySubmissionsPath && inAnswerWorkspace ? (
+              <>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbPage>{memberName ? `${memberName} answers` : "Answer workspace"}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            ) : null}
           </BreadcrumbList>
         </Breadcrumb>
       </div>

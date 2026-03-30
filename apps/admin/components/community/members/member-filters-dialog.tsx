@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/base-data/select-field";
 import { inputClass } from "@/components/base-data/shared";
 import {
+  APPROVAL_STATUS_OPTIONS,
   GENDER_OPTIONS,
   MARITAL_OPTIONS,
   STATUS_OPTIONS,
@@ -23,6 +24,7 @@ import {
 
 export type MemberAppliedFilters = {
   status: string;
+  approvalStatus: string;
   gender: string;
   marital: string;
   shgId: string;
@@ -35,6 +37,7 @@ export type MemberAppliedFilters = {
 
 const emptyFilters: MemberAppliedFilters = {
   status: "",
+  approvalStatus: "",
   gender: "",
   marital: "",
   shgId: "",
@@ -97,6 +100,16 @@ export function MemberFiltersDialog({
                 placeholder="All statuses"
                 options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
                 onValueChange={(v) => setDraft((d) => ({ ...d, status: v }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="member-filter-approval-status">Approval status</Label>
+              <SelectField
+                id="member-filter-approval-status"
+                value={draft.approvalStatus}
+                placeholder="All approval statuses"
+                options={APPROVAL_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                onValueChange={(v) => setDraft((d) => ({ ...d, approvalStatus: v }))}
               />
             </div>
             <div className="space-y-1.5">

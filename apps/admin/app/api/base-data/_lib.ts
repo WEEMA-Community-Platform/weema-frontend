@@ -30,7 +30,7 @@ function logMultipartProxy(
 
 type ForwardRequestArgs = {
   path: string;
-  method: "GET" | "POST" | "PATCH" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
 };
 

@@ -13,10 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
+import type { RejectMemberPayload } from "@/lib/api/members";
 
 type UpdateMutation = UseMutationResult<
   BaseApiResponse,
@@ -47,6 +49,13 @@ type MemberEditDialogProps = {
   religionOptions: { value: string; label: string }[];
   shgOptions: { value: string; label: string }[];
   updateMutation: UpdateMutation;
+  approveMutation: UseMutationResult<BaseApiResponse, Error, string, unknown>;
+  rejectMutation: UseMutationResult<
+    BaseApiResponse,
+    Error,
+    { id: string; payload: RejectMemberPayload },
+    unknown
+  >;
   isSubmitting: boolean;
   /** Clears view-only state so the view dialog cannot reopen when edit closes. */
   onDismiss?: () => void;
@@ -58,6 +67,8 @@ export function MemberEditDialog({
   religionOptions,
   shgOptions,
   updateMutation,
+  approveMutation,
+  rejectMutation,
   isSubmitting,
   onDismiss,
 }: MemberEditDialogProps) {
@@ -71,9 +82,11 @@ export function MemberEditDialog({
   const [status, setStatus] = useState<EntityStatus>("ACTIVE");
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
   const [editFormSynced, setEditFormSynced] = useState(false);
 
   const open = !!member;
+  const isApproved = (member?.approvalStatus ?? "").toUpperCase() === "APPROVED";
 
   const formSnapshot = useMemo(
     () => ({
@@ -119,6 +132,7 @@ export function MemberEditDialog({
       setStatus((member.status as EntityStatus) || "ACTIVE");
       setSelfHelpGroupId(member.selfHelpGroupId);
       setFan(member.fan ?? "");
+      setRejectionReason(member.rejectionReason ?? "");
       setEditFormSynced(true);
     } else {
       setEditFormSynced(false);
@@ -176,6 +190,45 @@ export function MemberEditDialog({
     }
   };
 
+  const handleApprove = async () => {
+    if (!member) return;
+    try {
+      const result = await approveMutation.mutateAsync(member.id);
+      sileo.success({
+        title: "Member approved",
+        description: result.message || "Member is now approved.",
+      });
+      dismissAfterExit();
+    } catch (error) {
+      sileo.error({
+        title: "Could not approve member",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
+
+  const handleReject = async () => {
+    if (!member) return;
+    try {
+      const result = await rejectMutation.mutateAsync({
+        id: member.id,
+        payload: {
+          rejectionReason: rejectionReason.trim() || undefined,
+        },
+      });
+      sileo.success({
+        title: "Member rejected",
+        description: result.message || "Member is now rejected.",
+      });
+      dismissAfterExit();
+    } catch (error) {
+      sileo.error({
+        title: "Could not reject member",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,42rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
@@ -211,8 +264,42 @@ export function MemberEditDialog({
               religionOptions={religionOptions}
               shgOptions={shgOptions}
             />
+            {!isApproved ? (
+              <div className="space-y-1.5">
+                <label htmlFor="member-rejection-reason" className="text-sm font-medium">
+                  Rejection reason (optional)
+                </label>
+                <textarea
+                  id="member-rejection-reason"
+                  value={rejectionReason}
+                  onChange={(event) => setRejectionReason(event.target.value)}
+                  placeholder="Provide a reason if this member is rejected"
+                  className="min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-input/30"
+                />
+              </div>
+            ) : null}
           </div>
-          <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
+          <DialogFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={approveMutation.isPending || rejectMutation.isPending || isSubmitting}
+                onClick={() => void handleApprove()}
+              >
+                {approveMutation.isPending ? "Approving..." : "Approve"}
+              </Button>
+              {!isApproved ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={approveMutation.isPending || rejectMutation.isPending || isSubmitting}
+                  onClick={() => void handleReject()}
+                >
+                  {rejectMutation.isPending ? "Rejecting..." : "Reject"}
+                </Button>
+              ) : null}
+            </div>
             <SaveButton
               isPending={isSubmitting}
               idleLabel="Save changes"

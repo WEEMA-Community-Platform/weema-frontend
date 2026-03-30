@@ -15,3 +15,9 @@ export const STATUS_OPTIONS: { value: EntityStatus; label: string }[] = [
   { value: "ACTIVE", label: "Active" },
   { value: "INACTIVE", label: "Inactive" },
 ];
+
+export const APPROVAL_STATUS_OPTIONS = [
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+] as const;
