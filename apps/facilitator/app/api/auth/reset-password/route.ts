@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify(body),
       cache: "no-store",
-    }
+    },
+    { email: body.email }
   );
 
   const payload = await safeJson<{ message?: string; statusCode?: string }>(

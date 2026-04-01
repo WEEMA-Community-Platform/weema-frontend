@@ -1,4 +1,4 @@
-import type { ApiEnvelope } from "@/lib/api/types";
+import type { BaseApiResponse } from "@/lib/api/base-data";
 
 export type CurrentUser = {
   id: string;
@@ -11,7 +11,7 @@ export type CurrentUser = {
   active: boolean;
 };
 
-export type CurrentUserResponse = ApiEnvelope & {
+export type CurrentUserResponse = BaseApiResponse & {
   user: CurrentUser;
 };
 
@@ -35,7 +35,7 @@ export type EditProfilePayload = {
 
 export async function editMyProfile(
   payload: EditProfilePayload
-): Promise<ApiEnvelope> {
+): Promise<BaseApiResponse> {
   const response = await fetch("/api/user/edit-profile", {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Accept: "*/*" },
@@ -43,7 +43,7 @@ export async function editMyProfile(
     cache: "no-store",
   });
   const data = (await response.json().catch(() => null)) as
-    | (ApiEnvelope & { message?: string })
+    | (BaseApiResponse & { message?: string })
     | null;
   if (!response.ok || !data) {
     throw new Error(data?.message ?? "Failed to update profile");
@@ -58,7 +58,7 @@ export type ChangePasswordPayload = {
 
 export async function changeMyPassword(
   payload: ChangePasswordPayload
-): Promise<ApiEnvelope> {
+): Promise<BaseApiResponse> {
   const response = await fetch("/api/user/change-password", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "*/*" },
@@ -66,7 +66,7 @@ export async function changeMyPassword(
     cache: "no-store",
   });
   const data = (await response.json().catch(() => null)) as
-    | (ApiEnvelope & { message?: string })
+    | (BaseApiResponse & { message?: string })
     | null;
   if (!response.ok || !data) {
     throw new Error(data?.message ?? "Failed to change password");

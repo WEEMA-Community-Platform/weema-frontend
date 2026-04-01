@@ -6,6 +6,11 @@ import {
   isAllowedAdminRole,
 } from "@/lib/auth";
 
+/**
+ * Route protection: requires a valid-looking access cookie + admin role for page navigations.
+ * Expired access tokens are refreshed automatically on `/api/*` proxy routes (`forwardAuthorizedRequest`);
+ * if refresh also fails, cookies are cleared and clients redirect to `/login` (see `app/providers.tsx`).
+ */
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublicAsset = /\.[a-zA-Z0-9]+$/.test(path);

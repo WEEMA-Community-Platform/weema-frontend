@@ -15,7 +15,8 @@ export async function PATCH(_: Request, { params }: RouteParams) {
       method: "PATCH",
       headers: { Accept: "*/*" },
       cache: "no-store",
-    }
+    },
+    { email }
   );
 
   const payload = await safeJson<{ message?: string; statusCode?: string }>(

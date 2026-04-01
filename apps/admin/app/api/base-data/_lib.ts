@@ -7,12 +7,25 @@ import {
   isAuthProxyDebugEnabled,
   safeJson,
 } from "@/app/api/auth/_lib";
+import {
+  tryRefreshSessionCookies,
+  unauthorizedJsonResponse,
+} from "@/app/api/auth/refresh-session";
 
 function getMultipartProxyTimeoutMs() {
   const raw = process.env.API_PROXY_UPLOAD_TIMEOUT_MS;
   if (raw === undefined || raw === "") return 120_000;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : 120_000;
+}
+
+/** FormData body streams are single-use; clone before first fetch so we can retry after token refresh. */
+function cloneFormData(formData: FormData): FormData {
+  const next = new FormData();
+  for (const [key, value] of formData.entries()) {
+    next.append(key, value);
+  }
+  return next;
 }
 
 function logMultipartProxy(
@@ -39,21 +52,40 @@ export async function forwardAuthorizedRequest({
   method,
   body,
 }: ForwardRequestArgs) {
-  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
+  const url = buildBackendUrl(path);
+
+  const accessToken =
+    (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value ??
+    (await tryRefreshSessionCookies());
+
   if (!accessToken) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return unauthorizedJsonResponse();
   }
 
-  const backendResponse = await fetch(buildBackendUrl(path), {
-    method,
-    headers: {
-      Accept: "*/*",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    cache: "no-store",
-  });
+  const doFetch = (token: string) =>
+    fetch(url, {
+      method,
+      headers: {
+        Accept: "*/*",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    });
+
+  let backendResponse = await doFetch(accessToken);
+
+  if (backendResponse.status === 401) {
+    const refreshed = await tryRefreshSessionCookies();
+    if (refreshed) {
+      backendResponse = await doFetch(refreshed);
+    }
+  }
+
+  if (backendResponse.status === 401) {
+    return unauthorizedJsonResponse();
+  }
 
   const payload = await safeJson<unknown>(backendResponse);
   return NextResponse.json(payload, { status: backendResponse.status });
@@ -67,30 +99,45 @@ export async function forwardAuthorizedFormDataRequest({
   path: string;
   body: FormData;
 }) {
-  const accessToken = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
   const url = buildBackendUrl(path);
   const timeoutMs = getMultipartProxyTimeoutMs();
   const signal = AbortSignal.timeout(timeoutMs);
+
+  const accessToken =
+    (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value ??
+    (await tryRefreshSessionCookies());
+
+  if (!accessToken) {
+    return unauthorizedJsonResponse();
+  }
+
   const started = Date.now();
 
   logMultipartProxy("out", path, { url, timeoutMs });
 
-  let backendResponse: Response;
-  try {
-    backendResponse = await fetch(url, {
+  const bodyForRetry = cloneFormData(body);
+
+  const doFetch = (token: string, form: FormData) =>
+    fetch(url, {
       method: "POST",
       headers: {
         Accept: "*/*",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
       },
-      body,
+      body: form,
       cache: "no-store",
       signal,
     });
+
+  let backendResponse: Response;
+  try {
+    backendResponse = await doFetch(accessToken, body);
+    if (backendResponse.status === 401) {
+      const refreshed = await tryRefreshSessionCookies();
+      if (refreshed) {
+        backendResponse = await doFetch(refreshed, bodyForRetry);
+      }
+    }
   } catch (err) {
     const ms = Date.now() - started;
     const name = err instanceof Error ? err.name : "";
@@ -124,6 +171,10 @@ export async function forwardAuthorizedFormDataRequest({
     ok: backendResponse.ok,
     ms: Date.now() - started,
   });
+
+  if (backendResponse.status === 401) {
+    return unauthorizedJsonResponse();
+  }
 
   const payload = await safeJson<unknown>(backendResponse);
   return NextResponse.json(payload, { status: backendResponse.status });

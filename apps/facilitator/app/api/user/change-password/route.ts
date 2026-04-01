@@ -1,4 +1,4 @@
-import { forwardAuthorizedRequest } from "@/app/api/_lib/forward-proxy";
+import { forwardAuthorizedRequest } from "@/app/api/base-data/_lib";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);

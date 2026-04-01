@@ -16,7 +16,11 @@ export async function GET(_: Request, { params }: RouteParams) {
       method: "GET",
       headers: { Accept: "*/*" },
       cache: "no-store",
-    }
+    },
+    { email },
+    buildAuthBackendUrl(
+      `/verify-otp/${encodeURIComponent(email)}/[redacted]`
+    )
   );
 
   const payload = await safeJson<{ message?: string; statusCode?: string }>(

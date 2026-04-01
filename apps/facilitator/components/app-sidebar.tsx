@@ -1,49 +1,80 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useCurrentUser } from "@/hooks/use-user";
+import { useMemo } from "react"
+import {
+  Building2Icon,
+  ClipboardListIcon,
+  NetworkIcon,
+} from "lucide-react"
+import Link from "next/link"
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/community/shgs", label: "SHGs" },
-  { href: "/community/members", label: "Members" },
-  { href: "/surveys/assignments", label: "Assigned Surveys" },
-  { href: "/surveys/submissions", label: "Submissions" },
-  { href: "/profile", label: "Profile" },
-];
+import { NavMain } from "@/components/nav-main"
+import { NavUser } from "@/components/nav-user"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+} from "@/components/ui/sidebar"
+import { useCurrentUser } from "@/hooks/use-user"
 
-export function AppSidebar() {
-  const pathname = usePathname();
-  const { data } = useCurrentUser();
-  const user = data?.user;
+const baseNavMain = [
+  {
+    title: "Community",
+    url: "/?section=shg",
+    icon: <NetworkIcon />,
+    isActive: true,
+    items: [
+      { title: "Self-Help Groups", url: "/?section=shg" },
+      { title: "Members",          url: "/?section=member" },
+    ],
+  },
+  {
+    title: "Survey",
+    url: "/survey",
+    icon: <ClipboardListIcon />,
+    isActive: false,
+  },
+]
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: currentUserData } = useCurrentUser()
+  const navMain = useMemo(() => [...baseNavMain], [])
+
+  const user = currentUserData?.user
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "Loading..."
+  const displayEmail = user?.email ?? ""
+  const displayRole = user?.role?.replace("ROLE_", "").replace(/_/g, " ") ?? ""
 
   return (
-    <aside className="w-64 shrink-0 border-r border-black/10 bg-white/60 p-4">
-      <div className="mb-5 rounded-lg border border-black/10 p-3">
-        <p className="text-sm font-semibold">WEEMA Facilitator</p>
-        <p className="text-xs text-black/60">Field Operations</p>
-      </div>
-
-      <nav className="space-y-1">
-        {navItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`block rounded-md px-3 py-2 text-sm ${active ? "bg-orange-100 text-orange-900" : "hover:bg-black/5"}`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="mt-8 rounded-lg border border-black/10 p-3">
-        <p className="text-sm font-medium">{user ? `${user.firstName} ${user.lastName}` : "..."}</p>
-        <p className="text-xs text-black/60">{user?.email ?? "Loading user..."}</p>
-      </div>
-    </aside>
-  );
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <Link
+          href="/?section=shg"
+          className="flex items-center gap-2 rounded-md border border-primary/10 bg-card px-3 py-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0"
+        >
+          <div className="rounded-md bg-primary p-1.5 text-primary-foreground">
+            <Building2Icon className="size-4" />
+          </div>
+          <div className="group-data-[collapsible=icon]:hidden">
+            <p className="text-sm font-semibold">WEEMA Facilitator</p>
+            <p className="text-xs text-muted-foreground">Community Platform</p>
+          </div>
+        </Link>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={navMain} />
+      </SidebarContent>
+      <SidebarFooter>
+        <NavUser
+          user={{
+            name: displayName,
+            email: displayEmail,
+            role: displayRole,
+            avatar: "",
+          }}
+        />
+      </SidebarFooter>
+    </Sidebar>
+  )
 }

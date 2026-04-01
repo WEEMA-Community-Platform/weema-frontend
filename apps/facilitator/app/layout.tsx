@@ -11,7 +11,7 @@ const lato = Lato({
 
 export const metadata: Metadata = {
   title: "WEEMA Facilitator",
-  description: "WEEMA Facilitator Application",
+  description: "WEEMA Community Platform Facilitator Application",
 };
 
 export default function RootLayout({
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={lato.variable}>
-      <body>
+    <html lang="en" suppressHydrationWarning className={lato.variable}>
+      <body className="antialiased font-medium font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

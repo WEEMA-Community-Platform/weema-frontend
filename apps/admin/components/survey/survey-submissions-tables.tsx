@@ -30,7 +30,7 @@ export function formatSubmissionDateTime(value: string | null | undefined) {
 
 export function SubmissionStatusBadge({ status }: { status: string }) {
   const normalized = status.toUpperCase();
-  if (normalized === "FINISHED" || normalized === "SUBMITTED") {
+  if (normalized === "SUBMITTED") {
     return (
       <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
         Submitted
@@ -140,7 +140,7 @@ export function AssignedTargetsTableCard({
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-8 px-3 text-xs"
+            
                       onClick={() => onChooseAssignment(target)}
                       disabled={!target.assignmentId}
                     >
@@ -161,8 +161,8 @@ export function AssignedTargetsTableCard({
                     <Button
                       type="button"
                       size="sm"
-                      variant="outline"
-                      className="h-8 px-3 text-xs text-destructive hover:text-destructive"
+                      variant="destructive"
+                      // className="h-8 px-3"
                       onClick={() => onRejectAssignment(target)}
                       disabled={!target.assignmentId || isApproving || isRejecting}
                     >

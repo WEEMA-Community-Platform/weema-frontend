@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "pnpm --filter @weema/admin dev",
     "dev:admin": "pnpm --filter @weema/admin dev",
+    "dev:facilitator": "pnpm --filter @weema/facilitator dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"

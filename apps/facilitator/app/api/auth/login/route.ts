@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import type { LoginRequest, LoginResponse } from "@weema/auth";
-import { extractAuthErrorMessage, getRoleFromToken, normalizeRole } from "@weema/auth";
+import { extractAuthErrorMessage } from "@weema/auth";
+import { getRoleFromToken, normalizeRole } from "@weema/auth";
 
 import {
   ACCESS_TOKEN_COOKIE,
@@ -32,7 +33,8 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify(body),
       cache: "no-store",
-    }
+    },
+    { email: body.email }
   );
 
   const payload = await safeJson<LoginResponse & { message?: string }>(

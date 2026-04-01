@@ -18,6 +18,7 @@ export const ROLE_HOME_PATHS: Record<WeemaRole, string> = {
 };
 
 export const ADMIN_ALLOWED_ROLES: WeemaRole[] = ["admin"];
+export const FACILITATOR_ALLOWED_ROLES: WeemaRole[] = ["facilitator"];
 
 type JwtPayload = {
   role?: string;
