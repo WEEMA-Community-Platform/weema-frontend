@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Plus, SlidersHorizontal } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, Loader2, Plus, SlidersHorizontal } from "lucide-react";
 import { Children, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,10 @@ export function DataToolbar({
           onClick={onOpenFilters}
         >
           <SlidersHorizontal className="size-4" />
-          {hasActiveFilters ? "Filters applied" : "Filters"}
+          Filters
+          {hasActiveFilters && (
+            <span className="ml-0.5 size-1.5 rounded-full bg-primary" aria-label="Filters active" />
+          )}
         </Button>
       )}
       {onAdd && (
@@ -230,10 +233,13 @@ export function PaginationRow({
   return (
     <div className="mt-3 flex items-center justify-between border-t border-primary/10 pt-3 text-xs text-muted-foreground">
       <p>
-        Page {currentPage} of {totalPages} ({totalElements} total)
+        Page {currentPage} of {totalPages}
+        <span className="mx-1.5 opacity-40">·</span>
+        {totalElements} {totalElements === 1 ? "result" : "results"}
       </p>
-      <div className="flex gap-2">
-        <Button type="button" size="sm" variant="outline" disabled={currentPage <= 1} onClick={onPrev}>
+      <div className="flex gap-1.5">
+        <Button type="button" size="sm" variant="outline" disabled={currentPage <= 1} onClick={onPrev} className="gap-1 pl-2.5">
+          <ChevronLeftIcon className="size-3.5" />
           Previous
         </Button>
         <Button
@@ -242,8 +248,10 @@ export function PaginationRow({
           variant="outline"
           disabled={currentPage >= totalPages}
           onClick={onNext}
+          className="gap-1 pr-2.5"
         >
           Next
+          <ChevronRightIcon className="size-3.5" />
         </Button>
       </div>
     </div>

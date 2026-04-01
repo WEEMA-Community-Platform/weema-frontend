@@ -120,6 +120,7 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
           <AssignedTargetsTableCard
             surveyTitle={surveyTitle}
             targets={assignedTargets}
+            selectedAssignmentId={selectedAssignmentId}
             loading={assignmentTargetsQuery.isLoading}
             isError={assignmentTargetsQuery.isError}
             errorMessage={

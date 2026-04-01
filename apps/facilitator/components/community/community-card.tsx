@@ -66,7 +66,7 @@ export function CommunityCard({
   const hasPrimaryActions = showViewAction || showEditAction;
   const hasAnyMenuContent = hasPrimaryActions || extraMenuItems || showDeleteAction;
   return (
-    <Card className="py-0 overflow-hidden transition-colors hover:ring-primary/50">
+    <Card className="py-0 overflow-hidden ring-1 ring-primary/10 transition-all duration-200 hover:ring-primary/25 hover:shadow-sm hover:shadow-primary/5">
       <CardHeader className="px-4 pt-4 flex flex-row items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <h3 className="font-semibold text-base leading-snug truncate">{title}</h3>

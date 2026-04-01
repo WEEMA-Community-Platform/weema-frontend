@@ -1,11 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyStateRow, TableShell, tableActionsCellClass, tableRowActionsClass } from "@/components/base-data/shared";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { SurveyAssignmentTargetRow, SurveySubmissionRecord } from "@/lib/api/surveys";
+
+const TARGETS_PAGE_SIZE = 5;
 
 export function formatSubmissionDateTime(value: string | null | undefined) {
   if (!value) return "—";
@@ -72,6 +77,7 @@ export function AssignmentApprovalBadge({ status }: { status?: string | null }) 
 type AssignedTargetsTableCardProps = {
   surveyTitle: string;
   targets: SurveyAssignmentTargetRow[];
+  selectedAssignmentId?: string | null;
   loading: boolean;
   isError: boolean;
   errorMessage?: string;
@@ -82,18 +88,54 @@ type AssignedTargetsTableCardProps = {
 export function AssignedTargetsTableCard({
   surveyTitle,
   targets,
+  selectedAssignmentId,
   loading,
   isError,
   errorMessage,
   onRetry,
   onChooseAssignment,
 }: AssignedTargetsTableCardProps) {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(targets.length / TARGETS_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedTargets = targets.slice(
+    (safePage - 1) * TARGETS_PAGE_SIZE,
+    safePage * TARGETS_PAGE_SIZE,
+  );
+  const showPagination = targets.length > TARGETS_PAGE_SIZE;
+
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-primary/10 px-4 pb-4 pt-4">
         <CardTitle>Assigned self-help groups for {surveyTitle}</CardTitle>
+        {showPagination && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/10 bg-background transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+              aria-label="Previous page"
+            >
+              <ChevronLeftIcon className="size-3.5" />
+            </button>
+            <span className="min-w-[4rem] text-center">
+              {safePage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-primary/10 bg-background transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+              aria-label="Next page"
+            >
+              <ChevronRightIcon className="size-3.5" />
+            </button>
+          </div>
+        )}
       </CardHeader>
-      <CardContent className="px-0 pb-4 pt-0">
+      <CardContent className="px-0 pb-0 pt-0">
         <TableShell
           variant="embedded"
           headers={["Self-help group", "Approval", "Actions"]}
@@ -104,30 +146,51 @@ export function AssignedTargetsTableCard({
           onRetry={onRetry}
           emptyState={<EmptyStateRow colSpan={3} message="No assigned self-help groups yet." />}
         >
-          {targets.map((target) => (
-            <TableRow key={target.id}>
-              <TableCell>
-                <p className="truncate text-sm font-medium">{target.name || "Unnamed target"}</p>
-              </TableCell>
-              <TableCell>
-                <AssignmentApprovalBadge status={target.approvalStatus} />
-              </TableCell>
-              <TableCell className={tableActionsCellClass}>
-                <div className={tableRowActionsClass}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onChooseAssignment(target)}
-                    disabled={!target.assignmentId}
-                  >
-                    View members
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {pagedTargets.map((target) => {
+            const isSelected = !!selectedAssignmentId && target.assignmentId === selectedAssignmentId;
+            return (
+              <TableRow
+                key={target.id}
+                className={cn(
+                  "transition-colors",
+                  isSelected && "bg-primary/5 hover:bg-primary/8",
+                )}
+              >
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {isSelected && (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                    )}
+                    <p className={cn("truncate text-sm", isSelected ? "font-semibold text-primary" : "font-medium")}>
+                      {target.name || "Unnamed target"}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <AssignmentApprovalBadge status={target.approvalStatus} />
+                </TableCell>
+                <TableCell className={tableActionsCellClass}>
+                  <div className={tableRowActionsClass}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isSelected ? "default" : "outline"}
+                      onClick={() => onChooseAssignment(target)}
+                      disabled={!target.assignmentId}
+                    >
+                      {isSelected ? "Viewing members" : "View members"}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableShell>
+        {showPagination && (
+          <p className="px-4 py-2.5 text-xs text-muted-foreground">
+            Showing {(safePage - 1) * TARGETS_PAGE_SIZE + 1}–{Math.min(safePage * TARGETS_PAGE_SIZE, targets.length)} of {targets.length} groups
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -163,7 +226,7 @@ export function MemberSubmissionsTableCard({
             : "Member submissions"}
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-0 pb-4 pt-0">
+      <CardContent className="px-0 pb-0 pt-0">
         {!selectedAssignmentId ? (
           <div className="rounded-b-xl bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
             Select a self-help group above to load member submissions.
