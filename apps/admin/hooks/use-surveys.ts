@@ -101,10 +101,7 @@ export function useSaveSurveySubmissionAnswerMutation() {
       payload: UpsertSubmissionAnswerPayload;
     }) => saveSurveySubmissionAnswer(submissionId, payload),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["survey-submission", variables.submissionId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["survey"] });
+      invalidateSubmissionQueries(queryClient, variables.submissionId);
     },
   });
 }
@@ -122,10 +119,7 @@ export function useUpdateSurveySubmissionAnswerMutation() {
       payload: UpsertSubmissionAnswerPayload;
     }) => updateSurveySubmissionAnswer(submissionId, answerId, payload),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["survey-submission", variables.submissionId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["survey"] });
+      invalidateSubmissionQueries(queryClient, variables.submissionId);
     },
   });
 }
@@ -135,10 +129,7 @@ export function useSubmitSurveySubmissionMutation() {
   return useMutation({
     mutationFn: (submissionId: string) => submitSurveySubmission(submissionId),
     onSuccess: (_result, submissionId) => {
-      queryClient.invalidateQueries({
-        queryKey: ["survey-submission", submissionId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["survey"] });
+      invalidateSubmissionQueries(queryClient, submissionId);
     },
   });
 }
@@ -167,8 +158,8 @@ export function useLockSurveySubmissionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (submissionId: string) => lockSurveySubmission(submissionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["survey-submission"] });
+    onSuccess: (_result, submissionId) => {
+      invalidateSubmissionQueries(queryClient, submissionId);
       queryClient.invalidateQueries({ queryKey: ["survey-assignment"] });
     },
   });
@@ -178,8 +169,8 @@ export function useUnlockSurveySubmissionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (submissionId: string) => unlockSurveySubmission(submissionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["survey-submission"] });
+    onSuccess: (_result, submissionId) => {
+      invalidateSubmissionQueries(queryClient, submissionId);
       queryClient.invalidateQueries({ queryKey: ["survey-assignment"] });
     },
   });
@@ -198,6 +189,17 @@ export function useCreateSurveyMutation() {
 
 function invalidateSurveyQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["surveys"] });
+  queryClient.invalidateQueries({ queryKey: ["survey"] });
+}
+
+function invalidateSubmissionQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  submissionId?: string
+) {
+  if (submissionId) {
+    queryClient.invalidateQueries({ queryKey: ["survey-submission", submissionId] });
+  }
+  queryClient.invalidateQueries({ queryKey: ["survey-submission"] });
   queryClient.invalidateQueries({ queryKey: ["survey"] });
 }
 

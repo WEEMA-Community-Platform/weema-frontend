@@ -39,12 +39,14 @@ function SubmissionLockDialog({
   open,
   lockMutation,
   unlockMutation,
+  onUpdated,
   onClose,
 }: {
   pending: PendingSubmissionLock | null;
   open: boolean;
   lockMutation: ReturnType<typeof useLockSurveySubmissionMutation>;
   unlockMutation: ReturnType<typeof useUnlockSurveySubmissionMutation>;
+  onUpdated: () => Promise<void>;
   onClose: () => void;
 }) {
   // Retain last non-null values so content doesn't flash during the exit animation.
@@ -70,6 +72,7 @@ function SubmissionLockDialog({
           description: `${p.submission.memberName}'s submission has been unlocked.`,
         });
       }
+      await onUpdated();
       onClose();
     } catch (error) {
       sileo.error({
@@ -141,7 +144,6 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const surveyTitle = searchParams.get("surveyTitle")?.trim() || "Selected survey";
   const selectedSubmissionId = searchParams.get("submissionId");
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
@@ -247,6 +249,12 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
         open={!!pendingSubmissionLock}
         lockMutation={lockSubmissionMutation}
         unlockMutation={unlockSubmissionMutation}
+        onUpdated={async () => {
+          await Promise.all([
+            submissionsQuery.refetch(),
+            selectedSubmissionId ? detailQuery.refetch() : Promise.resolve(),
+          ]);
+        }}
         onClose={() => setPendingSubmissionLock(null)}
       />
     </div>
