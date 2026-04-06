@@ -24,6 +24,7 @@ type JwtPayload = {
   role?: string;
   roles?: string[];
   [key: string]: unknown;
+  
 };
 
 export function buildBearerToken(accessToken: string) {
