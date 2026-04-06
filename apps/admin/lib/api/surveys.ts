@@ -76,6 +76,7 @@ export type SurveySubmissionRecord = {
   totalQuestions: number;
   answeredQuestions: number;
   answers: SurveySubmissionAnswer[];
+  locked?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -88,9 +89,6 @@ export type SurveySubmissionDetailResponse = BaseApiResponse & {
   submission: SurveySubmissionRecord | null;
 };
 
-export type RejectSurveyAssignmentPayload = {
-  rejectionReason?: string;
-};
 
 export type UpsertSubmissionAnswerPayload = {
   questionId: string;
@@ -254,8 +252,7 @@ export type SurveyAssignmentTargetRow = {
   name: string;
   description: string | null;
   type: string;
-  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | string | null;
-  rejectionReason?: string | null;
+  locked?: boolean;
 };
 
 export type SurveyAssignmentData = {
@@ -282,6 +279,18 @@ export async function assignSurveyTargets(
 ): Promise<BaseApiResponse> {
   const response = await fetch(`/api/survey/${surveyId}/assign`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetIds }),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function unassignSurveyTargets(
+  surveyId: string,
+  targetIds: string[]
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey/${surveyId}/un-assign`, {
+    method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ targetIds }),
   });
@@ -335,21 +344,30 @@ export async function getSurveySubmissionsByAssignmentId(
   };
 }
 
-export async function approveSurveyAssignment(assignmentId: string): Promise<BaseApiResponse> {
-  const response = await fetch(`/api/survey-submissions/assignments/${assignmentId}/approve`, {
+export async function lockSurveyAssignment(assignmentId: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/assignments/${assignmentId}/lock`, {
     method: "PATCH",
   });
   return parseResponse<BaseApiResponse>(response);
 }
 
-export async function rejectSurveyAssignment(
-  assignmentId: string,
-  payload: RejectSurveyAssignmentPayload
-): Promise<BaseApiResponse> {
-  const response = await fetch(`/api/survey-submissions/assignments/${assignmentId}/reject`, {
+export async function unlockSurveyAssignment(assignmentId: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/assignments/${assignmentId}/unlock`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function lockSurveySubmission(submissionId: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/${submissionId}/lock`, {
+    method: "PATCH",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function unlockSurveySubmission(submissionId: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-submissions/${submissionId}/unlock`, {
+    method: "PATCH",
   });
   return parseResponse<BaseApiResponse>(response);
 }

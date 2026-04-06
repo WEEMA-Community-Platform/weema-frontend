@@ -1,6 +1,6 @@
 "use client";
 
-import { EyeIcon, MoreVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { EyeIcon, LockIcon, MoreVerticalIcon, PencilIcon, Trash2Icon, UnlockIcon } from "lucide-react";
 
 import type { EntityStatus } from "@/lib/api/community";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export function LockedBadge({ locked }: { locked: boolean }) {
+  if (locked) {
+    return (
+      <Badge className="gap-1 border-transparent bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400">
+        <LockIcon className="size-3" />
+        Locked
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="gap-1 border-transparent bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+      <UnlockIcon className="size-3" />
+      Unlocked
+    </Badge>
+  );
+}
 
 export function StatusBadge({ status }: { status: EntityStatus }) {
   return (

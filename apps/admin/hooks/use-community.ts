@@ -22,6 +22,10 @@ import {
   updateCluster,
   updateFederation,
   updateSHG,
+  lockSHG,
+  unlockSHG,
+  bulkLockSHGs,
+  bulkUnlockSHGs,
   type ClusterListQuery,
   type ClusterPayload,
   type FederationListQuery,
@@ -236,6 +240,48 @@ export function useRemoveSHGFromClusterMutation() {
       removeSHGFromCluster(clusterId, shgId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+    },
+  });
+}
+
+export function useLockSHGMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => lockSHG(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      queryClient.invalidateQueries({ queryKey: ["shg", id] });
+    },
+  });
+}
+
+export function useUnlockSHGMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => unlockSHG(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      queryClient.invalidateQueries({ queryKey: ["shg", id] });
+    },
+  });
+}
+
+export function useBulkLockSHGsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkLockSHGs(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+    },
+  });
+}
+
+export function useBulkUnlockSHGsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkUnlockSHGs(ids),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shgs"] });
     },
   });

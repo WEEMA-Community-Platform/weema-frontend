@@ -3,15 +3,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  approveMember,
+  bulkLockMembers,
+  bulkUnlockMembers,
   createMember,
   deleteMember,
   getMemberById,
   getMembers,
-  rejectMember,
+  lockMember,
+  unlockMember,
   updateMember,
   uploadMemberNationalId,
-  type RejectMemberPayload,
   type MemberListQuery,
   type MemberPatchPayload,
 } from "@/lib/api/members";
@@ -79,25 +80,44 @@ export function useUploadMemberNationalIdMutation() {
   });
 }
 
-export function useApproveMemberMutation() {
+export function useLockMemberMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => approveMember(id),
-    onSuccess: (_data, memberId) => {
+    mutationFn: (id: string) => lockMember(id),
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      queryClient.invalidateQueries({ queryKey: ["member", memberId] });
+      queryClient.invalidateQueries({ queryKey: ["member", id] });
     },
   });
 }
 
-export function useRejectMemberMutation() {
+export function useUnlockMemberMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: RejectMemberPayload }) =>
-      rejectMember(id, payload),
-    onSuccess: (_data, variables) => {
+    mutationFn: (id: string) => unlockMember(id),
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      queryClient.invalidateQueries({ queryKey: ["member", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["member", id] });
+    },
+  });
+}
+
+export function useBulkLockMembersMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkLockMembers(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+}
+
+export function useBulkUnlockMembersMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkUnlockMembers(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
     },
   });
 }

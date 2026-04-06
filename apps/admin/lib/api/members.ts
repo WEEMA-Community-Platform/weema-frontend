@@ -15,8 +15,7 @@ export type Member = {
   selfHelpGroupId: string;
   selfHelpGroupName: string;
   fan: string | null;
-  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | string;
-  rejectionReason?: string | null;
+  locked: boolean;
 };
 
 export type MemberListResponse = BaseApiResponse & {
@@ -44,7 +43,7 @@ export type MemberListQuery = {
   dateOfBirthTo?: string;
   ageFrom?: number;
   ageTo?: number;
-  approvalStatus?: string;
+  isLocked?: boolean;
 };
 
 export type MemberPatchPayload = {
@@ -58,10 +57,6 @@ export type MemberPatchPayload = {
   status?: string;
   selfHelpGroupId?: string;
   fan?: string | null;
-};
-
-export type RejectMemberPayload = {
-  rejectionReason?: string;
 };
 
 function buildQueryString(query: Record<string, string | number | undefined>) {
@@ -103,7 +98,7 @@ export async function getMembers(query: MemberListQuery = {}) {
     "date-of-birth-to": query.dateOfBirthTo,
     "age-from": query.ageFrom,
     "age-to": query.ageTo,
-    "approval-status": query.approvalStatus,
+    "is-locked": query.isLocked === undefined ? undefined : String(query.isLocked),
   });
   const response = await fetch(`/api/member?${qs}`, {
     cache: "no-store",
@@ -158,19 +153,37 @@ export async function uploadMemberNationalId(memberId: string, file: File) {
   return parseResponse<BaseApiResponse>(response);
 }
 
-export async function approveMember(id: string) {
-  const response = await fetch(`/api/member/${id}/approve`, {
+export async function lockMember(id: string) {
+  const response = await fetch(`/api/member/${id}/lock`, {
     method: "PATCH",
     credentials: "include",
   });
   return parseResponse<BaseApiResponse>(response);
 }
 
-export async function rejectMember(id: string, payload: RejectMemberPayload) {
-  const response = await fetch(`/api/member/${id}/reject`, {
+export async function unlockMember(id: string) {
+  const response = await fetch(`/api/member/${id}/unlock`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function bulkLockMembers(ids: string[]) {
+  const response = await fetch("/api/member/bulk/lock", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ids }),
+    credentials: "include",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function bulkUnlockMembers(ids: string[]) {
+  const response = await fetch("/api/member/bulk/unlock", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
     credentials: "include",
   });
   return parseResponse<BaseApiResponse>(response);

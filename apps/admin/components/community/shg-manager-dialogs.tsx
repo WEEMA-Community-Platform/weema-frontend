@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { LockIcon, UnlockIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sileo } from "sileo";
 
 import { useSHGDetailQuery } from "@/hooks/use-community";
 import type { EntityStatus, SHG } from "@/lib/api/community";
 import { StatusBadge } from "@/components/community/community-card";
+import type { UseMutationResult } from "@tanstack/react-query";
+import type { BaseApiResponse } from "@/lib/api/base-data";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -360,6 +364,99 @@ export function SHGDeleteDialog({
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={() => void onConfirmDelete()}>
             Delete SHG
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function SHGLockDialog({
+  shg,
+  action,
+  onOpenChange,
+  lockMutation,
+  unlockMutation,
+}: {
+  shg: SHG | null;
+  action: "lock" | "unlock";
+  onOpenChange: (open: boolean) => void;
+  lockMutation: UseMutationResult<BaseApiResponse, Error, string, unknown>;
+  unlockMutation: UseMutationResult<BaseApiResponse, Error, string, unknown>;
+}) {
+  // Keep last non-null values so content doesn't flash during the exit animation.
+  const lastShg = useRef(shg);
+  const lastAction = useRef(action);
+  if (shg) { lastShg.current = shg; lastAction.current = action; }
+  const s = lastShg.current;
+  const isLocking = lastAction.current === "lock";
+
+  const handleConfirm = async () => {
+    if (!s) return;
+    try {
+      if (isLocking) {
+        const result = await lockMutation.mutateAsync(s.id);
+        sileo.success({ title: "SHG locked", description: result.message });
+      } else {
+        const result = await unlockMutation.mutateAsync(s.id);
+        sileo.success({ title: "SHG unlocked", description: result.message });
+      }
+      onOpenChange(false);
+    } catch (error) {
+      sileo.error({
+        title: isLocking ? "Could not lock SHG" : "Could not unlock SHG",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
+
+  const isPending = lockMutation.isPending || unlockMutation.isPending;
+
+  return (
+    <AlertDialog open={!!shg} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            {isLocking ? (
+              <LockIcon className="size-4 text-slate-500 dark:text-slate-400" />
+            ) : (
+              <UnlockIcon className="size-4 text-amber-500" />
+            )}
+            {isLocking ? "Lock self-help group" : "Unlock self-help group"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {isLocking ? (
+              <>
+                Lock{" "}
+                <span className="font-semibold text-foreground">{s?.name}</span>? Facilitators will not be able to edit or delete this group until it is unlocked.
+              </>
+            ) : (
+              <>
+                Unlock{" "}
+                <span className="font-semibold text-foreground">{s?.name}</span>? Facilitators will be able to edit or delete this group again.
+              </>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => void handleConfirm()}
+            disabled={isPending}
+            className={
+              isLocking
+                ? "bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+                : "bg-amber-600 hover:bg-amber-500"
+            }
+          >
+            {isPending ? (
+              isLocking ? "Locking..." : "Unlocking..."
+            ) : (
+              <>
+                {isLocking ? <LockIcon className="size-4" /> : <UnlockIcon className="size-4" />}
+                {isLocking ? "Lock SHG" : "Unlock SHG"}
+              </>
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

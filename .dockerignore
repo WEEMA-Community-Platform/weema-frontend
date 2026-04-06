@@ -1,0 +1,22 @@
+.git
+.gitignore
+
+node_modules
+**/node_modules
+
+.next
+**/.next
+
+dist
+build
+coverage
+
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Keep docs/guidelines out of Docker build context.
+README.md
+**/README.md
+CLAUDE.md

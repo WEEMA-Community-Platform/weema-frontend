@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { LockIcon, UnlockIcon } from "lucide-react";
 import { sileo } from "sileo";
+
 
 import type { Member } from "@/lib/api/members";
 import type { EntityStatus } from "@/lib/api/community";
@@ -18,7 +20,6 @@ import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
-import type { RejectMemberPayload } from "@/lib/api/members";
 
 type UpdateMutation = UseMutationResult<
   BaseApiResponse,
@@ -44,21 +45,14 @@ function snapshotFromMember(m: Member) {
 
 type MemberEditDialogProps = {
   member: Member | null;
-  /** Clears edit state (e.g. setEditingMember(null)). */
   onClose: () => void;
   religionOptions: { value: string; label: string }[];
   shgOptions: { value: string; label: string }[];
   updateMutation: UpdateMutation;
-  approveMutation: UseMutationResult<BaseApiResponse, Error, string, unknown>;
-  rejectMutation: UseMutationResult<
-    BaseApiResponse,
-    Error,
-    { id: string; payload: RejectMemberPayload },
-    unknown
-  >;
   isSubmitting: boolean;
-  /** Clears view-only state so the view dialog cannot reopen when edit closes. */
   onDismiss?: () => void;
+  onRequestLock: (member: Member) => void;
+  onRequestUnlock: (member: Member) => void;
 };
 
 export function MemberEditDialog({
@@ -67,10 +61,10 @@ export function MemberEditDialog({
   religionOptions,
   shgOptions,
   updateMutation,
-  approveMutation,
-  rejectMutation,
   isSubmitting,
   onDismiss,
+  onRequestLock,
+  onRequestUnlock,
 }: MemberEditDialogProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -82,11 +76,9 @@ export function MemberEditDialog({
   const [status, setStatus] = useState<EntityStatus>("ACTIVE");
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
-  const [rejectionReason, setRejectionReason] = useState("");
   const [editFormSynced, setEditFormSynced] = useState(false);
 
   const open = !!member;
-  const isApproved = (member?.approvalStatus ?? "").toUpperCase() === "APPROVED";
 
   const formSnapshot = useMemo(
     () => ({
@@ -101,18 +93,7 @@ export function MemberEditDialog({
       selfHelpGroupId,
       fan: fan.trim(),
     }),
-    [
-      firstName,
-      lastName,
-      contactPhone,
-      gender,
-      dateOfBirth,
-      maritalStatus,
-      religionId,
-      status,
-      selfHelpGroupId,
-      fan,
-    ]
+    [firstName, lastName, contactPhone, gender, dateOfBirth, maritalStatus, religionId, status, selfHelpGroupId, fan]
   );
 
   const isEditDirty = useMemo(() => {
@@ -132,7 +113,6 @@ export function MemberEditDialog({
       setStatus((member.status as EntityStatus) || "ACTIVE");
       setSelfHelpGroupId(member.selfHelpGroupId);
       setFan(member.fan ?? "");
-      setRejectionReason(member.rejectionReason ?? "");
       setEditFormSynced(true);
     } else {
       setEditFormSynced(false);
@@ -190,43 +170,16 @@ export function MemberEditDialog({
     }
   };
 
-  const handleApprove = async () => {
+  const handleRequestLock = () => {
     if (!member) return;
-    try {
-      const result = await approveMutation.mutateAsync(member.id);
-      sileo.success({
-        title: "Member approved",
-        description: result.message || "Member is now approved.",
-      });
-      dismissAfterExit();
-    } catch (error) {
-      sileo.error({
-        title: "Could not approve member",
-        description: error instanceof Error ? error.message : "Unexpected error",
-      });
-    }
+    dismiss();
+    onRequestLock(member);
   };
 
-  const handleReject = async () => {
+  const handleRequestUnlock = () => {
     if (!member) return;
-    try {
-      const result = await rejectMutation.mutateAsync({
-        id: member.id,
-        payload: {
-          rejectionReason: rejectionReason.trim() || undefined,
-        },
-      });
-      sileo.success({
-        title: "Member rejected",
-        description: result.message || "Member is now rejected.",
-      });
-      dismissAfterExit();
-    } catch (error) {
-      sileo.error({
-        title: "Could not reject member",
-        description: error instanceof Error ? error.message : "Unexpected error",
-      });
-    }
+    dismiss();
+    onRequestUnlock(member);
   };
 
   return (
@@ -264,43 +217,32 @@ export function MemberEditDialog({
               religionOptions={religionOptions}
               shgOptions={shgOptions}
             />
-            {!isApproved ? (
-              <div className="space-y-1.5">
-                <label htmlFor="member-rejection-reason" className="text-sm font-medium">
-                  Rejection reason (optional)
-                </label>
-                <textarea
-                  id="member-rejection-reason"
-                  value={rejectionReason}
-                  onChange={(event) => setRejectionReason(event.target.value)}
-                  placeholder="Provide a reason if this member is rejected"
-                  className="min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-input/30"
-                />
-              </div>
-            ) : null}
           </div>
           <DialogFooter className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
             <div className="flex items-center gap-2">
-              {!isApproved ? (
+              {member?.locked ? (
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={approveMutation.isPending || rejectMutation.isPending || isSubmitting}
-                  onClick={() => void handleApprove()}
+                  disabled={isSubmitting}
+                  onClick={handleRequestUnlock}
+                  className="gap-1.5 text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300"
                 >
-                  {approveMutation.isPending ? "Approving..." : "Approve"}
+                  <UnlockIcon className="size-4" />
+                  Unlock
                 </Button>
-              ) : null}
-              {!isApproved ? (
+              ) : (
                 <Button
                   type="button"
-                  variant="destructive"
-                  disabled={approveMutation.isPending || rejectMutation.isPending || isSubmitting}
-                  onClick={() => void handleReject()}
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={handleRequestLock}
+                  className="gap-1.5 text-slate-600 hover:text-slate-700 border-slate-200 hover:border-slate-300"
                 >
-                  {rejectMutation.isPending ? "Rejecting..." : "Reject"}
+                  <LockIcon className="size-4" />
+                  Lock
                 </Button>
-              ) : null}
+              )}
             </div>
             <SaveButton
               isPending={isSubmitting}

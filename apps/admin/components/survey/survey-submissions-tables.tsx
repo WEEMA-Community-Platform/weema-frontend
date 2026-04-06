@@ -1,17 +1,11 @@
 "use client";
 
+import { LockIcon, UnlockIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { EmptyStateRow, TableShell, formTextareaClass, tableActionsCellClass, tableRowActionsClass } from "@/components/base-data/shared";
+import { EmptyStateRow, TableShell, tableActionsCellClass, tableRowActionsClass } from "@/components/base-data/shared";
+import { LockedBadge } from "@/components/community/community-card";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { SurveyAssignmentTargetRow, SurveySubmissionRecord } from "@/lib/api/surveys";
 
@@ -54,29 +48,6 @@ export function SubmissionStatusBadge({ status }: { status: string }) {
   return <Badge variant="outline">{status.replaceAll("_", " ")}</Badge>;
 }
 
-export function AssignmentApprovalBadge({ status }: { status?: string | null }) {
-  const normalized = (status || "PENDING").toUpperCase();
-  if (normalized === "APPROVED") {
-    return (
-      <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-        Approved
-      </Badge>
-    );
-  }
-  if (normalized === "REJECTED") {
-    return (
-      <Badge className="border-transparent bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300">
-        Rejected
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-      Pending
-    </Badge>
-  );
-}
-
 type AssignedTargetsTableCardProps = {
   surveyTitle: string;
   targets: SurveyAssignmentTargetRow[];
@@ -85,10 +56,8 @@ type AssignedTargetsTableCardProps = {
   errorMessage?: string;
   onRetry: () => void;
   onChooseAssignment: (target: SurveyAssignmentTargetRow) => void;
-  onApproveAssignment: (target: SurveyAssignmentTargetRow) => void;
-  onRejectAssignment: (target: SurveyAssignmentTargetRow) => void;
-  approvingAssignmentId?: string;
-  rejectingAssignmentId?: string;
+  onLockAssignment: (target: SurveyAssignmentTargetRow) => void;
+  onUnlockAssignment: (target: SurveyAssignmentTargetRow) => void;
 };
 
 export function AssignedTargetsTableCard({
@@ -99,10 +68,8 @@ export function AssignedTargetsTableCard({
   errorMessage,
   onRetry,
   onChooseAssignment,
-  onApproveAssignment,
-  onRejectAssignment,
-  approvingAssignmentId,
-  rejectingAssignmentId,
+  onLockAssignment,
+  onUnlockAssignment,
 }: AssignedTargetsTableCardProps) {
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
@@ -112,67 +79,63 @@ export function AssignedTargetsTableCard({
       <CardContent className="px-0 pb-4 pt-0">
         <TableShell
           variant="embedded"
-          headers={["Self-help group", "Approval", "Rejection reason", "Actions"]}
+          headers={["Self-help group", "Locked", "Actions"]}
           loading={loading}
-          loadingColumnCount={4}
+          loadingColumnCount={3}
           isError={isError}
           errorMessage={errorMessage}
           onRetry={onRetry}
-          emptyState={<EmptyStateRow colSpan={4} message="No assigned self-help groups yet." />}
+          emptyState={<EmptyStateRow colSpan={3} message="No assigned self-help groups yet." />}
         >
-          {targets.map((target) => {
-            const isApproving = approvingAssignmentId === target.assignmentId;
-            const isRejecting = rejectingAssignmentId === target.assignmentId;
-            return (
-              <TableRow key={target.id}>
-                <TableCell>
-                  <p className="truncate text-sm font-medium">{target.name || "Unnamed target"}</p>
-                </TableCell>
-                <TableCell>
-                  <AssignmentApprovalBadge status={target.approvalStatus} />
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {target.rejectionReason?.trim() || "—"}
-                </TableCell>
-                <TableCell className={tableActionsCellClass}>
-                  <div className={tableRowActionsClass}>
+          {targets.map((target) => (
+            <TableRow key={target.id}>
+              <TableCell>
+                <p className="truncate text-sm font-medium">{target.name || "Unnamed target"}</p>
+              </TableCell>
+              <TableCell>
+                <LockedBadge locked={target.locked ?? false} />
+              </TableCell>
+              <TableCell className={tableActionsCellClass}>
+                <div className={tableRowActionsClass}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-3 text-xs"
+                    disabled={!target.assignmentId}
+                    onClick={() => onChooseAssignment(target)}
+                  >
+                    View members
+                  </Button>
+                  {target.locked ? (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-            
-                      onClick={() => onChooseAssignment(target)}
+                      className="h-8 px-3 text-xs text-amber-600 hover:border-amber-300 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400"
                       disabled={!target.assignmentId}
+                      onClick={() => onUnlockAssignment(target)}
                     >
-                      View members
+                      <UnlockIcon className="size-3" />
+                      Unlock
                     </Button>
-                    {target.approvalStatus?.toUpperCase() !== "APPROVED" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-3 text-xs"
-                        onClick={() => onApproveAssignment(target)}
-                        disabled={!target.assignmentId || isApproving || isRejecting}
-                      >
-                        {isApproving ? "Approving..." : "Approve"}
-                      </Button>
-                    ) : null}
+                  ) : (
                     <Button
                       type="button"
                       size="sm"
-                      variant="destructive"
-                      // className="h-8 px-3"
-                      onClick={() => onRejectAssignment(target)}
-                      disabled={!target.assignmentId || isApproving || isRejecting}
+                      variant="outline"
+                      className="h-8 px-3 text-xs text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                      disabled={!target.assignmentId}
+                      onClick={() => onLockAssignment(target)}
                     >
-                      Reject
+                      <LockIcon className="size-3" />
+                      Lock
                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableShell>
       </CardContent>
     </Card>
@@ -188,6 +151,8 @@ type MemberSubmissionsTableCardProps = {
   errorMessage?: string;
   onRetry: () => void;
   onViewAnswers: (submission: SurveySubmissionRecord) => void;
+  onLockSubmission: (submission: SurveySubmissionRecord) => void;
+  onUnlockSubmission: (submission: SurveySubmissionRecord) => void;
 };
 
 export function MemberSubmissionsTableCard({
@@ -199,6 +164,8 @@ export function MemberSubmissionsTableCard({
   errorMessage,
   onRetry,
   onViewAnswers,
+  onLockSubmission,
+  onUnlockSubmission,
 }: MemberSubmissionsTableCardProps) {
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
@@ -217,14 +184,14 @@ export function MemberSubmissionsTableCard({
         ) : (
           <TableShell
             variant="embedded"
-            headers={["Member", "Status", "Progress", "Submitted", "Actions"]}
+            headers={["Member", "Status", "Progress", "Submitted", "Locked", "Actions"]}
             loading={loading}
-            loadingColumnCount={5}
+            loadingColumnCount={6}
             isError={isError}
             errorMessage={errorMessage}
             onRetry={onRetry}
             emptyState={
-              <EmptyStateRow colSpan={5} message="No member submissions found for this self-help group." />
+              <EmptyStateRow colSpan={6} message="No member submissions found for this self-help group." />
             }
           >
             {submissions.map((submission) => {
@@ -258,6 +225,9 @@ export function MemberSubmissionsTableCard({
                   <TableCell className="text-sm text-muted-foreground">
                     {formatSubmissionDateTime(submission.submittedAt)}
                   </TableCell>
+                  <TableCell>
+                    <LockedBadge locked={submission.locked ?? false} />
+                  </TableCell>
                   <TableCell className={tableActionsCellClass}>
                     <div className={tableRowActionsClass}>
                       <Button
@@ -269,6 +239,29 @@ export function MemberSubmissionsTableCard({
                       >
                         View answers
                       </Button>
+                      {submission.locked ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs text-amber-600 hover:border-amber-300 hover:text-amber-700 dark:text-amber-500 dark:hover:text-amber-400"
+                          onClick={() => onUnlockSubmission(submission)}
+                        >
+                          <UnlockIcon className="size-3" />
+                          Unlock
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                          onClick={() => onLockSubmission(submission)}
+                        >
+                          <LockIcon className="size-3" />
+                          Lock
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -278,54 +271,5 @@ export function MemberSubmissionsTableCard({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-type RejectAssignmentDialogProps = {
-  targetName: string;
-  open: boolean;
-  value: string;
-  submitting: boolean;
-  onChange: (value: string) => void;
-  onClose: () => void;
-  onSubmit: () => void;
-};
-
-export function RejectAssignmentDialog({
-  targetName,
-  open,
-  value,
-  submitting,
-  onChange,
-  onClose,
-  onSubmit,
-}: RejectAssignmentDialogProps) {
-  return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Reject assignment</DialogTitle>
-          <DialogDescription>
-            Provide an optional rejection reason for {targetName || "this assignment"}.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="px-5 pb-2">
-          <textarea
-            className={formTextareaClass}
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            placeholder="Reason (optional)"
-          />
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="button" variant="destructive" onClick={onSubmit} disabled={submitting}>
-            {submitting ? "Rejecting..." : "Reject assignment"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

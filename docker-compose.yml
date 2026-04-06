@@ -1,0 +1,30 @@
+services:
+  admin:
+    container_name: weema-admin
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: "@weema/admin"
+        PORT: 3001
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  facilitator:
+    container_name: weema-facilitator
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: "@weema/facilitator"
+        PORT: 3002
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    restart: unless-stopped

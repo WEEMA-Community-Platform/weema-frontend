@@ -1,14 +1,16 @@
 "use client";
 
 import { type ClipboardEvent, FormEvent, useMemo, useState } from "react";
-import { LayersIcon, MapPinIcon, UsersIcon, UserIcon } from "lucide-react";
+import { LayersIcon, LockIcon, MapPinIcon, UnlockIcon, UsersIcon, UserIcon } from "lucide-react";
 import { sileo } from "sileo";
 
 import {
   useClustersQuery,
   useCreateSHGMutation,
   useDeleteSHGMutation,
+  useLockSHGMutation,
   useSHGsQuery,
+  useUnlockSHGMutation,
   useUpdateSHGMutation,
 } from "@/hooks/use-community";
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
@@ -18,7 +20,11 @@ import {
   CardMetaRow,
   CommunityCard,
   CommunityCardSkeleton,
+  LockedBadge,
 } from "@/components/community/community-card";
+import {
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -40,11 +46,17 @@ import {
   SHGDeleteDialog,
   SHGDetailDialog,
   SHGFormDialog,
+  SHGLockDialog,
 } from "@/components/community/shg-manager-dialogs";
 
 const STATUS_OPTIONS = [
   { value: "ACTIVE", label: "Active" },
   { value: "INACTIVE", label: "Inactive" },
+];
+
+const LOCKED_OPTIONS = [
+  { value: "true", label: "Locked" },
+  { value: "false", label: "Unlocked" },
 ];
 
 
@@ -77,12 +89,18 @@ export function SHGManager() {
   const [appliedFilterKebeleId, setAppliedFilterKebeleId] = useState("");
   const [appliedFilterClusterId, setAppliedFilterClusterId] = useState("");
   const [appliedFilterLocation, setAppliedFilterLocation] = useState("");
+  const [appliedFilterIsLocked, setAppliedFilterIsLocked] = useState("");
   const [draftFilterStatus, setDraftFilterStatus] = useState("");
   const [draftFilterWoredaId, setDraftFilterWoredaId] = useState("");
   const [draftFilterKebeleId, setDraftFilterKebeleId] = useState("");
   const [draftFilterClusterId, setDraftFilterClusterId] = useState("");
   const [draftFilterLocation, setDraftFilterLocation] = useState("");
+  const [draftFilterIsLocked, setDraftFilterIsLocked] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [pendingLock, setPendingLock] = useState<{ shg: SHG; action: "lock" | "unlock" } | null>(null);
+
+  const isLockedFilter =
+    appliedFilterIsLocked === "true" ? true : appliedFilterIsLocked === "false" ? false : undefined;
 
   const shgsQuery = useSHGsQuery({
     page,
@@ -93,6 +111,7 @@ export function SHGManager() {
     kebeleId: filterQueryParam(appliedFilterKebeleId),
     clusterId: filterQueryParam(appliedFilterClusterId),
     location: appliedFilterLocation.trim() || undefined,
+    isLocked: isLockedFilter,
   });
   const { data: woredaData } = useWoredasQuery({ page: 1, pageSize: 200, searchQuery: "" });
   const { data: kebeleData } = useKebelesQuery({ page: 1, pageSize: 200, searchQuery: "" });
@@ -107,8 +126,11 @@ export function SHGManager() {
   const createMutation = useCreateSHGMutation();
   const updateMutation = useUpdateSHGMutation();
   const deleteMutation = useDeleteSHGMutation();
+  const lockMutation = useLockSHGMutation();
+  const unlockMutation = useUnlockSHGMutation();
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
 
   const woredaOptions = [
     { value: "none", label: "No woreda" },
@@ -275,7 +297,8 @@ export function SHGManager() {
       appliedFilterWoredaId ||
       appliedFilterKebeleId ||
       appliedFilterClusterId ||
-      appliedFilterLocation.trim()
+      appliedFilterLocation.trim() ||
+      appliedFilterIsLocked
   );
   const emptyMessage = listEmptyMessage({
     entityPlural: "self-help groups",
@@ -324,6 +347,25 @@ export function SHGManager() {
                 onView={() => setViewingId(s.id)}
                 onEdit={() => openEdit(s)}
                 onDelete={() => setPendingDelete(s)}
+                extraMenuItems={
+                  s.locked ? (
+                    <DropdownMenuItem
+                      className="text-[12px] whitespace-nowrap text-amber-600 focus:text-amber-600"
+                      onClick={() => setPendingLock({ shg: s, action: "unlock" })}
+                    >
+                      <UnlockIcon className="size-3.5" />
+                      Unlock
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      className="text-[12px] whitespace-nowrap text-slate-600 focus:text-slate-600"
+                      onClick={() => setPendingLock({ shg: s, action: "lock" })}
+                    >
+                      <LockIcon className="size-3.5" />
+                      Lock
+                    </DropdownMenuItem>
+                  )
+                }
               >
                 <CardMetaRow icon={LayersIcon} label="Cluster">
                   {s.clusterName ?? "No cluster"}
@@ -337,6 +379,9 @@ export function SHGManager() {
                 <CardMetaRow icon={MapPinIcon} label="GPS">
                   {hasGps ? `${s.latitude}, ${s.longitude}` : "No coordinates"}
                 </CardMetaRow>
+                <div className="mt-1">
+                  <LockedBadge locked={s.locked} />
+                </div>
               </CommunityCard>
             );
           })}
@@ -363,13 +408,14 @@ export function SHGManager() {
             setDraftFilterKebeleId(appliedFilterKebeleId);
             setDraftFilterClusterId(appliedFilterClusterId);
             setDraftFilterLocation(appliedFilterLocation);
+            setDraftFilterIsLocked(appliedFilterIsLocked);
           }
         }}
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Filter self-help groups</DialogTitle>
-            <DialogDescription>Filter by status, geography, cluster, or location. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogDescription>Filter by status, geography, cluster, lock state, or location. Changes apply when you click Apply filters.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto px-5 pb-4">
             <SelectField
@@ -377,6 +423,12 @@ export function SHGManager() {
               placeholder="All statuses"
               options={STATUS_OPTIONS}
               onValueChange={setDraftFilterStatus}
+            />
+            <SelectField
+              value={draftFilterIsLocked}
+              placeholder="All lock statuses"
+              options={LOCKED_OPTIONS}
+              onValueChange={setDraftFilterIsLocked}
             />
             <SelectField
               value={draftFilterWoredaId}
@@ -417,11 +469,13 @@ export function SHGManager() {
                 setAppliedFilterKebeleId("");
                 setAppliedFilterClusterId("");
                 setAppliedFilterLocation("");
+                setAppliedFilterIsLocked("");
                 setDraftFilterStatus("");
                 setDraftFilterWoredaId("");
                 setDraftFilterKebeleId("");
                 setDraftFilterClusterId("");
                 setDraftFilterLocation("");
+                setDraftFilterIsLocked("");
                 setPage(1);
                 setIsFilterOpen(false);
               }}
@@ -437,6 +491,7 @@ export function SHGManager() {
                 setAppliedFilterKebeleId(draftFilterKebeleId);
                 setAppliedFilterClusterId(draftFilterClusterId);
                 setAppliedFilterLocation(draftFilterLocation);
+                setAppliedFilterIsLocked(draftFilterIsLocked);
                 setPage(1);
                 setIsFilterOpen(false);
               }}
@@ -502,6 +557,14 @@ export function SHGManager() {
             });
           }
         }}
+      />
+
+      <SHGLockDialog
+        shg={pendingLock?.shg ?? null}
+        action={pendingLock?.action ?? "lock"}
+        onOpenChange={(open) => { if (!open) setPendingLock(null); }}
+        lockMutation={lockMutation}
+        unlockMutation={unlockMutation}
       />
     </div>
   );

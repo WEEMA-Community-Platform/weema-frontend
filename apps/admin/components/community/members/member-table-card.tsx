@@ -1,19 +1,25 @@
 "use client";
 
+import { EyeIcon, LockIcon, MoreVerticalIcon, PencilIcon, Trash2Icon, UnlockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableCell, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   DataToolbar,
   EmptyStateRow,
   PaginationRow,
   TableShell,
   descriptionCellClass,
-  tableActionsCellClass,
-  tableRowActionsClass,
 } from "@/components/base-data/shared";
-import { StatusBadge } from "@/components/community/community-card";
-import { Badge } from "@/components/ui/badge";
+import { LockedBadge, StatusBadge } from "@/components/community/community-card";
 import type { Member } from "@/lib/api/members";
 import type { EntityStatus } from "@/lib/api/community";
 
@@ -35,6 +41,8 @@ type MemberTableCardProps = {
   onView: (id: string) => void;
   onEdit: (member: Member) => void;
   onDelete: (member: Member) => void;
+  onLock: (member: Member) => void;
+  onUnlock: (member: Member) => void;
   emptyMessage: string;
 };
 
@@ -56,6 +64,8 @@ export function MemberTableCard({
   onView,
   onEdit,
   onDelete,
+  onLock,
+  onUnlock,
   emptyMessage,
 }: MemberTableCardProps) {
   return (
@@ -75,7 +85,7 @@ export function MemberTableCard({
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Phone", "Self-help group", "Gender", "Status", "Approval", "Actions"]}
+          headers={["Name", "Phone", "Self-help group", "Gender", "Status", "Locked", ""]}
           loading={isLoading}
           loadingColumnCount={7}
           isError={isError}
@@ -95,20 +105,67 @@ export function MemberTableCard({
                 <StatusBadge status={m.status as EntityStatus} />
               </TableCell>
               <TableCell>
-                <ApprovalStatusBadge approvalStatus={m.approvalStatus} />
+                <LockedBadge locked={m.locked} />
               </TableCell>
-              <TableCell className={tableActionsCellClass}>
-                <div className={tableRowActionsClass}>
-                  <Button type="button" size="sm" variant="outline" onClick={() => onView(m.id)}>
-                    View
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => onEdit(m)}>
-                    Edit
-                  </Button>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => onDelete(m)}>
-                    Delete
-                  </Button>
-                </div>
+              <TableCell className="w-10 text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground"
+                        aria-label="Open member actions"
+                      >
+                        <MoreVerticalIcon className="size-4" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="min-w-44">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem className="text-[12px]" onClick={() => onView(m.id)}>
+                        <EyeIcon />
+                        View details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-[12px]" onClick={() => onEdit(m)}>
+                        <PencilIcon />
+                        Edit
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      {m.locked ? (
+                        <DropdownMenuItem
+                          className="text-[12px] text-amber-600 focus:text-amber-600"
+                          onClick={() => onUnlock(m)}
+                        >
+                          <UnlockIcon />
+                          Unlock
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          className="text-[12px] text-slate-500 focus:text-slate-700"
+                          onClick={() => onLock(m)}
+                        >
+                          <LockIcon />
+                          Lock
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        className="text-[12px]"
+                        variant="destructive"
+                        onClick={() => onDelete(m)}
+                      >
+                        <Trash2Icon />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
@@ -125,28 +182,5 @@ export function MemberTableCard({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function ApprovalStatusBadge({ approvalStatus }: { approvalStatus?: string }) {
-  const normalized = (approvalStatus ?? "PENDING").toUpperCase();
-  if (normalized === "APPROVED") {
-    return (
-      <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-        Approved
-      </Badge>
-    );
-  }
-  if (normalized === "REJECTED") {
-    return (
-      <Badge className="border-transparent bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
-        Rejected
-      </Badge>
-    );
-  }
-  return (
-    <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-      Pending
-    </Badge>
   );
 }

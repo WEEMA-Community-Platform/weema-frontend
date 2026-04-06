@@ -115,6 +115,7 @@ export type SHG = {
   facilitatorId: string | null;
   facilitatorName: string | null;
   memberCount: number;
+  locked: boolean;
 };
 
 export type SHGPayload = {
@@ -146,6 +147,7 @@ export type SHGListQuery = {
   /** Filter only SHGs without any assigned cluster. */
   unassignedCluster?: boolean;
   location?: string;
+  isLocked?: boolean;
 };
 
 export type SHGListResponse = BaseApiResponse & {
@@ -327,6 +329,7 @@ export async function getSHGs(query: SHGListQuery = {}) {
     "unassigned-cluster":
       query.unassignedCluster === undefined ? undefined : String(query.unassignedCluster),
     location: query.location,
+    "is-locked": query.isLocked === undefined ? undefined : String(query.isLocked),
   });
   const response = await fetch(`/api/self-help-group?${qs}`, {
     cache: "no-store",
@@ -376,6 +379,42 @@ export async function addSHGsToCluster(clusterId: string, shgIds: string[]) {
 export async function removeSHGFromCluster(clusterId: string, shgId: string) {
   const response = await fetch(`/api/cluster/${clusterId}/self-help-groups/${shgId}`, {
     method: "DELETE",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function lockSHG(id: string) {
+  const response = await fetch(`/api/self-help-group/${id}/lock`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function unlockSHG(id: string) {
+  const response = await fetch(`/api/self-help-group/${id}/unlock`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function bulkLockSHGs(ids: string[]) {
+  const response = await fetch("/api/self-help-group/bulk/lock", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+    credentials: "include",
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function bulkUnlockSHGs(ids: string[]) {
+  const response = await fetch("/api/self-help-group/bulk/unlock", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+    credentials: "include",
   });
   return parseResponse<BaseApiResponse>(response);
 }

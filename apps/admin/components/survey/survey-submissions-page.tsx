@@ -1,22 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
 import { sileo } from "sileo";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { type QuestionTemplate } from "@/components/survey/survey-submission-answer-workspace";
 import { SubmissionWorkspacePanel } from "@/components/survey/survey-submission-workspace-panel";
 import {
   AssignedTargetsTableCard,
   MemberSubmissionsTableCard,
-  RejectAssignmentDialog,
 } from "@/components/survey/survey-submissions-tables";
 import {
-  useApproveSurveyAssignmentMutation,
-  useRejectSurveyAssignmentMutation,
+  useLockSurveyAssignmentMutation,
+  useUnlockSurveyAssignmentMutation,
+  useLockSurveySubmissionMutation,
+  useUnlockSurveySubmissionMutation,
   useSurveyAssignmentTargetsQuery,
   useSurveyDetailQuery,
   useSurveySubmissionDetailQuery,
@@ -24,6 +35,205 @@ import {
 } from "@/hooks/use-surveys";
 import type { SurveyAssignmentTargetRow, SurveySubmissionRecord } from "@/lib/api/surveys";
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
+
+type PendingAssignmentLock = { target: SurveyAssignmentTargetRow; action: "lock" | "unlock" };
+type PendingSubmissionLock = { submission: SurveySubmissionRecord; action: "lock" | "unlock" };
+
+function AssignmentLockDialog({
+  pending,
+  open,
+  lockMutation,
+  unlockMutation,
+  onClose,
+}: {
+  pending: PendingAssignmentLock | null;
+  open: boolean;
+  lockMutation: ReturnType<typeof useLockSurveyAssignmentMutation>;
+  unlockMutation: ReturnType<typeof useUnlockSurveyAssignmentMutation>;
+  onClose: () => void;
+}) {
+  // Retain last non-null values so content doesn't flash during the exit animation.
+  const lastPending = useRef(pending);
+  if (pending) lastPending.current = pending;
+  const p = lastPending.current;
+  const isLocking = p?.action === "lock";
+  const isPending = lockMutation.isPending || unlockMutation.isPending;
+
+  const handleConfirm = async () => {
+    if (!p?.target.assignmentId) return;
+    try {
+      if (isLocking) {
+        await lockMutation.mutateAsync(p.target.assignmentId);
+        sileo.success({ title: "Assignment locked", description: `${p.target.name} has been locked.` });
+      } else {
+        await unlockMutation.mutateAsync(p.target.assignmentId);
+        sileo.success({ title: "Assignment unlocked", description: `${p.target.name} has been unlocked.` });
+      }
+      onClose();
+    } catch (error) {
+      sileo.error({
+        title: isLocking ? "Failed to lock assignment" : "Failed to unlock assignment",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            {isLocking ? (
+              <LockIcon className="size-4 text-slate-500 dark:text-slate-400" />
+            ) : (
+              <UnlockIcon className="size-4 text-amber-500" />
+            )}
+            {isLocking ? "Lock assignment" : "Unlock assignment"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {isLocking ? (
+              <>
+                Lock the assignment for{" "}
+                <span className="font-semibold text-foreground">{p?.target.name ?? ""}</span>?
+                {" "}Facilitators will not be able to edit or delete it.
+              </>
+            ) : (
+              <>
+                Unlock the assignment for{" "}
+                <span className="font-semibold text-foreground">{p?.target.name ?? ""}</span>?
+                {" "}Facilitators will be able to edit or delete it again.
+              </>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => void handleConfirm()}
+            disabled={isPending}
+            className={
+              isLocking
+                ? "bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+                : "bg-amber-600 hover:bg-amber-500"
+            }
+          >
+            {isPending ? (
+              isLocking ? "Locking..." : "Unlocking..."
+            ) : (
+              <>
+                {isLocking ? <LockIcon className="size-4" /> : <UnlockIcon className="size-4" />}
+                {isLocking ? "Lock assignment" : "Unlock assignment"}
+              </>
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function SubmissionLockDialog({
+  pending,
+  open,
+  lockMutation,
+  unlockMutation,
+  onClose,
+}: {
+  pending: PendingSubmissionLock | null;
+  open: boolean;
+  lockMutation: ReturnType<typeof useLockSurveySubmissionMutation>;
+  unlockMutation: ReturnType<typeof useUnlockSurveySubmissionMutation>;
+  onClose: () => void;
+}) {
+  // Retain last non-null values so content doesn't flash during the exit animation.
+  const lastPending = useRef(pending);
+  if (pending) lastPending.current = pending;
+  const p = lastPending.current;
+  const isLocking = p?.action === "lock";
+  const isPending = lockMutation.isPending || unlockMutation.isPending;
+
+  const handleConfirm = async () => {
+    if (!p?.submission.id) return;
+    try {
+      if (isLocking) {
+        await lockMutation.mutateAsync(p.submission.id);
+        sileo.success({
+          title: "Submission locked",
+          description: `${p.submission.memberName}'s submission has been locked.`,
+        });
+      } else {
+        await unlockMutation.mutateAsync(p.submission.id);
+        sileo.success({
+          title: "Submission unlocked",
+          description: `${p.submission.memberName}'s submission has been unlocked.`,
+        });
+      }
+      onClose();
+    } catch (error) {
+      sileo.error({
+        title: isLocking ? "Failed to lock submission" : "Failed to unlock submission",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            {isLocking ? (
+              <LockIcon className="size-4 text-slate-500 dark:text-slate-400" />
+            ) : (
+              <UnlockIcon className="size-4 text-amber-500" />
+            )}
+            {isLocking ? "Lock submission" : "Unlock submission"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {isLocking ? (
+              <>
+                Lock{" "}
+                <span className="font-semibold text-foreground">
+                  {p?.submission.memberName ?? "this member"}
+                </span>
+                {"'s submission? Facilitators will not be able to edit or delete it."}
+              </>
+            ) : (
+              <>
+                Unlock{" "}
+                <span className="font-semibold text-foreground">
+                  {p?.submission.memberName ?? "this member"}
+                </span>
+                {"'s submission? Facilitators will be able to edit or delete it again."}
+              </>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => void handleConfirm()}
+            disabled={isPending}
+            className={
+              isLocking
+                ? "bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+                : "bg-amber-600 hover:bg-amber-500"
+            }
+          >
+            {isPending ? (
+              isLocking ? "Locking..." : "Unlocking..."
+            ) : (
+              <>
+                {isLocking ? <LockIcon className="size-4" /> : <UnlockIcon className="size-4" />}
+                {isLocking ? "Lock submission" : "Unlock submission"}
+              </>
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
   const router = useRouter();
@@ -34,8 +244,8 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
   const selectedAssignmentId = searchParams.get("assignmentId");
   const selectedAssignmentName = searchParams.get("assignmentName")?.trim() || "";
 
-  const [rejectDialogTarget, setRejectDialogTarget] = useState<SurveyAssignmentTargetRow | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [pendingAssignmentLock, setPendingAssignmentLock] = useState<PendingAssignmentLock | null>(null);
+  const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
 
   const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(surveyId);
   const assignedTargets = assignmentTargetsQuery.data?.assignmentData?.assignedTargets ?? [];
@@ -48,8 +258,10 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
   const selectedSubmission = detailQuery.data?.submission ?? null;
   const surveyDetailQuery = useSurveyDetailQuery(surveyId, { enabled: !!selectedSubmissionId });
 
-  const approveAssignmentMutation = useApproveSurveyAssignmentMutation();
-  const rejectAssignmentMutation = useRejectSurveyAssignmentMutation();
+  const lockAssignmentMutation = useLockSurveyAssignmentMutation();
+  const unlockAssignmentMutation = useUnlockSurveyAssignmentMutation();
+  const lockSubmissionMutation = useLockSurveySubmissionMutation();
+  const unlockSubmissionMutation = useUnlockSurveySubmissionMutation();
 
   const questionTemplates: QuestionTemplate[] = (() => {
     const backendSurvey = surveyDetailQuery.data?.survey;
@@ -102,62 +314,6 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
     setRouteSearch(next);
   };
 
-  const handleApproveAssignment = async (target: SurveyAssignmentTargetRow) => {
-    if (!target.assignmentId) return;
-    try {
-      const result = await approveAssignmentMutation.mutateAsync(target.assignmentId);
-      const refreshTasks: Array<Promise<unknown>> = [assignmentTargetsQuery.refetch()];
-      if (selectedAssignmentId && selectedAssignmentId === target.assignmentId) {
-        refreshTasks.push(submissionsQuery.refetch());
-      }
-      await Promise.all(refreshTasks);
-      sileo.success({
-        title: "Assignment approved",
-        description: result.message || `${target.name} assignment has been approved.`,
-      });
-    } catch (error) {
-      sileo.error({
-        title: "Failed to approve assignment",
-        description: error instanceof Error ? error.message : "Unexpected error",
-      });
-    }
-  };
-
-  const openRejectDialog = (target: SurveyAssignmentTargetRow) => {
-    setRejectDialogTarget(target);
-    setRejectionReason(target.rejectionReason ?? "");
-  };
-
-  const closeRejectDialog = () => {
-    setRejectDialogTarget(null);
-    setRejectionReason("");
-  };
-
-  const handleRejectAssignment = async () => {
-    if (!rejectDialogTarget?.assignmentId) return;
-    try {
-      const result = await rejectAssignmentMutation.mutateAsync({
-        assignmentId: rejectDialogTarget.assignmentId,
-        payload: { rejectionReason: rejectionReason.trim() || undefined },
-      });
-      const refreshTasks: Array<Promise<unknown>> = [assignmentTargetsQuery.refetch()];
-      if (selectedAssignmentId && selectedAssignmentId === rejectDialogTarget.assignmentId) {
-        refreshTasks.push(submissionsQuery.refetch());
-      }
-      await Promise.all(refreshTasks);
-      sileo.success({
-        title: "Assignment rejected",
-        description: result.message || `${rejectDialogTarget.name} assignment has been rejected.`,
-      });
-      closeRejectDialog();
-    } catch (error) {
-      sileo.error({
-        title: "Failed to reject assignment",
-        description: error instanceof Error ? error.message : "Unexpected error",
-      });
-    }
-  };
-
   return (
     <div className="min-w-0 space-y-4 overflow-x-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -195,15 +351,11 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
             }
             onRetry={() => assignmentTargetsQuery.refetch()}
             onChooseAssignment={chooseAssignment}
-            onApproveAssignment={(target) => void handleApproveAssignment(target)}
-            onRejectAssignment={openRejectDialog}
-            approvingAssignmentId={
-              approveAssignmentMutation.isPending ? approveAssignmentMutation.variables : undefined
+            onLockAssignment={(target) =>
+              setPendingAssignmentLock({ target, action: "lock" })
             }
-            rejectingAssignmentId={
-              rejectAssignmentMutation.isPending
-                ? rejectAssignmentMutation.variables?.assignmentId
-                : undefined
+            onUnlockAssignment={(target) =>
+              setPendingAssignmentLock({ target, action: "unlock" })
             }
           />
 
@@ -220,18 +372,30 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
             }
             onRetry={() => submissionsQuery.refetch()}
             onViewAnswers={openAnswerWorkspace}
+            onLockSubmission={(submission) =>
+              setPendingSubmissionLock({ submission, action: "lock" })
+            }
+            onUnlockSubmission={(submission) =>
+              setPendingSubmissionLock({ submission, action: "unlock" })
+            }
           />
         </>
       )}
 
-      <RejectAssignmentDialog
-        open={Boolean(rejectDialogTarget)}
-        targetName={rejectDialogTarget?.name || ""}
-        value={rejectionReason}
-        submitting={rejectAssignmentMutation.isPending}
-        onChange={setRejectionReason}
-        onClose={closeRejectDialog}
-        onSubmit={() => void handleRejectAssignment()}
+      <AssignmentLockDialog
+        pending={pendingAssignmentLock}
+        open={!!pendingAssignmentLock}
+        lockMutation={lockAssignmentMutation}
+        unlockMutation={unlockAssignmentMutation}
+        onClose={() => setPendingAssignmentLock(null)}
+      />
+
+      <SubmissionLockDialog
+        pending={pendingSubmissionLock}
+        open={!!pendingSubmissionLock}
+        lockMutation={lockSubmissionMutation}
+        unlockMutation={unlockSubmissionMutation}
+        onClose={() => setPendingSubmissionLock(null)}
       />
     </div>
   );

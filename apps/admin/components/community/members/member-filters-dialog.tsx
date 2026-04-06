@@ -16,15 +16,15 @@ import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/base-data/select-field";
 import { inputClass } from "@/components/base-data/shared";
 import {
-  APPROVAL_STATUS_OPTIONS,
   GENDER_OPTIONS,
+  LOCKED_OPTIONS,
   MARITAL_OPTIONS,
   STATUS_OPTIONS,
 } from "@/components/community/members/constants";
 
 export type MemberAppliedFilters = {
   status: string;
-  approvalStatus: string;
+  isLocked: string;
   gender: string;
   marital: string;
   shgId: string;
@@ -37,7 +37,7 @@ export type MemberAppliedFilters = {
 
 const emptyFilters: MemberAppliedFilters = {
   status: "",
-  approvalStatus: "",
+  isLocked: "",
   gender: "",
   marital: "",
   shgId: "",
@@ -103,13 +103,13 @@ export function MemberFiltersDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-approval-status">Approval status</Label>
+              <Label htmlFor="member-filter-locked">Lock status</Label>
               <SelectField
-                id="member-filter-approval-status"
-                value={draft.approvalStatus}
-                placeholder="All approval statuses"
-                options={APPROVAL_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                onValueChange={(v) => setDraft((d) => ({ ...d, approvalStatus: v }))}
+                id="member-filter-locked"
+                value={draft.isLocked}
+                placeholder="All lock statuses"
+                options={LOCKED_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                onValueChange={(v) => setDraft((d) => ({ ...d, isLocked: v }))}
               />
             </div>
             <div className="space-y-1.5">

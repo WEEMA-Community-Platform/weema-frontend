@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 
 import {
-  useApproveMemberMutation,
   useCreateMemberMutation,
   useDeleteMemberMutation,
+  useLockMemberMutation,
   useMembersQuery,
-  useRejectMemberMutation,
+  useUnlockMemberMutation,
   useUpdateMemberMutation,
   useUploadMemberNationalIdMutation,
 } from "@/hooks/use-members";
@@ -23,6 +23,7 @@ import {
   MemberFiltersDialog,
   type MemberAppliedFilters,
 } from "@/components/community/members/member-filters-dialog";
+import { MemberLockDialog } from "@/components/community/members/member-lock-dialog";
 import { MemberTableCard } from "@/components/community/members/member-table-card";
 
 export function MemberManager() {
@@ -30,7 +31,7 @@ export function MemberManager() {
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [appliedStatus, setAppliedStatus] = useState("");
-  const [appliedApprovalStatus, setAppliedApprovalStatus] = useState("");
+  const [appliedIsLocked, setAppliedIsLocked] = useState("");
   const [appliedGender, setAppliedGender] = useState("");
   const [appliedMarital, setAppliedMarital] = useState("");
   const [appliedShgId, setAppliedShgId] = useState("");
@@ -46,13 +47,17 @@ export function MemberManager() {
   const [editDialogKey, setEditDialogKey] = useState(0);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Member | null>(null);
+  const [pendingLock, setPendingLock] = useState<{ member: Member; action: "lock" | "unlock" } | null>(null);
+
+  const isLockedFilter =
+    appliedIsLocked === "true" ? true : appliedIsLocked === "false" ? false : undefined;
 
   const membersQuery = useMembersQuery({
     page,
     pageSize: 10,
     searchQuery,
     status: appliedStatus || undefined,
-    approvalStatus: appliedApprovalStatus || undefined,
+    isLocked: isLockedFilter,
     gender: appliedGender || undefined,
     maritalStatus: appliedMarital || undefined,
     shgId: appliedShgId || undefined,
@@ -77,14 +82,14 @@ export function MemberManager() {
 
   const createMutation = useCreateMemberMutation();
   const updateMutation = useUpdateMemberMutation();
-  const approveMutation = useApproveMemberMutation();
-  const rejectMutation = useRejectMemberMutation();
+  const lockMutation = useLockMemberMutation();
+  const unlockMutation = useUnlockMemberMutation();
   const deleteMutation = useDeleteMemberMutation();
   const uploadIdMutation = useUploadMemberNationalIdMutation();
 
   const hasActiveFilters = Boolean(
     appliedStatus ||
-      appliedApprovalStatus ||
+      appliedIsLocked ||
       appliedGender ||
       appliedMarital ||
       appliedShgId ||
@@ -98,7 +103,7 @@ export function MemberManager() {
   const appliedFilters: MemberAppliedFilters = useMemo(
     () => ({
       status: appliedStatus,
-      approvalStatus: appliedApprovalStatus,
+      isLocked: appliedIsLocked,
       gender: appliedGender,
       marital: appliedMarital,
       shgId: appliedShgId,
@@ -108,18 +113,7 @@ export function MemberManager() {
       ageFrom: appliedAgeFrom,
       ageTo: appliedAgeTo,
     }),
-    [
-      appliedStatus,
-      appliedApprovalStatus,
-      appliedGender,
-      appliedMarital,
-      appliedShgId,
-      appliedReligionId,
-      appliedDobFrom,
-      appliedDobTo,
-      appliedAgeFrom,
-      appliedAgeTo,
-    ]
+    [appliedStatus, appliedIsLocked, appliedGender, appliedMarital, appliedShgId, appliedReligionId, appliedDobFrom, appliedDobTo, appliedAgeFrom, appliedAgeTo]
   );
 
   const hasSearch = Boolean(searchQuery.trim());
@@ -134,14 +128,12 @@ export function MemberManager() {
   const isSubmittingEdit = updateMutation.isPending;
 
   const list = membersQuery.data;
-
   const isFormOpen = isCreateOpen || !!editingMember;
-  /** View dialog is independent: hidden while add/edit is open; never stacks with form. */
   const isViewOpen = !!viewingId && !isFormOpen;
 
   const applyMemberFilters = (f: MemberAppliedFilters) => {
     setAppliedStatus(f.status);
-    setAppliedApprovalStatus(f.approvalStatus);
+    setAppliedIsLocked(f.isLocked);
     setAppliedGender(f.gender);
     setAppliedMarital(f.marital);
     setAppliedShgId(f.shgId);
@@ -175,9 +167,9 @@ export function MemberManager() {
         religionOptions={religionOptions}
         shgOptions={shgOptions}
         updateMutation={updateMutation}
-        approveMutation={approveMutation}
-        rejectMutation={rejectMutation}
         isSubmitting={isSubmittingEdit}
+        onRequestLock={(m) => setPendingLock({ member: m, action: "lock" })}
+        onRequestUnlock={(m) => setPendingLock({ member: m, action: "unlock" })}
       />
 
       <MemberDetailDialog
@@ -189,10 +181,7 @@ export function MemberManager() {
 
       <MemberTableCard
         searchQuery={searchQuery}
-        onSearchChange={(value) => {
-          setSearchQuery(value);
-          setPage(1);
-        }}
+        onSearchChange={(value) => { setSearchQuery(value); setPage(1); }}
         onAdd={() => {
           setEditingMember(null);
           setCreateDialogKey((k) => k + 1);
@@ -220,6 +209,8 @@ export function MemberManager() {
           setEditingMember(m);
         }}
         onDelete={setPendingDelete}
+        onLock={(m) => setPendingLock({ member: m, action: "lock" })}
+        onUnlock={(m) => setPendingLock({ member: m, action: "unlock" })}
       />
 
       <MemberFiltersDialog
@@ -233,11 +224,17 @@ export function MemberManager() {
 
       <MemberDeleteDialog
         open={!!pendingDelete}
-        onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
-        }}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
         member={pendingDelete}
         deleteMutation={deleteMutation}
+      />
+
+      <MemberLockDialog
+        member={pendingLock?.member ?? null}
+        action={pendingLock?.action ?? "lock"}
+        onOpenChange={(open) => { if (!open) setPendingLock(null); }}
+        lockMutation={lockMutation}
+        unlockMutation={unlockMutation}
       />
     </>
   );

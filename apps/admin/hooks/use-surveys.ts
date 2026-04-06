@@ -3,8 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  approveSurveyAssignment,
   assignSurveyTargets,
+  unassignSurveyTargets,
   createQuestions,
   createSurvey,
   createSurveySections,
@@ -18,7 +18,10 @@ import {
   getSurveySubmissionsBySurveyId,
   getSurveys,
   publishSurvey,
-  rejectSurveyAssignment,
+  lockSurveyAssignment,
+  unlockSurveyAssignment,
+  lockSurveySubmission,
+  unlockSurveySubmission,
   reorderQuestions,
   reorderSurveySections,
   updateQuestion,
@@ -30,7 +33,6 @@ import {
   type SurveysListQuery,
   type CreateSectionPayload,
   type UpsertQuestionPayload,
-  type RejectSurveyAssignmentPayload,
   type UpsertSubmissionAnswerPayload,
   type UpdateSurveyPayload,
 } from "@/lib/api/surveys";
@@ -141,32 +143,44 @@ export function useSubmitSurveySubmissionMutation() {
   });
 }
 
-export function useApproveSurveyAssignmentMutation() {
+export function useLockSurveyAssignmentMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (assignmentId: string) => approveSurveyAssignment(assignmentId),
-    onSuccess: (_result, assignmentId) => {
-      queryClient.invalidateQueries({ queryKey: ["survey-assignment", assignmentId, "submissions"] });
+    mutationFn: (assignmentId: string) => lockSurveyAssignment(assignmentId),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["survey"] });
     },
   });
 }
 
-export function useRejectSurveyAssignmentMutation() {
+export function useUnlockSurveyAssignmentMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      assignmentId,
-      payload,
-    }: {
-      assignmentId: string;
-      payload: RejectSurveyAssignmentPayload;
-    }) => rejectSurveyAssignment(assignmentId, payload),
-    onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["survey-assignment", variables.assignmentId, "submissions"],
-      });
+    mutationFn: (assignmentId: string) => unlockSurveyAssignment(assignmentId),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
+  });
+}
+
+export function useLockSurveySubmissionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (submissionId: string) => lockSurveySubmission(submissionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["survey-submission"] });
+      queryClient.invalidateQueries({ queryKey: ["survey-assignment"] });
+    },
+  });
+}
+
+export function useUnlockSurveySubmissionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (submissionId: string) => unlockSurveySubmission(submissionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["survey-submission"] });
+      queryClient.invalidateQueries({ queryKey: ["survey-assignment"] });
     },
   });
 }
@@ -235,6 +249,20 @@ export function useAssignSurveyTargetsMutation() {
   return useMutation({
     mutationFn: ({ surveyId, targetIds }: { surveyId: string; targetIds: string[] }) =>
       assignSurveyTargets(surveyId, targetIds),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey", variables.surveyId, "assignment-targets"],
+      });
+      invalidateSurveyQueries(queryClient);
+    },
+  });
+}
+
+export function useUnassignSurveyTargetsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ surveyId, targetIds }: { surveyId: string; targetIds: string[] }) =>
+      unassignSurveyTargets(surveyId, targetIds),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["survey", variables.surveyId, "assignment-targets"],

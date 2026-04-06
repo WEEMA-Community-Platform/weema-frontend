@@ -1,13 +1,11 @@
 import { forwardAuthorizedRequest } from "@/app/api/base-data/_lib";
 
-type RouteParams = {
-  params: Promise<{ id: string }>;
-};
+type RouteParams = { params: Promise<{ submissionId: string }> };
 
 export async function PATCH(_request: Request, { params }: RouteParams) {
-  const { id } = await params;
+  const { submissionId } = await params;
   return forwardAuthorizedRequest({
     method: "PATCH",
-    path: `/api/member/${id}/approve`,
+    path: `/api/survey-submissions/${submissionId}/unlock`,
   });
 }
