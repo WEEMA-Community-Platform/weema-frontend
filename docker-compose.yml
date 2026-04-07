@@ -10,6 +10,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
+      APP_NAME: "@weema/admin"   # ✅ ADD THIS
     ports:
       - "3001:3001"
     restart: unless-stopped
@@ -25,6 +26,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
+      APP_NAME: "@weema/facilitator"   # ✅ ADD THIS
     ports:
       - "3002:3002"
     restart: unless-stopped
