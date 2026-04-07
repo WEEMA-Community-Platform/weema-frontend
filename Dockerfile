@@ -43,4 +43,4 @@ COPY --from=builder /app .
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "pnpm --filter \"${APP_NAME}\" start -- -p ${PORT}"]
+CMD ["sh", "-c", "pnpm --filter \"${APP_NAME}\" start"]
