@@ -5,27 +5,31 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 RUN corepack enable
 
+# -------------------
+# INSTALL DEPENDENCIES
+# -------------------
 FROM base AS deps
 WORKDIR /app
 
-# Copy workspace manifests first for better Docker layer caching.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/admin/package.json apps/admin/package.json
-COPY apps/facilitator/package.json apps/facilitator/package.json
-COPY packages/auth/package.json packages/auth/package.json
+COPY . .
 
 RUN pnpm install --frozen-lockfile
 
+# -------------------
+# BUILD
+# -------------------
 FROM base AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --from=deps /app .
 
 ARG APP_NAME
 
 RUN pnpm --filter "${APP_NAME}" build
 
+# -------------------
+# RUNNER
+# -------------------
 FROM base AS runner
 WORKDIR /app
 
@@ -35,7 +39,7 @@ ARG APP_NAME
 ARG PORT=3000
 ENV PORT="${PORT}"
 
-COPY --from=builder /app ./
+COPY --from=builder /app .
 
 EXPOSE ${PORT}
 
