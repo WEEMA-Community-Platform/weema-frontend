@@ -7,10 +7,17 @@ services:
       args:
         APP_NAME: "@weema/admin"
         PORT: 3001
+    env_file:
+      - path: ./.env
+        required: false
+      - path: ./apps/admin/.env
+        required: false
+      - path: ./apps/admin/.env.local
+        required: false
     environment:
       NODE_ENV: production
       PORT: 3001
-      APP_NAME: "@weema/admin"   # ✅ ADD THIS
+      APP_NAME: "@weema/admin"
     ports:
       - "3001:3001"
     restart: unless-stopped
@@ -23,10 +30,17 @@ services:
       args:
         APP_NAME: "@weema/facilitator"
         PORT: 3002
+    env_file:
+      - path: ./.env
+        required: false
+      - path: ./apps/facilitator/.env
+        required: false
+      - path: ./apps/facilitator/.env.local
+        required: false
     environment:
       NODE_ENV: production
       PORT: 3002
-      APP_NAME: "@weema/facilitator"   # ✅ ADD THIS
+      APP_NAME: "@weema/facilitator"
     ports:
       - "3002:3002"
     restart: unless-stopped
