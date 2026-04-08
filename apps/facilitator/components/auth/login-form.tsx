@@ -28,7 +28,11 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const returnTo = searchParams.get("returnTo") ?? "/";
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo =
+    rawReturnTo && rawReturnTo.startsWith("/") && !rawReturnTo.startsWith("//")
+      ? rawReturnTo
+      : "/";
 
   const loginMutation = useLoginMutation({
     baseUrl: "/api/auth",

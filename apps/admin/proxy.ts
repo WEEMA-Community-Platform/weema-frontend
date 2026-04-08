@@ -30,7 +30,8 @@ export function proxy(request: NextRequest) {
 
   if (!token || !isAllowedAdminRole(role)) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("returnTo", request.nextUrl.href);
+    const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    loginUrl.searchParams.set("returnTo", returnTo || "/");
     return NextResponse.redirect(loginUrl);
   }
 

@@ -1,6 +1,7 @@
 services:
   admin:
     container_name: weema-admin
+    init: true
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,21 +10,36 @@ services:
         PORT: 3001
     env_file:
       - path: ./.env
-        required: false
+        required: true
       - path: ./apps/admin/.env
-        required: false
-      - path: ./apps/admin/.env.local
         required: false
     environment:
       NODE_ENV: production
+      HOSTNAME: 0.0.0.0
       PORT: 3001
       APP_NAME: "@weema/admin"
+      AUTH_DEBUG: ${AUTH_DEBUG:-0}
+      AUTH_API_BASE_URL: ${AUTH_API_BASE_URL:?Set AUTH_API_BASE_URL in .env}
+      API_BASE_URL: ${API_BASE_URL:?Set API_BASE_URL in .env}
+      NEXT_PUBLIC_AUTH_APP_URL: ${NEXT_PUBLIC_AUTH_APP_URL:?Set NEXT_PUBLIC_AUTH_APP_URL in .env}
     ports:
       - "3001:3001"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:' + (process.env.PORT || 3001) + '/login',{redirect:'manual'}).then(r=>process.exit(r.status < 500 ? 0 : 1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s
     restart: unless-stopped
 
   facilitator:
     container_name: weema-facilitator
+    init: true
     build:
       context: .
       dockerfile: Dockerfile
@@ -32,15 +48,29 @@ services:
         PORT: 3002
     env_file:
       - path: ./.env
-        required: false
+        required: true
       - path: ./apps/facilitator/.env
-        required: false
-      - path: ./apps/facilitator/.env.local
         required: false
     environment:
       NODE_ENV: production
+      HOSTNAME: 0.0.0.0
       PORT: 3002
       APP_NAME: "@weema/facilitator"
+      AUTH_DEBUG: ${AUTH_DEBUG:-0}
+      AUTH_API_BASE_URL: ${AUTH_API_BASE_URL:?Set AUTH_API_BASE_URL in .env}
+      API_BASE_URL: ${API_BASE_URL:?Set API_BASE_URL in .env}
+      NEXT_PUBLIC_AUTH_APP_URL: ${NEXT_PUBLIC_AUTH_APP_URL:?Set NEXT_PUBLIC_AUTH_APP_URL in .env}
     ports:
       - "3002:3002"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:' + (process.env.PORT || 3002) + '/login',{redirect:'manual'}).then(r=>process.exit(r.status < 500 ? 0 : 1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s
     restart: unless-stopped
