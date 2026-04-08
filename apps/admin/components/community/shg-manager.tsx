@@ -14,6 +14,7 @@ import {
   useUpdateSHGMutation,
 } from "@/hooks/use-community";
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
+import { useUsersQuery } from "@/hooks/use-users-admin";
 import type { EntityStatus, SHG } from "@/lib/api/community";
 import { extractLatLngFromMapsUrl } from "@/lib/maps-coordinates";
 import {
@@ -70,6 +71,7 @@ export function SHGManager() {
   const [kebeleId, setKebeleId] = useState("none");
   /** Edit form only — new SHGs are created without a cluster; assign via Edit SHG. */
   const [clusterId, setClusterId] = useState("none");
+  const [facilitatorId, setFacilitatorId] = useState("none");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   /** Helper field — not submitted; used to paste maps links and fill lat/lng. */
@@ -122,6 +124,12 @@ export function SHGManager() {
     woredaId: filterQueryParam(draftFilterWoredaId),
   });
   const { data: clustersData } = useClustersQuery({ page: 1, pageSize: 200 });
+  const facilitatorsQuery = useUsersQuery({
+    page: 1,
+    pageSize: 200,
+    roles: ["ROLE_FACILITATOR"],
+    isActive: true,
+  });
 
   const createMutation = useCreateSHGMutation();
   const updateMutation = useUpdateSHGMutation();
@@ -163,6 +171,19 @@ export function SHGManager() {
     ],
     [clustersData?.clusters]
   );
+  const facilitatorOptions = useMemo(
+    () => [
+      { value: "none", label: "No facilitator (unassigned)" },
+      ...(facilitatorsQuery.data?.users ?? []).map((user) => {
+        const name = `${user.firstName} ${user.lastName}`.trim();
+        return {
+          value: user.id,
+          label: name ? `${name} (${user.email})` : user.email,
+        };
+      }),
+    ],
+    [facilitatorsQuery.data?.users]
+  );
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -170,6 +191,7 @@ export function SHGManager() {
     setWoredaId("none");
     setKebeleId("none");
     setClusterId("none");
+    setFacilitatorId("none");
     setLatitude("");
     setLongitude("");
     setMapsUrl("");
@@ -185,6 +207,7 @@ export function SHGManager() {
     setWoredaId(s.woredaId || "none");
     setKebeleId(s.kebeleId || "none");
     setClusterId(s.clusterId || "none");
+    setFacilitatorId(s.facilitatorId || "none");
     const latStr = s.latitude != null ? String(s.latitude) : "";
     const lngStr = s.longitude != null ? String(s.longitude) : "";
     setLatitude(latStr);
@@ -266,11 +289,26 @@ export function SHGManager() {
     const resolvedWoredaId = woredaId && woredaId !== "none" ? woredaId : undefined;
     const resolvedKebeleId = kebeleId && kebeleId !== "none" ? kebeleId : undefined;
     const resolvedClusterId = clusterId && clusterId !== "none" ? clusterId : undefined;
+    const resolvedFacilitatorId =
+      facilitatorId && facilitatorId !== "none" ? facilitatorId : null;
     const lat = latitude ? parseFloat(latitude) : undefined;
     const lng = longitude ? parseFloat(longitude) : undefined;
     try {
       if (editingSHG) {
-        const result = await updateMutation.mutateAsync({ id: editingSHG.id, payload: { name: name.trim(), description: description.trim(), status, woredaId: resolvedWoredaId, kebeleId: resolvedKebeleId, clusterId: resolvedClusterId, latitude: lat, longitude: lng } });
+        const result = await updateMutation.mutateAsync({
+          id: editingSHG.id,
+          payload: {
+            name: name.trim(),
+            description: description.trim(),
+            status,
+            woredaId: resolvedWoredaId,
+            kebeleId: resolvedKebeleId,
+            clusterId: resolvedClusterId,
+            facilitatorId: resolvedFacilitatorId,
+            latitude: lat,
+            longitude: lng,
+          },
+        });
         sileo.success({ title: "SHG updated", description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
@@ -279,6 +317,7 @@ export function SHGManager() {
           status,
           woredaId: resolvedWoredaId,
           kebeleId: resolvedKebeleId,
+          facilitatorId: resolvedFacilitatorId,
           latitude: lat,
           longitude: lng,
         });
@@ -512,6 +551,7 @@ export function SHGManager() {
         woredaId={woredaId}
         kebeleId={kebeleId}
         clusterId={clusterId}
+        facilitatorId={facilitatorId}
         latitude={latitude}
         longitude={longitude}
         mapsUrl={mapsUrl}
@@ -519,6 +559,7 @@ export function SHGManager() {
         woredaOptions={woredaOptions}
         kebeleOptions={kebeleOptions}
         clusterFormOptions={clusterFormOptions}
+        facilitatorOptions={facilitatorOptions}
         statusOptions={STATUS_OPTIONS}
         setName={setName}
         setDescription={setDescription}
@@ -526,6 +567,7 @@ export function SHGManager() {
         setWoredaId={setWoredaId}
         setKebeleId={setKebeleId}
         setClusterId={setClusterId}
+        setFacilitatorId={setFacilitatorId}
         handleMapsUrlChange={handleMapsUrlChange}
         handleMapsUrlBlur={handleMapsUrlBlur}
         handleMapsPaste={handleMapsPaste}
@@ -535,6 +577,7 @@ export function SHGManager() {
         setMapsUrl={setMapsUrl}
         onSubmit={submitForm}
         isSubmitting={isSubmitting}
+        isFacilitatorsLoading={facilitatorsQuery.isLoading || facilitatorsQuery.isFetching}
       />
 
       <SHGDetailDialog id={viewingId} open={!!viewingId} onClose={() => setViewingId(null)} />

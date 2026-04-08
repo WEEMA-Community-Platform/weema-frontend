@@ -92,6 +92,47 @@ export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open
   );
 }
 
+type SHGFormDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingSHG: SHG | null;
+  name: string;
+  description: string;
+  status: EntityStatus | "";
+  woredaId: string;
+  kebeleId: string;
+  clusterId: string;
+  facilitatorId: string;
+  facilitatorSearchQuery?: string;
+  latitude: string;
+  longitude: string;
+  mapsUrl: string;
+  coordinateMode: "idle" | "map" | "manual";
+  woredaOptions: Array<{ value: string; label: string }>;
+  kebeleOptions: Array<{ value: string; label: string }>;
+  clusterFormOptions: Array<{ value: string; label: string }>;
+  facilitatorOptions: Array<{ value: string; label: string }>;
+  statusOptions: Array<{ value: string; label: string }>;
+  setName: (value: string) => void;
+  setDescription: (value: string) => void;
+  setStatus: (value: EntityStatus | "") => void;
+  setWoredaId: (value: string) => void;
+  setKebeleId: (value: string) => void;
+  setClusterId: (value: string) => void;
+  setFacilitatorId: (value: string) => void;
+  setFacilitatorSearchQuery?: (value: string) => void;
+  handleMapsUrlChange: (value: string) => void;
+  handleMapsUrlBlur: () => void;
+  handleMapsPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
+  handleManualCoordinateInput: (field: "lat" | "lng", value: string) => void;
+  switchToMapLinkEntry: () => void;
+  setCoordinateMode: (mode: "idle" | "map" | "manual") => void;
+  setMapsUrl: (value: string) => void;
+  onSubmit: (event: React.FormEvent) => void;
+  isSubmitting: boolean;
+  isFacilitatorsLoading: boolean;
+};
+
 export function SHGFormDialog({
   open,
   onOpenChange,
@@ -102,6 +143,7 @@ export function SHGFormDialog({
   woredaId,
   kebeleId,
   clusterId,
+  facilitatorId,
   latitude,
   longitude,
   mapsUrl,
@@ -109,6 +151,7 @@ export function SHGFormDialog({
   woredaOptions,
   kebeleOptions,
   clusterFormOptions,
+  facilitatorOptions,
   statusOptions,
   setName,
   setDescription,
@@ -116,6 +159,7 @@ export function SHGFormDialog({
   setWoredaId,
   setKebeleId,
   setClusterId,
+  setFacilitatorId,
   handleMapsUrlChange,
   handleMapsUrlBlur,
   handleMapsPaste,
@@ -125,40 +169,8 @@ export function SHGFormDialog({
   setMapsUrl,
   onSubmit,
   isSubmitting,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  editingSHG: SHG | null;
-  name: string;
-  description: string;
-  status: EntityStatus | "";
-  woredaId: string;
-  kebeleId: string;
-  clusterId: string;
-  latitude: string;
-  longitude: string;
-  mapsUrl: string;
-  coordinateMode: "idle" | "map" | "manual";
-  woredaOptions: Array<{ value: string; label: string }>;
-  kebeleOptions: Array<{ value: string; label: string }>;
-  clusterFormOptions: Array<{ value: string; label: string }>;
-  statusOptions: Array<{ value: string; label: string }>;
-  setName: (value: string) => void;
-  setDescription: (value: string) => void;
-  setStatus: (value: EntityStatus | "") => void;
-  setWoredaId: (value: string) => void;
-  setKebeleId: (value: string) => void;
-  setClusterId: (value: string) => void;
-  handleMapsUrlChange: (value: string) => void;
-  handleMapsUrlBlur: () => void;
-  handleMapsPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
-  handleManualCoordinateInput: (field: "lat" | "lng", value: string) => void;
-  switchToMapLinkEntry: () => void;
-  setCoordinateMode: (mode: "idle" | "map" | "manual") => void;
-  setMapsUrl: (value: string) => void;
-  onSubmit: (event: React.FormEvent) => void;
-  isSubmitting: boolean;
-}) {
+  isFacilitatorsLoading,
+}: SHGFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
@@ -199,6 +211,21 @@ export function SHGFormDialog({
                   />
                 </div>
               ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="shg-facilitator">Facilitator</Label>
+                <SelectField
+                  id="shg-facilitator"
+                  value={facilitatorId || "none"}
+                  onValueChange={setFacilitatorId}
+                  options={facilitatorOptions}
+                  placeholder={
+                    isFacilitatorsLoading
+                      ? "Loading facilitators..."
+                      : "Select facilitator"
+                  }
+                  className="h-11"
+                />
+              </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="shg-woreda">Woreda</Label>
