@@ -19,7 +19,7 @@ export function getSecureCookieOptions(
 ): Partial<ResponseCookie> {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
     path: "/",
     expires: expiresAt,
