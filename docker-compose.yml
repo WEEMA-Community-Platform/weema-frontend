@@ -21,7 +21,6 @@ services:
       AUTH_DEBUG: ${AUTH_DEBUG:-0}
       AUTH_API_BASE_URL: ${AUTH_API_BASE_URL:?Set AUTH_API_BASE_URL in .env}
       API_BASE_URL: ${API_BASE_URL:?Set API_BASE_URL in .env}
-      NEXT_PUBLIC_AUTH_APP_URL: ${NEXT_PUBLIC_AUTH_APP_URL:?Set NEXT_PUBLIC_AUTH_APP_URL in .env}
     ports:
       - "3001:3001"
     healthcheck:
@@ -59,7 +58,6 @@ services:
       AUTH_DEBUG: ${AUTH_DEBUG:-0}
       AUTH_API_BASE_URL: ${AUTH_API_BASE_URL:?Set AUTH_API_BASE_URL in .env}
       API_BASE_URL: ${API_BASE_URL:?Set API_BASE_URL in .env}
-      NEXT_PUBLIC_AUTH_APP_URL: ${NEXT_PUBLIC_AUTH_APP_URL:?Set NEXT_PUBLIC_AUTH_APP_URL in .env}
     ports:
       - "3002:3002"
     healthcheck:
