@@ -1,6 +1,6 @@
 "use client";
 
-import { EyeIcon, MoreVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { SquareKanban, MoreVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
 
 import type { EntityStatus } from "@/lib/api/community";
 import { Badge } from "@/components/ui/badge";
@@ -81,11 +81,11 @@ export function CommunityCard({
                 </Button>
               }
             />
-            <DropdownMenuContent align="end" side="bottom" className="min-w-48">
+            <DropdownMenuContent align="center" side="bottom" className="min-w-48">
               {hasPrimaryActions ? (
                 <DropdownMenuGroup>
                   {showViewAction && onView ? (
-                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><EyeIcon />{viewActionLabel}</DropdownMenuItem>
+                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><SquareKanban />{viewActionLabel}</DropdownMenuItem>
                   ) : null}
                   {showEditAction && onEdit ? (
                     <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{editActionLabel}</DropdownMenuItem>

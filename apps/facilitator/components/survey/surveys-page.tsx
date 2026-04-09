@@ -157,7 +157,7 @@ export function SurveysPage() {
                 }
                 showEditAction={false}
                 showDeleteAction={false}
-                viewActionLabel="View submissions"
+                viewActionLabel="Manage submissions"
               >
                 <CardMetaRow icon={LayersIcon} label="Target">
                   {survey.targetType || "-"}
