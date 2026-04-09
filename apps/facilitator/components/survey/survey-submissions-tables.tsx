@@ -25,8 +25,8 @@ export function formatSubmissionDateTime(value: string | null | undefined) {
   }).format(date);
 }
 
-export function SubmissionStatusBadge({ status }: { status: string }) {
-  const normalized = status.toUpperCase();
+export function SubmissionStatusBadge({ status }: { status?: string | null }) {
+  const normalized = (status ?? "NOT_STARTED").toUpperCase();
   if (normalized === "SUBMITTED") {
     return (
       <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
@@ -48,7 +48,13 @@ export function SubmissionStatusBadge({ status }: { status: string }) {
       </Badge>
     );
   }
-  return <Badge variant="outline">{status.replaceAll("_", " ")}</Badge>;
+  const label = status ? status.replaceAll("_", " ") : "Pending";
+  return <Badge variant="outline">{label}</Badge>;
+}
+
+function isNotStartedStatus(status?: string | null) {
+  const normalized = (status ?? "NOT_STARTED").toUpperCase();
+  return normalized === "NOT_STARTED" || normalized === "NOT STARTED" || normalized === "PENDING";
 }
 
 export function AssignmentApprovalBadge({ status }: { status?: string | null }) {
@@ -120,7 +126,7 @@ export function AssignedTargetsTableCard({
             >
               <ChevronLeftIcon className="size-3.5" />
             </button>
-            <span className="min-w-[4rem] text-center">
+            <span className="min-w-16 text-center">
               {safePage} / {totalPages}
             </span>
             <button
@@ -197,104 +203,120 @@ export function AssignedTargetsTableCard({
 }
 
 type MemberSubmissionsTableCardProps = {
-  selectedAssignmentId: string | null;
-  selectedAssignmentName: string;
+  selectedAssignmentName?: string;
+  targetLabelSingular: string;
+  targetLabelPlural: string;
   submissions: SurveySubmissionRecord[];
   loading: boolean;
   isError: boolean;
   errorMessage?: string;
   onRetry: () => void;
-  onViewAnswers: (submission: SurveySubmissionRecord) => void;
+  onPrimaryAction: (submission: SurveySubmissionRecord) => void;
 };
 
 export function MemberSubmissionsTableCard({
-  selectedAssignmentId,
   selectedAssignmentName,
+  targetLabelSingular,
+  targetLabelPlural,
   submissions,
   loading,
   isError,
   errorMessage,
   onRetry,
-  onViewAnswers,
+  onPrimaryAction,
 }: MemberSubmissionsTableCardProps) {
+  const titleTargetLabel = targetLabelPlural[0]
+    ? targetLabelPlural[0].toUpperCase() + targetLabelPlural.slice(1)
+    : targetLabelPlural;
+  const rowTargetLabel = targetLabelSingular[0]
+    ? targetLabelSingular[0].toUpperCase() + targetLabelSingular.slice(1)
+    : targetLabelSingular;
+
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-primary/10 px-4 pb-4 pt-4">
         <CardTitle>
-          {selectedAssignmentId
-            ? `Member submissions${selectedAssignmentName ? ` - ${selectedAssignmentName}` : ""}`
-            : "Member submissions"}
+          {`${titleTargetLabel} submissions${selectedAssignmentName ? ` - ${selectedAssignmentName}` : ""}`}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0 pb-0 pt-0">
-        {!selectedAssignmentId ? (
-          <div className="rounded-b-xl bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-            Select a self-help group above to load member submissions.
-          </div>
-        ) : (
-          <TableShell
-            variant="embedded"
-            headers={["Member", "Status", "Progress", "Submitted", "Actions"]}
-            loading={loading}
-            loadingColumnCount={5}
-            isError={isError}
-            errorMessage={errorMessage}
-            onRetry={onRetry}
-            emptyState={
-              <EmptyStateRow colSpan={5} message="No member submissions found for this self-help group." />
-            }
-          >
-            {submissions.map((submission) => {
-              const progress =
-                submission.totalQuestions > 0
-                  ? Math.round((submission.answeredQuestions / submission.totalQuestions) * 100)
-                  : 0;
-              return (
-                <TableRow key={submission.id}>
-                  <TableCell>
-                    <p className="truncate text-sm font-medium">
-                      {submission.memberName || "Unknown member"}
+        <TableShell
+          variant="embedded"
+          headers={[rowTargetLabel, "Status", "Progress", "Submitted", "Actions"]}
+          loading={loading}
+          loadingColumnCount={5}
+          isError={isError}
+          errorMessage={errorMessage}
+          onRetry={onRetry}
+          emptyState={
+            <EmptyStateRow
+              colSpan={5}
+              message={
+                selectedAssignmentName
+                  ? `No ${targetLabelPlural} submissions found for this self-help group.`
+                  : `No ${targetLabelPlural} submissions found for this survey.`
+              }
+            />
+          }
+        >
+          {submissions.map((submission, index) => {
+            const progress =
+              (submission.totalQuestions ?? 0) > 0
+                ? Math.round(((submission.answeredQuestions ?? 0) / (submission.totalQuestions ?? 0)) * 100)
+                : 0;
+            const rowKey =
+              submission.id ||
+              `${submission.targetId || submission.memberId || submission.targetName || submission.memberName || "target"}-${submission.surveyAssignmentId || "pending"}-${index}`;
+            const hasSubmissionId = Boolean(submission.id);
+            const hasTargetId = Boolean(submission.targetId || submission.memberId);
+            const fillMode = isNotStartedStatus(submission.submissionStatus);
+            const actionLabel = fillMode ? "Fill survey" : "View answers";
+            const displayName = submission.targetName || submission.memberName;
+
+            return (
+              <TableRow key={rowKey}>
+                <TableCell>
+                  <p className="truncate text-sm font-medium">
+                    {displayName || `Unknown ${targetLabelSingular}`}
+                  </p>
+                </TableCell>
+                <TableCell className="text-sm">
+                  <SubmissionStatusBadge status={submission.submissionStatus} />
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">
+                      {submission.answeredQuestions ?? 0}/{submission.totalQuestions ?? 0} answered
                     </p>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <SubmissionStatusBadge status={submission.submissionStatus} />
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">
-                        {submission.answeredQuestions}/{submission.totalQuestions} answered
-                      </p>
-                      <div className="h-1.5 w-full rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                        />
-                      </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                      />
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatSubmissionDateTime(submission.submittedAt)}
-                  </TableCell>
-                  <TableCell className={tableActionsCellClass}>
-                    <div className={tableRowActionsClass}>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-3 text-xs"
-                        onClick={() => onViewAnswers(submission)}
-                      >
-                        {submission.submissionStatus?.toUpperCase() === "SUBMITTED"
-                          ? "Edit survey"
-                          : "Fill survey"}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableShell>
-        )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatSubmissionDateTime(submission.submittedAt)}
+                </TableCell>
+                <TableCell className={tableActionsCellClass}>
+                  <div className={tableRowActionsClass}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-3 text-xs"
+                      disabled={fillMode ? !hasTargetId : !hasSubmissionId}
+                      onClick={() => onPrimaryAction(submission)}
+                    >
+                      {actionLabel}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableShell>
       </CardContent>
     </Card>
   );

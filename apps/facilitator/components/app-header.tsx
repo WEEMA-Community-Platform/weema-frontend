@@ -19,7 +19,7 @@ export function AppHeader() {
   const surveyTitle = searchParams.get("surveyTitle")
   const isSurveySubmissionsPath = pathname.startsWith("/survey/") && pathname.endsWith("/submissions")
   const inAnswerWorkspace = searchParams.get("view") === "answers"
-  const memberName = searchParams.get("memberName")
+  const targetName = searchParams.get("targetName") ?? searchParams.get("memberName")
   const meta = isSurveySubmissionsPath
     ? {
         ...PATH_META["/survey/submissions"],
@@ -50,7 +50,7 @@ export function AppHeader() {
               <>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>{memberName ? `${memberName} answers` : "Answer workspace"}</BreadcrumbPage>
+                  <BreadcrumbPage>{targetName ? `${targetName} answers` : "Answer workspace"}</BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             ) : null}

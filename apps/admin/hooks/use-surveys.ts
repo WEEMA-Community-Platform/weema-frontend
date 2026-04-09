@@ -15,7 +15,8 @@ import {
   getSurveyById,
   getSurveySubmissionById,
   getSurveySubmissionsByAssignmentId,
-  getSurveySubmissionsBySurveyId,
+  getSurveyPendingTargetsBySurveyId,
+  startSurveySubmission,
   getSurveys,
   publishSurvey,
   lockSurveyAssignment,
@@ -34,6 +35,7 @@ import {
   type CreateSectionPayload,
   type UpsertQuestionPayload,
   type UpsertSubmissionAnswerPayload,
+  type StartSurveySubmissionPayload,
   type UpdateSurveyPayload,
 } from "@/lib/api/surveys";
 import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
@@ -60,8 +62,8 @@ export function useSurveySubmissionsBySurveyQuery(
 ) {
   const enabled = (options?.enabled ?? true) && !!surveyId;
   return useQuery({
-    queryKey: ["survey", surveyId, "submissions"],
-    queryFn: () => getSurveySubmissionsBySurveyId(surveyId!),
+    queryKey: ["survey", surveyId, "pending-targets"],
+    queryFn: () => getSurveyPendingTargetsBySurveyId(surveyId!),
     enabled,
   });
 }
@@ -130,6 +132,17 @@ export function useSubmitSurveySubmissionMutation() {
     mutationFn: (submissionId: string) => submitSurveySubmission(submissionId),
     onSuccess: (_result, submissionId) => {
       invalidateSubmissionQueries(queryClient, submissionId);
+    },
+  });
+}
+
+export function useStartSurveySubmissionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: StartSurveySubmissionPayload) => startSurveySubmission(payload),
+    onSuccess: (submission) => {
+      invalidateSubmissionQueries(queryClient, submission.id);
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
     },
   });
 }

@@ -8,6 +8,6 @@ export async function GET(_request: Request, { params }: RouteParams) {
   const { surveyId } = await params;
   return forwardAuthorizedRequest({
     method: "GET",
-    path: `/api/survey-submissions/survey/${surveyId}`,
+    path: `/api/survey-submissions/survey/${surveyId}/pending-targets`,
   });
 }

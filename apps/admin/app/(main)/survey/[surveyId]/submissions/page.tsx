@@ -2,9 +2,11 @@ import { SurveySubmissionsPage } from "@/components/survey/survey-submissions-pa
 
 type PageProps = {
   params: Promise<{ surveyId: string }>;
+  searchParams: Promise<{ targetType?: string }>;
 };
 
-export default async function SurveySubmissionsRoute({ params }: PageProps) {
+export default async function SurveySubmissionsRoute({ params, searchParams }: PageProps) {
   const { surveyId } = await params;
-  return <SurveySubmissionsPage surveyId={surveyId} />;
+  const { targetType } = await searchParams;
+  return <SurveySubmissionsPage surveyId={surveyId} initialTargetType={targetType} />;
 }

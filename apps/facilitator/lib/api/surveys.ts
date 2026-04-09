@@ -76,11 +76,18 @@ export type SurveySubmissionRecord = {
   totalQuestions: number;
   answeredQuestions: number;
   answers: SurveySubmissionAnswer[];
+  targetId?: string;
+  targetName?: string;
+  targetType?: string;
   createdAt?: string;
   updatedAt?: string;
 };
 
 export type SurveySubmissionsBySurveyResponse = BaseApiResponse & {
+  submissions: SurveySubmissionRecord[];
+};
+
+export type SurveyPendingTargetsResponse = BaseApiResponse & {
   submissions: SurveySubmissionRecord[];
 };
 
@@ -100,6 +107,11 @@ export type UpsertSubmissionAnswerPayload = {
   answerBoolean?: boolean;
   answerJson?: unknown;
   selectedOptionIds?: string[];
+};
+
+export type StartSurveySubmissionPayload = {
+  surveyId: string;
+  targetId: string;
 };
 
 export type UpdateSurveyPayload = {
@@ -291,23 +303,82 @@ export async function assignSurveyTargets(
 export async function getSurveySubmissionsBySurveyId(
   surveyId: string
 ): Promise<SurveySubmissionsBySurveyResponse> {
-  const response = await fetch(`/api/survey-submissions/survey/${surveyId}`, {
+  const response = await fetch(`/api/survey-submissions/survey/${surveyId}/pending-targets`, {
     cache: "no-store",
   });
   const payload = await parseResponse<
-    SurveySubmissionsBySurveyResponse | (BaseApiResponse & { data?: SurveySubmissionRecord[] })
+    | SurveyPendingTargetsResponse
+    | (BaseApiResponse & { targets?: Array<Record<string, unknown>>; data?: Array<Record<string, unknown>> })
   >(response);
   if ("submissions" in payload && Array.isArray(payload.submissions)) {
-    return payload as SurveySubmissionsBySurveyResponse;
+    return payload as SurveyPendingTargetsResponse;
   }
+
+  const rows = Array.isArray((payload as { targets?: unknown[] }).targets)
+    ? ((payload as { targets: Array<Record<string, unknown>> }).targets ?? [])
+    : Array.isArray((payload as { data?: unknown[] }).data)
+      ? ((payload as { data: Array<Record<string, unknown>> }).data ?? [])
+      : [];
+
+  const mapped: SurveySubmissionRecord[] = rows.map((row) => {
+    const targetId = String(row.targetId ?? "");
+    const targetName = String(row.targetName ?? "");
+    const targetType = String(row.targetType ?? "");
+    const assigneeId = row.assigneeId ? String(row.assigneeId) : "";
+    return {
+      id: "",
+      surveyAssignmentId: assigneeId,
+      surveyId,
+      surveyTitle: "",
+      memberId: targetId,
+      memberName: targetName,
+      submissionStatus: "NOT_STARTED",
+      startedAt: null,
+      submittedAt: null,
+      totalQuestions: 0,
+      answeredQuestions: 0,
+      answers: [],
+      targetId,
+      targetName,
+      targetType,
+      createdAt: undefined,
+      updatedAt: undefined,
+    };
+  });
 
   return {
     message: payload.message,
     statusCode: payload.statusCode,
-    submissions: Array.isArray((payload as { data?: unknown[] }).data)
-      ? ((payload as { data: SurveySubmissionRecord[] }).data ?? [])
-      : [],
+    submissions: mapped,
   };
+}
+
+export async function startSurveySubmission(
+  payload: StartSurveySubmissionPayload
+): Promise<SurveySubmissionRecord> {
+  const response = await fetch("/api/survey-submissions/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const parsed = await parseResponse<
+    | SurveySubmissionRecord
+    | (BaseApiResponse & { submission?: SurveySubmissionRecord | null; data?: SurveySubmissionRecord | null })
+  >(response);
+
+  if ("id" in parsed && typeof parsed.id === "string") {
+    return parsed as SurveySubmissionRecord;
+  }
+
+  const wrapped = parsed as BaseApiResponse & {
+    submission?: SurveySubmissionRecord | null;
+    data?: SurveySubmissionRecord | null;
+  };
+  const submission = wrapped.submission ?? wrapped.data;
+  if (!submission?.id) {
+    throw new Error(wrapped.message || "Could not start submission");
+  }
+  return submission;
 }
 
 export type SurveySubmissionsByAssignmentResponse = BaseApiResponse & {

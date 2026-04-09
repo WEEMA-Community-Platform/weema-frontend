@@ -16,6 +16,7 @@ import {
   getSurveySubmissionById,
   getSurveySubmissionsByAssignmentId,
   getSurveySubmissionsBySurveyId,
+  startSurveySubmission,
   getSurveys,
   publishSurvey,
   rejectSurveyAssignment,
@@ -32,6 +33,7 @@ import {
   type UpsertQuestionPayload,
   type RejectSurveyAssignmentPayload,
   type UpsertSubmissionAnswerPayload,
+  type StartSurveySubmissionPayload,
   type UpdateSurveyPayload,
 } from "@/lib/api/surveys";
 import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
@@ -136,6 +138,20 @@ export function useSubmitSurveySubmissionMutation() {
       queryClient.invalidateQueries({
         queryKey: ["survey-submission", submissionId],
       });
+      queryClient.invalidateQueries({ queryKey: ["survey"] });
+    },
+  });
+}
+
+export function useStartSurveySubmissionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: StartSurveySubmissionPayload) => startSurveySubmission(payload),
+    onSuccess: (submission) => {
+      queryClient.invalidateQueries({
+        queryKey: ["survey-submission", submission.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["survey-submission"] });
       queryClient.invalidateQueries({ queryKey: ["survey"] });
     },
   });

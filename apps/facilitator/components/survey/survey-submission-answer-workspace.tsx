@@ -650,11 +650,13 @@ function buildSubmissionAnswerPayload(question: WorkspaceQuestion, draft: Answer
 
 export function SurveySubmissionAnswerWorkspace({
   submission,
+  targetLabelSingular = "member",
   questionTemplates,
   onBackToTable,
   onSubmissionUpdated,
 }: {
   submission: SurveySubmissionRecord;
+  targetLabelSingular?: string;
   questionTemplates: QuestionTemplate[];
   onBackToTable: () => void;
   onSubmissionUpdated?: () => Promise<unknown> | void;
@@ -728,6 +730,8 @@ export function SurveySubmissionAnswerWorkspace({
   const isSaving = saveAnswerMutation.isPending || updateAnswerMutation.isPending;
   const isSubmitting = submitSubmissionMutation.isPending;
   const dirtyCount = Object.keys(dirtyQuestionKeys).length;
+  const displayTargetName =
+    submission.targetName || submission.memberName || `Unknown ${targetLabelSingular}`;
   const allQuestionsCompleted = questions.every((question) =>
     isQuestionAnswered(question, getDraft(question))
   );
@@ -829,7 +833,11 @@ export function SurveySubmissionAnswerWorkspace({
 
       <Card className="border-primary/10">
         <CardHeader className="pb-3">
-          <CardTitle>Member response workspace</CardTitle>
+          <CardTitle>
+            {targetLabelSingular[0]
+              ? `${targetLabelSingular[0].toUpperCase()}${targetLabelSingular.slice(1)} response workspace`
+              : "Response workspace"}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-primary/10 bg-card p-4">
@@ -837,7 +845,7 @@ export function SurveySubmissionAnswerWorkspace({
               <div className="space-y-1">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <UserRoundIcon className="size-4 text-muted-foreground" />
-                  {submission.memberName}
+                  {displayTargetName}
                 </p>
               </div>
               <SubmissionStatusBadge status={submission.submissionStatus} />

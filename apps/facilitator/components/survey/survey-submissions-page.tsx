@@ -9,37 +9,57 @@ import { Button } from "@/components/ui/button";
 import { type QuestionTemplate } from "@/components/survey/survey-submission-answer-workspace";
 import { SubmissionWorkspacePanel } from "@/components/survey/survey-submission-workspace-panel";
 import {
-  AssignedTargetsTableCard,
   MemberSubmissionsTableCard,
 } from "@/components/survey/survey-submissions-tables";
 import {
-  useSurveyAssignmentTargetsQuery,
+  useStartSurveySubmissionMutation,
   useSurveyDetailQuery,
   useSurveySubmissionDetailQuery,
-  useSurveySubmissionsByAssignmentQuery,
+  useSurveySubmissionsBySurveyQuery,
 } from "@/hooks/use-surveys";
-import type { SurveyAssignmentTargetRow, SurveySubmissionRecord } from "@/lib/api/surveys";
+import type { SurveySubmissionRecord } from "@/lib/api/surveys";
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
-export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
+function labelsForTargetType(targetType: string | undefined) {
+  const normalized = (targetType ?? "").toUpperCase();
+  if (normalized === "CLUSTER" || normalized === "SELF_HELP_GROUP") {
+    return { singular: "SHG", plural: "SHGs" };
+  }
+  if (normalized === "FEDERATION") return { singular: "cluster", plural: "clusters" };
+  if (normalized === "MEMBER") return { singular: "member", plural: "members" };
+  return { singular: "target", plural: "targets" };
+}
+
+function isNotStartedStatus(status?: string | null) {
+  const normalized = (status ?? "NOT_STARTED").toUpperCase();
+  return normalized === "NOT_STARTED" || normalized === "NOT STARTED" || normalized === "PENDING";
+}
+
+export function SurveySubmissionsPage({
+  surveyId,
+  initialTargetType,
+}: {
+  surveyId: string;
+  initialTargetType?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const surveyTitle = searchParams.get("surveyTitle")?.trim() || "Selected survey";
   const selectedSubmissionId = searchParams.get("submissionId");
-  const selectedAssignmentId = searchParams.get("assignmentId");
-  const selectedAssignmentName = searchParams.get("assignmentName")?.trim() || "";
+  const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
 
-  const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(surveyId);
-  const assignedTargets = assignmentTargetsQuery.data?.assignmentData?.assignedTargets ?? [];
-  const submissionsQuery = useSurveySubmissionsByAssignmentQuery(selectedAssignmentId, {
-    enabled: !!selectedAssignmentId,
-  });
+  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
   const submissions = submissionsQuery.data?.submissions ?? [];
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
-  const surveyDetailQuery = useSurveyDetailQuery(surveyId, { enabled: !!selectedSubmissionId });
+  const surveyDetailQuery = useSurveyDetailQuery(surveyId);
+  const primaryTargetType = submissions[0]?.targetType;
+  const surveyTargetType = surveyDetailQuery.data?.survey?.targetType;
+  const targetLabels = labelsForTargetType(targetTypeFromQuery ?? primaryTargetType ?? surveyTargetType);
+  const targetLabelSingular = targetLabels.singular;
+  const targetLabelPlural = targetLabels.plural;
+  const startSubmissionMutation = useStartSurveySubmissionMutation();
 
   const questionTemplates: QuestionTemplate[] = (() => {
     const backendSurvey = surveyDetailQuery.data?.survey;
@@ -65,28 +85,36 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const chooseAssignment = (target: SurveyAssignmentTargetRow) => {
-    if (!target.assignmentId) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.set("assignmentId", target.assignmentId);
-    next.set("assignmentName", target.name || "Self Help Group");
-    next.delete("submissionId");
-    next.delete("memberName");
-    next.delete("view");
-    setRouteSearch(next);
-  };
-
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("submissionId", submission.id);
-    next.set("memberName", submission.memberName || "Member");
+    next.set("targetName", submission.targetName || submission.memberName || targetLabelSingular);
+    next.delete("memberName");
     next.set("view", "answers");
     setRouteSearch(next);
+  };
+
+  const handlePrimaryAction = async (submission: SurveySubmissionRecord) => {
+    if (!isNotStartedStatus(submission.submissionStatus)) {
+      openAnswerWorkspace(submission);
+      return;
+    }
+
+    const targetId = submission.targetId || submission.memberId;
+    if (!targetId) return;
+
+    try {
+      const started = await startSubmissionMutation.mutateAsync({ surveyId, targetId });
+      openAnswerWorkspace({ ...submission, ...started, id: started.id });
+    } catch {
+      // errors are surfaced by API layer toasts elsewhere
+    }
   };
 
   const backToTable = () => {
     const next = new URLSearchParams(searchParams.toString());
     next.delete("submissionId");
+    next.delete("targetName");
     next.delete("memberName");
     next.delete("view");
     setRouteSearch(next);
@@ -107,6 +135,7 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
           loading={detailQuery.isLoading || surveyDetailQuery.isLoading}
           isError={detailQuery.isError}
           errorMessage={detailQuery.error instanceof Error ? detailQuery.error.message : undefined}
+          targetLabelSingular={targetLabelSingular}
           selectedSubmission={selectedSubmission}
           questionTemplates={questionTemplates}
           onRetry={() => detailQuery.refetch()}
@@ -117,34 +146,19 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
         />
       ) : (
         <>
-          <AssignedTargetsTableCard
-            surveyTitle={surveyTitle}
-            targets={assignedTargets}
-            selectedAssignmentId={selectedAssignmentId}
-            loading={assignmentTargetsQuery.isLoading}
-            isError={assignmentTargetsQuery.isError}
-            errorMessage={
-              assignmentTargetsQuery.error instanceof Error
-                ? assignmentTargetsQuery.error.message
-                : "Failed to load survey assignment targets."
-            }
-            onRetry={() => assignmentTargetsQuery.refetch()}
-            onChooseAssignment={chooseAssignment}
-          />
-
           <MemberSubmissionsTableCard
-            selectedAssignmentId={selectedAssignmentId}
-            selectedAssignmentName={selectedAssignmentName}
+            targetLabelSingular={targetLabelSingular}
+            targetLabelPlural={targetLabelPlural}
             submissions={submissions}
             loading={submissionsQuery.isLoading}
             isError={submissionsQuery.isError}
             errorMessage={
               submissionsQuery.error instanceof Error
                 ? submissionsQuery.error.message
-                : "Failed to load submissions."
+                : "Failed to load pending targets."
             }
             onRetry={() => submissionsQuery.refetch()}
-            onViewAnswers={openAnswerWorkspace}
+            onPrimaryAction={(submission) => void handlePrimaryAction(submission)}
           />
         </>
       )}

@@ -541,7 +541,7 @@ export function SHGManager() {
         </DialogContent>
       </Dialog>
 
-      <SHGFormDialog
+      < SHGFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         editingSHG={editingSHG}

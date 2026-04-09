@@ -232,6 +232,18 @@ function getSaveAllEligibility(
   try {
     const currentPayload = JSON.parse(currentSnapshot) as CreateSurveyPayload;
     const lastPayload = JSON.parse(lastSyncedSnapshot) as CreateSurveyPayload;
+    const metadataChanged =
+      currentPayload.title !== lastPayload.title ||
+      currentPayload.description !== lastPayload.description ||
+      currentPayload.targetType !== lastPayload.targetType;
+
+    if (metadataChanged) {
+      return {
+        canSaveAll: true,
+        hasUnsavedChanges: true,
+        reason: "Survey metadata changed. Save all will sync title, description, and target type.",
+      };
+    }
 
     const currentQuestionRows = currentPayload.sections.flatMap((section, sectionIndex) =>
       section.questions.map((question) => ({ sectionIndex, question }))
@@ -1329,6 +1341,10 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
                   onTitleChange={(value) => builder.setHeaderField("title", value)}
                   onDescriptionChange={(value) => builder.setHeaderField("description", value)}
                   onTargetTypeChange={(value) => builder.setHeaderField("targetType", value)}
+                  showSaveAction={Boolean(initialSurveyId)}
+                  onSave={() => void handleSaveSurvey()}
+                  isSaving={updateSurveyMutation.isPending}
+                  isSaveDisabled={isSavingAllChanges}
                 />
               </CardContent>
             </Card>

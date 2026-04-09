@@ -16,6 +16,7 @@ type SubmissionWorkspacePanelProps = {
   loading: boolean;
   isError: boolean;
   errorMessage?: string;
+  targetLabelSingular?: string;
   selectedSubmission: SurveySubmissionRecord | null;
   questionTemplates: QuestionTemplate[];
   onRetry: () => void;
@@ -28,6 +29,7 @@ export function SubmissionWorkspacePanel({
   loading,
   isError,
   errorMessage,
+  targetLabelSingular = "member",
   selectedSubmission,
   questionTemplates,
   onRetry,
@@ -87,6 +89,7 @@ export function SubmissionWorkspacePanel({
     <SurveySubmissionAnswerWorkspace
       key={selectedSubmission.id}
       submission={selectedSubmission}
+      targetLabelSingular={targetLabelSingular}
       questionTemplates={questionTemplates}
       onBackToTable={onBackToTable}
       onSubmissionUpdated={onSubmissionUpdated}

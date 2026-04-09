@@ -247,7 +247,7 @@ export function SurveysPage() {
                     router.push(
                       `/survey/${survey.id}/submissions?surveyTitle=${encodeURIComponent(
                         survey.title || "Untitled survey"
-                      )}`
+                      )}&targetType=${encodeURIComponent(survey.targetType || "")}`
                     )
                   }
                 >

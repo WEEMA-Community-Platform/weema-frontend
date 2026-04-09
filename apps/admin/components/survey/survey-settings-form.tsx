@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,6 +20,10 @@ type SurveySettingsFormProps = {
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onTargetTypeChange: (value: string) => void;
+  showSaveAction?: boolean;
+  onSave?: () => void;
+  isSaving?: boolean;
+  isSaveDisabled?: boolean;
 };
 
 export function SurveySettingsForm(props: SurveySettingsFormProps) {
@@ -57,6 +62,17 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
           </SelectContent>
         </Select>
       </Field>
+      {props.showSaveAction ? (
+        <div className="flex justify-end pt-2">
+          <Button
+            type="button"
+            onClick={props.onSave}
+            disabled={props.isSaveDisabled || props.isSaving}
+          >
+            {props.isSaving ? "Saving settings..." : "Save settings"}
+          </Button>
+        </div>
+      ) : null}
     </FieldGroup>
   );
 }

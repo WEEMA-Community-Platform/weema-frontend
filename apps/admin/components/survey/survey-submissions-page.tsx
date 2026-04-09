@@ -24,6 +24,7 @@ import {
 } from "@/components/survey/survey-submissions-tables";
 import {
   useLockSurveySubmissionMutation,
+  useStartSurveySubmissionMutation,
   useUnlockSurveySubmissionMutation,
   useSurveyDetailQuery,
   useSurveySubmissionDetailQuery,
@@ -34,11 +35,22 @@ import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
 type PendingSubmissionLock = { submission: SurveySubmissionRecord; action: "lock" | "unlock" };
 
+function labelsForTargetType(targetType: string | undefined) {
+  const normalized = (targetType ?? "").toUpperCase();
+  if (normalized === "CLUSTER" || normalized === "SELF_HELP_GROUP") {
+    return { singular: "SHG", plural: "SHGs" };
+  }
+  if (normalized === "FEDERATION") return { singular: "cluster", plural: "clusters" };
+  if (normalized === "MEMBER") return { singular: "member", plural: "members" };
+  return { singular: "target", plural: "targets" };
+}
+
 function SubmissionLockDialog({
   pending,
   open,
   lockMutation,
   unlockMutation,
+  targetLabelSingular,
   onUpdated,
   onClose,
 }: {
@@ -46,6 +58,7 @@ function SubmissionLockDialog({
   open: boolean;
   lockMutation: ReturnType<typeof useLockSurveySubmissionMutation>;
   unlockMutation: ReturnType<typeof useUnlockSurveySubmissionMutation>;
+  targetLabelSingular: string;
   onUpdated: () => Promise<void>;
   onClose: () => void;
 }) {
@@ -55,6 +68,10 @@ function SubmissionLockDialog({
   const p = lastPending.current;
   const isLocking = p?.action === "lock";
   const isPending = lockMutation.isPending || unlockMutation.isPending;
+  const targetName =
+    p?.submission.targetName ||
+    p?.submission.memberName ||
+    `this ${targetLabelSingular}`;
 
   const handleConfirm = async () => {
     if (!p?.submission.id) return;
@@ -63,13 +80,13 @@ function SubmissionLockDialog({
         await lockMutation.mutateAsync(p.submission.id);
         sileo.success({
           title: "Submission locked",
-          description: `${p.submission.memberName}'s submission has been locked.`,
+          description: `${targetName}'s submission has been locked.`,
         });
       } else {
         await unlockMutation.mutateAsync(p.submission.id);
         sileo.success({
           title: "Submission unlocked",
-          description: `${p.submission.memberName}'s submission has been unlocked.`,
+          description: `${targetName}'s submission has been unlocked.`,
         });
       }
       await onUpdated();
@@ -99,7 +116,7 @@ function SubmissionLockDialog({
               <>
                 Lock{" "}
                 <span className="font-semibold text-foreground">
-                  {p?.submission.memberName ?? "this member"}
+                  {targetName}
                 </span>
                 {"'s submission? Facilitators will not be able to edit or delete it."}
               </>
@@ -107,7 +124,7 @@ function SubmissionLockDialog({
               <>
                 Unlock{" "}
                 <span className="font-semibold text-foreground">
-                  {p?.submission.memberName ?? "this member"}
+                  {targetName}
                 </span>
                 {"'s submission? Facilitators will be able to edit or delete it again."}
               </>
@@ -140,11 +157,18 @@ function SubmissionLockDialog({
   );
 }
 
-export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
+export function SurveySubmissionsPage({
+  surveyId,
+  initialTargetType,
+}: {
+  surveyId: string;
+  initialTargetType?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedSubmissionId = searchParams.get("submissionId");
+  const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
 
@@ -153,9 +177,15 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
-  const surveyDetailQuery = useSurveyDetailQuery(surveyId, { enabled: !!selectedSubmissionId });
+  const surveyDetailQuery = useSurveyDetailQuery(surveyId);
+  const primaryTargetType = submissions[0]?.targetType;
+  const surveyTargetType = surveyDetailQuery.data?.survey?.targetType;
+  const targetLabels = labelsForTargetType(targetTypeFromQuery ?? primaryTargetType ?? surveyTargetType);
+  const targetLabelSingular = targetLabels.singular;
+  const targetLabelPlural = targetLabels.plural;
 
   const lockSubmissionMutation = useLockSurveySubmissionMutation();
+  const startSubmissionMutation = useStartSurveySubmissionMutation();
   const unlockSubmissionMutation = useUnlockSurveySubmissionMutation();
 
   const questionTemplates: QuestionTemplate[] = (() => {
@@ -185,14 +215,52 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("submissionId", submission.id);
-    next.set("memberName", submission.memberName || "Member");
+    next.set("targetName", submission.targetName || submission.memberName || targetLabelSingular);
+    next.delete("memberName");
     next.set("view", "answers");
     setRouteSearch(next);
+  };
+
+  const handlePrimaryAction = async (submission: SurveySubmissionRecord) => {
+    const normalizedStatus = (submission.submissionStatus ?? "NOT_STARTED").toUpperCase();
+    const isFillMode =
+      normalizedStatus === "NOT_STARTED" ||
+      normalizedStatus === "NOT STARTED" ||
+      normalizedStatus === "PENDING";
+
+    if (!isFillMode) {
+      openAnswerWorkspace(submission);
+      return;
+    }
+
+    const targetId = submission.targetId || submission.memberId;
+    if (!targetId) {
+      sileo.error({
+        title: "Unable to start submission",
+        description: "Missing target ID for this row.",
+      });
+      return;
+    }
+
+    try {
+      const started = await startSubmissionMutation.mutateAsync({ surveyId, targetId });
+      openAnswerWorkspace({
+        ...submission,
+        ...started,
+        id: started.id,
+      });
+    } catch (error) {
+      sileo.error({
+        title: "Failed to start submission",
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
+    }
   };
 
   const backToTable = () => {
     const next = new URLSearchParams(searchParams.toString());
     next.delete("submissionId");
+    next.delete("targetName");
     next.delete("memberName");
     next.delete("view");
     setRouteSearch(next);
@@ -213,6 +281,7 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
           loading={detailQuery.isLoading || surveyDetailQuery.isLoading}
           isError={detailQuery.isError}
           errorMessage={detailQuery.error instanceof Error ? detailQuery.error.message : undefined}
+          targetLabelSingular={targetLabelSingular}
           selectedSubmission={selectedSubmission}
           questionTemplates={questionTemplates}
           onRetry={() => detailQuery.refetch()}
@@ -224,16 +293,18 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
       ) : (
         <>
           <MemberSubmissionsTableCard
+            targetLabelSingular={targetLabelSingular}
+            targetLabelPlural={targetLabelPlural}
             submissions={submissions}
             loading={submissionsQuery.isLoading}
             isError={submissionsQuery.isError}
             errorMessage={
               submissionsQuery.error instanceof Error
                 ? submissionsQuery.error.message
-                : "Failed to load submissions."
+                : "Failed to load pending targets."
             }
             onRetry={() => submissionsQuery.refetch()}
-            onViewAnswers={openAnswerWorkspace}
+            onPrimaryAction={(submission) => void handlePrimaryAction(submission)}
             onLockSubmission={(submission) =>
               setPendingSubmissionLock({ submission, action: "lock" })
             }
@@ -249,6 +320,7 @@ export function SurveySubmissionsPage({ surveyId }: { surveyId: string }) {
         open={!!pendingSubmissionLock}
         lockMutation={lockSubmissionMutation}
         unlockMutation={unlockSubmissionMutation}
+        targetLabelSingular={targetLabelSingular}
         onUpdated={async () => {
           await Promise.all([
             submissionsQuery.refetch(),
