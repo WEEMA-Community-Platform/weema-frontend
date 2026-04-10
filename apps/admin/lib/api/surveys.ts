@@ -268,6 +268,20 @@ export async function publishSurvey(id: string): Promise<BaseApiResponse> {
   return parseResponse<BaseApiResponse>(response);
 }
 
+export type CloneSurveyPayload = {
+  title: string;
+  description: string;
+};
+
+export async function cloneSurvey(id: string, payload: CloneSurveyPayload): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey/${id}/clone`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
 /** Single row from GET /api/survey/{id}/assignment-targets (assigned or available). */
 export type SurveyAssignmentTargetRow = {
   id: string;

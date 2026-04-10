@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   assignSurveyTargets,
   unassignSurveyTargets,
+  cloneSurvey,
   createQuestions,
   createSurvey,
   createSurveySections,
@@ -32,6 +33,7 @@ import {
   updateSurvey,
   updateSurveySection,
   type SurveysListQuery,
+  type CloneSurveyPayload,
   type CreateSectionPayload,
   type UpsertQuestionPayload,
   type UpsertSubmissionAnswerPayload,
@@ -241,6 +243,17 @@ export function usePublishSurveyMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => publishSurvey(id),
+    onSuccess: () => {
+      invalidateSurveyQueries(queryClient);
+    },
+  });
+}
+
+export function useCloneSurveyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CloneSurveyPayload }) =>
+      cloneSurvey(id, payload),
     onSuccess: () => {
       invalidateSurveyQueries(queryClient);
     },

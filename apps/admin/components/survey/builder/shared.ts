@@ -1,4 +1,7 @@
-import type { ShowCondition, SurveyQuestion } from "@/lib/survey-builder/types";
+import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
+import { serializeSurveyPayload } from "@/lib/survey-builder/normalize";
+import type { ShowCondition, SurveyBuilderState, SurveyQuestion } from "@/lib/survey-builder/types";
+import { isChoiceType } from "@/lib/survey-builder/utils";
 
 export type SurveyQuestionWithContext = SurveyQuestion & {
   sectionClientId: string;
@@ -72,6 +75,156 @@ export function getFollowUpDepth(
 
   return depth;
 }
+
+// ─── Builder-level types ──────────────────────────────────────────────────────
+
+export type EditorMode = "settings" | "cards" | "question";
+
+export type PendingReorder =
+  | { kind: "section"; activeSectionClientId: string; overSectionClientId: string }
+  | {
+      kind: "question";
+      sectionClientId: string;
+      activeQuestionClientId: string;
+      overQuestionClientId: string;
+    };
+
+export type PendingDelete =
+  | { kind: "section"; sectionClientId: string; title: string }
+  | { kind: "question"; sectionClientId: string; questionClientId: string; questionText: string };
+
+export type SaveAllEligibility = {
+  canSaveAll: boolean;
+  hasUnsavedChanges: boolean;
+  reason: string;
+};
+
+// ─── Builder utilities ────────────────────────────────────────────────────────
+
+export function buildBuilderSnapshot(state: SurveyBuilderState): string {
+  return JSON.stringify(serializeSurveyPayload(state));
+}
+
+export function createFollowUpCondition(parentQuestion: SurveyQuestion): ShowCondition {
+  return {
+    parentQuestionClientId: parentQuestion.clientId,
+    operator: isChoiceType(parentQuestion.questionType) ? "EQUALS" : "CONTAINS",
+    optionClientId: isChoiceType(parentQuestion.questionType)
+      ? parentQuestion.options[0]?.clientId
+      : undefined,
+    expectedValue: isChoiceType(parentQuestion.questionType) ? undefined : "",
+    logicType: "AND",
+  };
+}
+
+export function getIdMapsFromState(state: SurveyBuilderState) {
+  const questionIdByClientId = new Map<string, string>();
+  const optionIdByClientId = new Map<string, string>();
+  for (const section of state.sections) {
+    for (const question of section.questions) {
+      if (question.id) questionIdByClientId.set(question.clientId, question.id);
+      for (const option of question.options) {
+        if (option.id) optionIdByClientId.set(option.clientId, option.id);
+      }
+    }
+  }
+  return { questionIdByClientId, optionIdByClientId };
+}
+
+export function getSaveAllEligibility(
+  currentSnapshot: string,
+  lastSyncedSnapshot: string | null
+): SaveAllEligibility {
+  if (!lastSyncedSnapshot) {
+    return {
+      canSaveAll: false,
+      hasUnsavedChanges: false,
+      reason: "Save all changes is available after the survey is loaded and there are unsaved updates.",
+    };
+  }
+  if (currentSnapshot === lastSyncedSnapshot) {
+    return {
+      canSaveAll: false,
+      hasUnsavedChanges: false,
+      reason: "No unsaved changes. Save all is for bulk pending updates.",
+    };
+  }
+  try {
+    const current = JSON.parse(currentSnapshot) as CreateSurveyPayload;
+    const last = JSON.parse(lastSyncedSnapshot) as CreateSurveyPayload;
+    const metadataChanged =
+      current.title !== last.title ||
+      current.description !== last.description ||
+      current.targetType !== last.targetType;
+    if (metadataChanged) {
+      return {
+        canSaveAll: true,
+        hasUnsavedChanges: true,
+        reason: "Survey metadata changed. Save all will sync title, description, and target type.",
+      };
+    }
+    const currentRows = current.sections.flatMap((s, si) =>
+      s.questions.map((q) => ({ si, q }))
+    );
+    const lastRows = last.sections.flatMap((s, si) => s.questions.map((q) => ({ si, q })));
+    const currentById = new Map(currentRows.map(({ si, q }) => [q.clientId, { si, q }]));
+    const lastById = new Map(lastRows.map(({ si, q }) => [q.clientId, { si, q }]));
+    const currentParent = new Map<string, string>();
+    const lastParent = new Map<string, string>();
+    for (const { q } of currentRows) {
+      const p = q.showConditions?.[0]?.parentQuestionClientId;
+      if (p) currentParent.set(q.clientId, p);
+    }
+    for (const { q } of lastRows) {
+      const p = q.showConditions?.[0]?.parentQuestionClientId;
+      if (p) lastParent.set(q.clientId, p);
+    }
+    const depth = (id: string, map: Map<string, string>) => {
+      let d = 0, cur: string | undefined = id, g = 0;
+      while (cur && g++ < 100) { const p = map.get(cur); if (!p) break; d++; cur = p; }
+      return d;
+    };
+    let added = 0, changed = 0, nestedTouched = false;
+    const changedSections = new Set<number>();
+    for (const [id, ce] of currentById) {
+      const le = lastById.get(id);
+      if (!le) {
+        added++;
+        changedSections.add(ce.si);
+        if (depth(id, currentParent) >= 2) nestedTouched = true;
+      } else if (JSON.stringify(ce.q) !== JSON.stringify(le.q)) {
+        changed++;
+        changedSections.add(ce.si);
+        changedSections.add(le.si);
+        if (depth(id, currentParent) >= 2 || depth(id, lastParent) >= 2) nestedTouched = true;
+      }
+    }
+    for (const [id, le] of lastById) {
+      if (!currentById.has(id)) {
+        changed++;
+        changedSections.add(le.si);
+        if (depth(id, lastParent) >= 2) nestedTouched = true;
+      }
+    }
+    const delta = added + changed;
+    const canSaveAll =
+      delta >= 2 ||
+      (current.sections.length !== last.sections.length && added >= 1) ||
+      (changedSections.size >= 2 && delta >= 2) ||
+      nestedTouched;
+    return {
+      canSaveAll,
+      hasUnsavedChanges: true,
+      reason: canSaveAll
+        ? "Save all applies bulk updates across sections/questions, including nested follow-ups."
+        : "Use Save all for 2+ unsaved question changes, a new section with questions, or nested follow-up changes.",
+    };
+  } catch {
+    return { canSaveAll: true, hasUnsavedChanges: true, reason: "Save all applies bulk updates." };
+  }
+}
+
+// ─── Section/question tree ────────────────────────────────────────────────────
 
 export function buildSectionQuestionTree(questions: SurveyQuestion[]): SectionQuestionTree {
   const sectionQuestionIds = new Set(questions.map((item) => item.clientId));

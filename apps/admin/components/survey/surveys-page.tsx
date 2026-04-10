@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ClipboardListIcon,
   CircleCheckBigIcon,
+  CopyIcon,
   LayersIcon,
   Link2Icon,
   SendHorizonalIcon,
@@ -41,6 +42,7 @@ import {
   type SurveyAppliedFilters,
 } from "@/components/survey/survey-filters-dialog";
 import { SurveyAssignTargetsDialog } from "@/components/survey/survey-assign-targets-dialog";
+import { SurveyCloneDialog } from "@/components/survey/survey-clone-dialog";
 import {
   useDeleteSurveyMutation,
   usePublishSurveyMutation,
@@ -85,6 +87,11 @@ export function SurveysPage() {
   const [pendingPublishSurvey, setPendingPublishSurvey] = useState<{
     id: string;
     title: string;
+  } | null>(null);
+  const [cloneSurveyTarget, setCloneSurveyTarget] = useState<{
+    id: string;
+    title: string;
+    description: string;
   } | null>(null);
   const [assignTargetsSurvey, setAssignTargetsSurvey] = useState<{
     id: string;
@@ -231,6 +238,19 @@ export function SurveysPage() {
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
                   onClick={() =>
+                    setCloneSurveyTarget({
+                      id: survey.id,
+                      title: survey.title || "Untitled survey",
+                      description: survey.description ?? "",
+                    })
+                  }
+                >
+                  <CopyIcon className="size-4" />
+                  Clone survey
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-[12px] whitespace-nowrap"
+                  onClick={() =>
                     openAssignTargets({
                       id: survey.id,
                       title: survey.title || "Untitled survey",
@@ -306,6 +326,16 @@ export function SurveysPage() {
           }
         />
       ) : null}
+
+      <SurveyCloneDialog
+        open={!!cloneSurveyTarget}
+        onOpenChange={(open) => {
+          if (!open) setCloneSurveyTarget(null);
+        }}
+        surveyId={cloneSurveyTarget?.id ?? null}
+        originalTitle={cloneSurveyTarget?.title ?? ""}
+        originalDescription={cloneSurveyTarget?.description ?? ""}
+      />
 
       <SurveyFiltersDialog
         open={isFilterOpen}

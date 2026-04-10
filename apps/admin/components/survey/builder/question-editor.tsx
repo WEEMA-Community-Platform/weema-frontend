@@ -39,8 +39,10 @@ export function QuestionEditor(props: {
   questionByClientId: Map<string, SurveyQuestion>;
   dependentsMap: Map<string, string[]>;
   onBackToCards: () => void;
+  backToCardsLabel?: string;
   onPrimaryAction: () => void;
   primaryActionLabel: string;
+  primaryActionVariant?: "default" | "outline";
   isPrimaryActionPending: boolean;
   isPrimaryActionDisabled?: boolean;
   onUpdate: (patch: Partial<SurveyQuestion>) => void;
@@ -78,10 +80,11 @@ export function QuestionEditor(props: {
         <CardTitle>Question editor</CardTitle>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={props.onBackToCards}>
-            Back to cards
+            {props.backToCardsLabel ?? "Back to cards"}
           </Button>
           <Button
             type="button"
+            variant={props.primaryActionVariant ?? "default"}
             onClick={props.onPrimaryAction}
             disabled={props.isPrimaryActionDisabled || props.isPrimaryActionPending}
           >
