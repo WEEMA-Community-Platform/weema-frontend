@@ -175,6 +175,18 @@ export function SurveysPage() {
     emptyCatalogHint: "No surveys yet. Add your first survey to get started.",
   });
 
+  /** After delete, refetch and clamp page so we never sit past the last page or on an empty page. */
+  const reconcilePageAfterDelete = async () => {
+    const { data } = await surveysQuery.refetch();
+    if (!data) return;
+    const lastPage = Math.max(1, data.totalPages ?? 1);
+    const current = page;
+    let next = current;
+    if (current > lastPage) next = lastPage;
+    else if (data.surveys.length === 0 && data.totalElements > 0 && current > 1) next = 1;
+    if (next !== current) setPage(next);
+  };
+
   return (
     <div className="space-y-4">
       <DataToolbar
@@ -385,6 +397,7 @@ export function SurveysPage() {
                     description: result.message || "Survey has been removed.",
                   });
                   setPendingDeleteSurvey(null);
+                  await reconcilePageAfterDelete();
                 } catch (error) {
                   sileo.error({
                     title: "Failed to delete survey",
