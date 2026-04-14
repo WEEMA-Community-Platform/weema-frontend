@@ -165,7 +165,8 @@ export function UserCreateDialog({
                 Phone number {role === FACILITATOR_ROLE ? "(required for facilitator)" : "(optional)"}
               </Label>
               <div className="flex items-stretch">
-                <span className="inline-flex h-11 items-center rounded-l-lg border border-r-0 border-input bg-muted/30 px-3 text-sm text-muted-foreground">
+                <span className="inline-flex h-11 items-center gap-1.5 rounded-l-lg border border-r-0 border-input bg-muted/30 px-3 text-sm text-muted-foreground">
+                  <span aria-hidden="true">🇪🇹</span>
                   +251
                 </span>
                 <Input
