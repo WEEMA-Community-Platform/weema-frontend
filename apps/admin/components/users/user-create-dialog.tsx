@@ -35,6 +35,15 @@ export function UserCreateDialog({
   createMutation,
   setPage,
 }: UserCreateDialogProps) {
+  const FACILITATOR_ROLE = "ROLE_FACILITATOR";
+  const normalizeLocalPhone = (raw: string) => {
+    let digits = raw.replace(/\D/g, "");
+    if (digits.startsWith("251")) digits = digits.slice(3);
+    if (digits.startsWith("0")) digits = digits.slice(1);
+    return digits.slice(0, 9);
+  };
+  const isValidEthiopianLocalPhone = (localNumber: string) => /^[97]\d{8}$/.test(localNumber);
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -67,13 +76,31 @@ export function UserCreateDialog({
       });
       return;
     }
+    const localPhoneNumber = normalizeLocalPhone(phoneNumber);
+    const isFacilitator = role === FACILITATOR_ROLE;
+
+    if (isFacilitator && !localPhoneNumber) {
+      sileo.warning({
+        title: "Phone number required",
+        description: "Facilitator accounts require a phone number.",
+      });
+      return;
+    }
+    if (localPhoneNumber && !isValidEthiopianLocalPhone(localPhoneNumber)) {
+      sileo.warning({
+        title: "Invalid phone number",
+        description: "Use a valid Ethiopian mobile number starting with 9 or 7.",
+      });
+      return;
+    }
+
     try {
       const result = await createMutation.mutateAsync({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
         role,
-        phoneNumber: phoneNumber.trim() || undefined,
+        phoneNumber: localPhoneNumber ? `+251${localPhoneNumber}` : undefined,
       });
       sileo.success({ title: "User created", description: result.message || "Success." });
       setPage(1);
@@ -134,15 +161,27 @@ export function UserCreateDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-user-phone">Phone (optional)</Label>
-              <Input
-                id="create-user-phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className={inputClass}
-                autoComplete="tel"
-              />
+              <Label htmlFor="create-user-phone">
+                Phone number {role === FACILITATOR_ROLE ? "(required for facilitator)" : "(optional)"}
+              </Label>
+              <div className="flex items-stretch">
+                <span className="inline-flex h-11 items-center rounded-l-lg border border-r-0 border-input bg-muted/30 px-3 text-sm text-muted-foreground">
+                  +251
+                </span>
+                <Input
+                  id="create-user-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={9}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(normalizeLocalPhone(e.target.value))}
+                  className={`${inputClass} rounded-l-none`}
+                  autoComplete="tel"
+                  placeholder="9XXXXXXXX"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Enter 9 digits, starting with 9 or 7.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="create-user-role">Role</Label>

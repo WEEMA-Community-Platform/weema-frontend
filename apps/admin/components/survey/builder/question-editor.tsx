@@ -372,7 +372,13 @@ function JsonQuestionConfigEditor(props: {
   if (!config) return null;
 
   return (
-    <div className="space-y-2 rounded-lg border border-primary/10 p-3">
+    <div className="space-y-3 rounded-lg border border-primary/10 p-3">
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">JSON question format</p>
+        <p className="text-xs text-muted-foreground">
+          Choose how data is collected, then define clear keys and labels for each field.
+        </p>
+      </div>
       <Select
         value={config.jsonType}
         onValueChange={(value) => {
@@ -431,30 +437,42 @@ function RepeatableTableEditor(props: {
   return (
     <div className="space-y-2">
       <div className="grid gap-2 md:grid-cols-2">
-        <Input
-          type="number"
-          value={props.config.minRows}
-          onChange={(event) =>
-            props.onChange({
-              ...props.config,
-              minRows: Number(event.target.value || 0),
-            })
-          }
-          placeholder="Min rows"
-          className={inputClass}
-        />
-        <Input
-          type="number"
-          value={props.config.maxRows}
-          onChange={(event) =>
-            props.onChange({
-              ...props.config,
-              maxRows: Number(event.target.value || 0),
-            })
-          }
-          placeholder="Max rows"
-          className={inputClass}
-        />
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">Minimum rows</p>
+          <Input
+            type="number"
+            value={props.config.minRows}
+            onChange={(event) =>
+              props.onChange({
+                ...props.config,
+                minRows: Number(event.target.value || 0),
+              })
+            }
+            placeholder="e.g. 0"
+            className={inputClass}
+          />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">Maximum rows</p>
+          <Input
+            type="number"
+            value={props.config.maxRows}
+            onChange={(event) =>
+              props.onChange({
+                ...props.config,
+                maxRows: Number(event.target.value || 0),
+              })
+            }
+            placeholder="e.g. 10"
+            className={inputClass}
+          />
+        </div>
+      </div>
+      <div className="hidden items-center gap-2 px-1 text-xs font-medium text-muted-foreground md:grid md:grid-cols-[140px_minmax(0,1fr)_180px_auto]">
+        <span>Key</span>
+        <span>Column label</span>
+        <span>Answer type</span>
+        <span className="text-center">Action</span>
       </div>
       {props.config.columns.map((column) => (
         <div
@@ -471,7 +489,7 @@ function RepeatableTableEditor(props: {
                 ),
               })
             }
-            placeholder="key"
+            placeholder="e.g. col_1"
             className={inputClass}
           />
           <Input
@@ -484,7 +502,7 @@ function RepeatableTableEditor(props: {
                 ),
               })
             }
-            placeholder="Column label"
+            placeholder="e.g. Household size"
             className={inputClass}
           />
           <Select
@@ -501,7 +519,7 @@ function RepeatableTableEditor(props: {
             }
           >
             <SelectTrigger className={inputClass}>
-              <SelectValue />
+              <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="TEXT">Text</SelectItem>
@@ -512,9 +530,10 @@ function RepeatableTableEditor(props: {
           </Select>
           <Button
             type="button"
-            variant="destructive"
+            variant="outline"
             size="icon-sm"
-            className="h-11 w-11 self-center"
+            className="h-11 w-11 self-center border-border/70 text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Remove column"
             onClick={() =>
               props.onChange({
                 ...props.config,
@@ -526,29 +545,31 @@ function RepeatableTableEditor(props: {
           </Button>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() =>
-          props.onChange({
-            ...props.config,
-            columns: [
-              ...props.config.columns,
-              {
-                clientId: createClientId(),
-                key: `col_${props.config.columns.length + 1}`,
-                label: `Column ${props.config.columns.length + 1}`,
-                columnType: "TEXT",
-                required: false,
-              },
-            ],
-          })
-        }
-      >
-        <PlusIcon className="size-3.5" />
-        Add column
-      </Button>
+      <div className="flex justify-start md:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            props.onChange({
+              ...props.config,
+              columns: [
+                ...props.config.columns,
+                {
+                  clientId: createClientId(),
+                  key: `col_${props.config.columns.length + 1}`,
+                  label: `Column ${props.config.columns.length + 1}`,
+                  columnType: "TEXT",
+                  required: false,
+                },
+              ],
+            })
+          }
+        >
+          <PlusIcon className="size-3.5" />
+          Add column
+        </Button>
+      </div>
     </div>
   );
 }
@@ -560,23 +581,26 @@ function GridEditor(props: {
   if (!props.config) return null;
   return (
     <div className="space-y-2">
-      <Select
-        value={props.config.selectionType}
-        onValueChange={(value) =>
-          props.onChange({
-            ...props.config,
-            selectionType: value as typeof props.config.selectionType,
-          })
-        }
-      >
-        <SelectTrigger>
-          <SelectValue placeholder="Selection type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="SINGLE">Single selection</SelectItem>
-          <SelectItem value="MULTIPLE">Multiple selection</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">Selection mode</p>
+        <Select
+          value={props.config.selectionType}
+          onValueChange={(value) =>
+            props.onChange({
+              ...props.config,
+              selectionType: value as typeof props.config.selectionType,
+            })
+          }
+        >
+          <SelectTrigger className={inputClass}>
+            <SelectValue placeholder="Selection type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="SINGLE">Single selection</SelectItem>
+            <SelectItem value="MULTIPLE">Multiple selection</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <GridAxisEditor
         label="Rows"
@@ -626,6 +650,11 @@ function GridAxisEditor(props: {
           Add
         </Button>
       </div>
+      <div className="hidden items-center gap-2 px-1 text-xs font-medium text-muted-foreground md:grid md:grid-cols-[140px_minmax(0,1fr)_auto]">
+        <span>Key</span>
+        <span>{props.label} label</span>
+        <span className="text-center">Action</span>
+      </div>
       {props.items.map((item) => (
         <div
           key={item.clientId}
@@ -642,7 +671,7 @@ function GridAxisEditor(props: {
                 )
               )
             }
-            placeholder="key"
+            placeholder="e.g. row_1"
             className={inputClass}
           />
           <Input
@@ -656,14 +685,15 @@ function GridAxisEditor(props: {
                 )
               )
             }
-            placeholder={`${props.label} label`}
+            placeholder={`e.g. ${props.label} 1`}
             className={inputClass}
           />
           <Button
             type="button"
-            variant="destructive"
+            variant="outline"
             size="icon-sm"
-            className="h-11 w-11 self-center"
+            className="h-11 w-11 self-center border-border/70 text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+            aria-label={`Remove ${props.label.toLowerCase()} item`}
             onClick={() =>
               props.onChange(props.items.filter((axisItem) => axisItem.clientId !== item.clientId))
             }
