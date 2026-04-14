@@ -457,7 +457,10 @@ function RepeatableTableEditor(props: {
         />
       </div>
       {props.config.columns.map((column) => (
-        <div key={column.clientId} className="grid gap-2 md:grid-cols-[120px_1fr_160px_auto]">
+        <div
+          key={column.clientId}
+          className="grid items-center gap-2 md:grid-cols-[140px_minmax(0,1fr)_180px_auto]"
+        >
           <Input
             value={column.key ?? ""}
             onChange={(event) =>
@@ -469,6 +472,7 @@ function RepeatableTableEditor(props: {
               })
             }
             placeholder="key"
+            className={inputClass}
           />
           <Input
             value={column.label}
@@ -481,6 +485,7 @@ function RepeatableTableEditor(props: {
               })
             }
             placeholder="Column label"
+            className={inputClass}
           />
           <Select
             value={column.columnType}
@@ -495,7 +500,7 @@ function RepeatableTableEditor(props: {
               })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className={inputClass}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -509,6 +514,7 @@ function RepeatableTableEditor(props: {
             type="button"
             variant="destructive"
             size="icon-sm"
+            className="h-11 w-11 self-center"
             onClick={() =>
               props.onChange({
                 ...props.config,
@@ -621,7 +627,10 @@ function GridAxisEditor(props: {
         </Button>
       </div>
       {props.items.map((item) => (
-        <div key={item.clientId} className="grid gap-2 md:grid-cols-[120px_1fr_auto]">
+        <div
+          key={item.clientId}
+          className="grid items-center gap-2 md:grid-cols-[140px_minmax(0,1fr)_auto]"
+        >
           <Input
             value={item.key ?? ""}
             onChange={(event) =>
@@ -634,6 +643,7 @@ function GridAxisEditor(props: {
               )
             }
             placeholder="key"
+            className={inputClass}
           />
           <Input
             value={item.label}
@@ -647,11 +657,13 @@ function GridAxisEditor(props: {
               )
             }
             placeholder={`${props.label} label`}
+            className={inputClass}
           />
           <Button
             type="button"
             variant="destructive"
             size="icon-sm"
+            className="h-11 w-11 self-center"
             onClick={() =>
               props.onChange(props.items.filter((axisItem) => axisItem.clientId !== item.clientId))
             }
