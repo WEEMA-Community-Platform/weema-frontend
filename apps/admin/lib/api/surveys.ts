@@ -293,8 +293,12 @@ export type SurveyAssignmentTargetRow = {
 };
 
 export type SurveyAssignmentData = {
-  assignedTargets: SurveyAssignmentTargetRow[];
-  availableTargets: SurveyAssignmentTargetRow[];
+  assignedTargets: SurveyAssignmentTargetRow[] | null;
+  availableTargets: SurveyAssignmentTargetRow[] | null;
+  assignedClusters?: SurveyAssignmentTargetRow[] | null;
+  assignedSelfHelpGroups?: SurveyAssignmentTargetRow[] | null;
+  availableClusters?: SurveyAssignmentTargetRow[] | null;
+  availableSelfHelpGroups?: SurveyAssignmentTargetRow[] | null;
 };
 
 export type SurveyAssignmentTargetsResponse = BaseApiResponse & {

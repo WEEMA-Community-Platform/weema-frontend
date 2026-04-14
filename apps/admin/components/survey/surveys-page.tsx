@@ -96,13 +96,12 @@ export function SurveysPage() {
   const [assignTargetsSurvey, setAssignTargetsSurvey] = useState<{
     id: string;
     title: string;
-    targetType: string;
   } | null>(null);
   const [assignTargetsOpen, setAssignTargetsOpen] = useState(false);
   /** Defer clearing survey payload until after dialog exit animation (Dialog overlay/content use duration-150). */
   const assignTargetsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const openAssignTargets = (payload: { id: string; title: string; targetType: string }) => {
+  const openAssignTargets = (payload: { id: string; title: string }) => {
     if (assignTargetsCloseTimerRef.current) {
       clearTimeout(assignTargetsCloseTimerRef.current);
       assignTargetsCloseTimerRef.current = null;
@@ -266,7 +265,6 @@ export function SurveysPage() {
                     openAssignTargets({
                       id: survey.id,
                       title: survey.title || "Untitled survey",
-                      targetType: survey.targetType ?? "",
                     })
                   }
                 >
@@ -361,7 +359,6 @@ export function SurveysPage() {
         onOpenChange={handleAssignTargetsOpenChange}
         surveyId={assignTargetsSurvey?.id ?? null}
         surveyTitle={assignTargetsSurvey?.title ?? ""}
-        targetType={assignTargetsSurvey?.targetType ?? ""}
       />
 
       <AlertDialog
