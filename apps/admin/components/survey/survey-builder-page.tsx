@@ -103,6 +103,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
 
   const persistence = useBuilderPersistence({
     initialSurveyId,
+    setInitialSurveyId,
     builder,
     questionIdByClientId,
     optionIdByClientId,

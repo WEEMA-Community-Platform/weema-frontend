@@ -39,6 +39,7 @@ import {
 
 type Params = {
   initialSurveyId: string | null;
+  setInitialSurveyId: React.Dispatch<React.SetStateAction<string | null>>;
   builder: ReturnType<typeof useSurveyBuilder>;
   questionIdByClientId: Map<string, string>;
   optionIdByClientId: Map<string, string>;
@@ -53,6 +54,7 @@ type Params = {
 
 export function useBuilderPersistence({
   initialSurveyId,
+  setInitialSurveyId,
   builder,
   questionIdByClientId,
   optionIdByClientId,
@@ -75,6 +77,25 @@ export function useBuilderPersistence({
   const updateQuestionMutation = useUpdateQuestionMutation();
   const deleteQuestionMutation = useDeleteQuestionMutation();
   const reorderQuestionsMutation = useReorderQuestionsMutation();
+
+  const extractCreatedSurveyId = (payload: unknown): string | null => {
+    if (!payload || typeof payload !== "object") return null;
+    const record = payload as Record<string, unknown>;
+    if (typeof record.id === "string" && record.id.trim().length > 0) return record.id;
+    if (typeof record.surveyId === "string" && record.surveyId.trim().length > 0) return record.surveyId;
+    const data = record.data;
+    if (data && typeof data === "object") {
+      const dataRecord = data as Record<string, unknown>;
+      if (typeof dataRecord.id === "string" && dataRecord.id.trim().length > 0) return dataRecord.id;
+      if (typeof dataRecord.surveyId === "string" && dataRecord.surveyId.trim().length > 0) return dataRecord.surveyId;
+    }
+    const survey = record.survey;
+    if (survey && typeof survey === "object") {
+      const surveyRecord = survey as Record<string, unknown>;
+      if (typeof surveyRecord.id === "string" && surveyRecord.id.trim().length > 0) return surveyRecord.id;
+    }
+    return null;
+  };
 
   const [savingSectionClientId, setSavingSectionClientId] = useState<string | null>(null);
   const [savingQuestionClientId, setSavingQuestionClientId] = useState<string | null>(null);
@@ -141,12 +162,25 @@ export function useBuilderPersistence({
     try {
       if (!initialSurveyId) {
         const result = await createSurveyMutation.mutateAsync(serializeSurveyPayload(builder.state));
+        const createdSurveyId = extractCreatedSurveyId(result);
         await queryClient.invalidateQueries({ queryKey: ["surveys"] });
         queryClient.removeQueries({ queryKey: ["surveys"] });
+        if (createdSurveyId) {
+          setInitialSurveyId(createdSurveyId);
+          await reloadSurvey(createdSurveyId);
+        }
         sileo.success({
           title: "Survey created",
-          description: result.message ?? "Survey has been created successfully.",
+          description: createdSurveyId
+            ? result.message ?? "Survey created and opened in edit mode."
+            : result.message ?? "Survey has been created successfully.",
         });
+        if (!createdSurveyId) {
+          sileo.info({
+            title: "Open survey to continue editing",
+            description: "Could not detect created survey ID automatically from the API response.",
+          });
+        }
         return;
       }
       const result = await updateSurveyMutation.mutateAsync({
@@ -234,10 +268,24 @@ export function useBuilderPersistence({
           payload: { title: section.title.trim(), description: section.description.trim() },
         });
       }
-      const idMaps = getIdMapsFromState(builder.state);
+      let idMaps = getIdMapsFromState(builder.state);
       for (const section of builder.state.sections) {
         for (const question of section.questions) {
           if (!question.id) continue;
+          await updateQuestionMutation.mutateAsync({
+            id: question.id,
+            payload: serializeQuestionPayload(question, idMaps),
+          });
+        }
+      }
+      // Follow-up conditions can reference parent questions/options that only get
+      // finalized IDs after the first update pass. Reload and sync conditions
+      // again so nested follow-ups keep stable backend references.
+      await reloadSurvey(initialSurveyId);
+      idMaps = getIdMapsFromState(builder.state);
+      for (const section of builder.state.sections) {
+        for (const question of section.questions) {
+          if (!question.id || question.showConditions.length === 0) continue;
           await updateQuestionMutation.mutateAsync({
             id: question.id,
             payload: serializeQuestionPayload(question, idMaps),
