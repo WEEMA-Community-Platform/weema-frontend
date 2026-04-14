@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(new URL("/", request.url));
   response.cookies.set(ACCESS_TOKEN_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
     path: "/",
   });
