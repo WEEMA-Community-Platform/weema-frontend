@@ -233,6 +233,16 @@ export function useBuilderPersistence({
     }
     setIsSavingAllChanges(true);
     try {
+      const draftState = JSON.parse(JSON.stringify(builder.state)) as SurveyBuilderState;
+      const draftSectionByClientId = new Map(
+        draftState.sections.map((section) => [section.clientId, section])
+      );
+      const draftQuestionByClientId = new Map(
+        draftState.sections.flatMap((section) =>
+          section.questions.map((question) => [question.clientId, question] as const)
+        )
+      );
+
       await updateSurveyMutation.mutateAsync({
         id: initialSurveyId,
         payload: {
@@ -263,18 +273,23 @@ export function useBuilderPersistence({
       await reloadSurvey(initialSurveyId);
       for (const section of builder.state.sections) {
         if (!section.id) continue;
+        const draftSection = draftSectionByClientId.get(section.clientId) ?? section;
         await updateSectionMutation.mutateAsync({
           id: section.id,
-          payload: { title: section.title.trim(), description: section.description.trim() },
+          payload: {
+            title: draftSection.title.trim(),
+            description: draftSection.description.trim(),
+          },
         });
       }
       let idMaps = getIdMapsFromState(builder.state);
       for (const section of builder.state.sections) {
         for (const question of section.questions) {
           if (!question.id) continue;
+          const draftQuestion = draftQuestionByClientId.get(question.clientId) ?? question;
           await updateQuestionMutation.mutateAsync({
             id: question.id,
-            payload: serializeQuestionPayload(question, idMaps),
+            payload: serializeQuestionPayload(draftQuestion, idMaps),
           });
         }
       }
