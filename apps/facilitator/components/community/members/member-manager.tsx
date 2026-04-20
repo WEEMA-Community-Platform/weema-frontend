@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import {
   useCreateMemberMutation,
@@ -12,7 +13,7 @@ import {
 import { useReligionsQuery } from "@/hooks/use-base-data";
 import { useSHGsQuery } from "@/hooks/use-community";
 import type { Member } from "@/lib/api/members";
-import { listEmptyMessage } from "@/components/base-data/shared";
+import { useListEmptyMessage } from "@/components/base-data/shared";
 import { MemberCreateDialog } from "@/components/community/members/member-create-dialog";
 import { MemberDeleteDialog } from "@/components/community/members/member-delete-dialog";
 import { MemberDetailDialog } from "@/components/community/members/member-detail-dialog";
@@ -119,11 +120,14 @@ export function MemberManager() {
   );
 
   const hasSearch = Boolean(searchQuery.trim());
+  const listEmptyMessage = useListEmptyMessage();
+  const tTable = useTranslations("community.members.table");
+  const tListEmpty = useTranslations("listEmpty.entity");
   const emptyMessage = listEmptyMessage({
-    entityPlural: "members",
+    entityPlural: tListEmpty("members"),
     hasSearch,
     hasFilters: hasActiveFilters,
-    emptyCatalogHint: "No members yet. Add a member once self-help groups exist.",
+    emptyCatalogHint: tTable("emptyHint"),
   });
 
   const isSubmittingCreate = createMutation.isPending;

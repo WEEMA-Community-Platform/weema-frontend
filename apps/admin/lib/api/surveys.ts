@@ -25,6 +25,10 @@ export type SurveyListItem = {
   isActive?: boolean;
   totalSections?: number;
   totalQuestions?: number;
+  language?: "en" | "am" | string;
+  parentSurveyId?: string | null;
+  isTranslation?: boolean;
+  isClone?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -127,6 +131,26 @@ export type UpdateSurveyPayload = {
   title: string;
   description: string;
   targetType: string;
+  language: "en" | "am";
+};
+
+export type TranslateSurveyPayload = {
+  language: "en" | "am";
+  title: string;
+  description: string;
+  sections: Array<{
+    id: string;
+    title: string;
+    description: string;
+    questions: Array<{
+      id: string;
+      questionText: string;
+      options: Array<{
+        id: string;
+        optionText: string;
+      }>;
+    }>;
+  }>;
 };
 
 export type UpsertQuestionPayload = {
@@ -275,6 +299,18 @@ export type CloneSurveyPayload = {
 
 export async function cloneSurvey(id: string, payload: CloneSurveyPayload): Promise<BaseApiResponse> {
   const response = await fetch(`/api/survey/${id}/clone`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function translateSurvey(
+  id: string,
+  payload: TranslateSurveyPayload
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey/${id}/translate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -673,7 +709,7 @@ export function serializeQuestionPayload(
     questionConfig: toBackendQuestionConfig(question.questionConfig),
     showConditions:
       question.showConditions.length > 0
-        ? question.showConditions.map((condition) => ({
+        ? question.showConditions.map((condition, index) => ({
             parentQuestionClientId: condition.parentQuestionClientId,
             parentQuestionId: options.questionIdByClientId?.get(
               condition.parentQuestionClientId
@@ -684,7 +720,7 @@ export function serializeQuestionPayload(
               ? options.optionIdByClientId?.get(condition.optionClientId)
               : undefined,
             expectedValue: condition.expectedValue?.trim() || undefined,
-            logicType: condition.logicType,
+            logicType: index === 0 ? "AND" : condition.logicType,
           }))
         : undefined,
   };

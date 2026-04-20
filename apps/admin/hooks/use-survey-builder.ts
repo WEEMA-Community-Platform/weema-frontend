@@ -177,7 +177,11 @@ export function useManageConditions(
             question.clientId === questionClientId
               ? {
                   ...question,
-                  showConditions: question.showConditions.filter((_, index) => index !== conditionIndex),
+                  showConditions: question.showConditions
+                    .filter((_, index) => index !== conditionIndex)
+                    .map((condition, index) =>
+                      index === 0 ? { ...condition, logicType: "AND" } : condition
+                    ),
                 }
               : question
           )

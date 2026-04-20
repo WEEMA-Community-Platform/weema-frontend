@@ -1,0 +1,626 @@
+{
+  "meta": {
+    "appTitle": "WEEMA አመቻች",
+    "appDescription": "የWEEMA የማህበረሰብ መድረክ የአመቻች መተግበሪያ",
+    "brand": {
+      "name": "WEEMA አመቻች",
+      "tagline": "የማህበረሰብ መድረክ"
+    }
+  },
+
+  "common": {
+    "actions": {
+      "save": "አስቀምጥ",
+      "saveChanges": "ለውጦችን አስቀምጥ",
+      "saving": "በማስቀመጥ ላይ…",
+      "cancel": "ይቅር",
+      "close": "ዝጋ",
+      "edit": "አርትዕ",
+      "delete": "ሰርዝ",
+      "view": "ተመልከት",
+      "viewDetails": "ዝርዝር ተመልከት",
+      "add": "ጨምር",
+      "retry": "እንደገና ሞክር",
+      "confirm": "አረጋግጥ",
+      "apply": "ተግብር",
+      "clear": "አጽዳ",
+      "back": "ተመለስ",
+      "next": "ቀጣይ",
+      "previous": "ቀዳሚ",
+      "upload": "ጫን",
+      "open": "ክፈት",
+      "openDocument": "ሰነዱን ክፈት"
+    },
+    "states": {
+      "loading": "በመጫን ላይ…",
+      "loadingDetails": "ዝርዝሮችን በመጫን ላይ…",
+      "pending": "በመጠባበቅ ላይ",
+      "approved": "ጸድቋል",
+      "rejected": "ውድቅ ተደርጓል",
+      "active": "ንቁ",
+      "inactive": "ቆሟል",
+      "draft": "ረቂቅ",
+      "published": "ታትሟል",
+      "submitted": "ቀርቧል",
+      "notStarted": "አልተጀመረም",
+      "inProgress": "በሂደት ላይ"
+    },
+    "empty": {
+      "noResults": "ምንም ውጤት የለም",
+      "failedToLoad": "መረጃውን መጫን አልተቻለም።",
+      "notUploaded": "ገና አልተጫነም",
+      "dash": "—",
+      "untitled": "ርእስ የለም"
+    },
+    "validation": {
+      "required": "ያስፈልጋል",
+      "requiredFields": "ግዴታ መሞላት ያለባቸው መስኮች",
+      "missingFields": "ያልተሞሉ መስኮች",
+      "unexpectedError": "ያልተጠበቀ ስህተት",
+      "somethingWentWrong": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።"
+    },
+    "pagination": {
+      "page": "ገጽ",
+      "of": "ከ",
+      "resultOne": "ውጤት",
+      "resultOther": "ውጤቶች",
+      "showing": "{from}–{to} ከ{total} {label} በማሳየት ላይ",
+      "previous": "የቀድሞ ገጽ",
+      "next": "ቀጣይ ገጽ"
+    },
+    "language": {
+      "label": "ቋንቋ",
+      "english": "English",
+      "amharic": "አማርኛ"
+    }
+  },
+
+  "nav": {
+    "groupLabel": "ዝርዝር",
+    "items": {
+      "community": "ማህበረሰብ",
+      "shg": "የራስ አገዝ ቡድኖች",
+      "members": "አባላት",
+      "survey": "ዳሰሳ",
+      "surveys": "ዳሰሳዎች"
+    },
+    "user": {
+      "profile": "መገለጫ",
+      "logout": "ውጣ",
+      "loggingOut": "በመውጣት ላይ…",
+      "loggedOut": "ወጥተሃል",
+      "loggedOutMessage": "ከመለያዎ ወጥተዋል።",
+      "logoutFailed": "መውጣት አልተሳካም",
+      "openMenu": "ምናሌ ክፈት",
+      "changeLanguage": "ቋንቋ ቀይር"
+    }
+  },
+
+  "sections": {
+    "shg": {
+      "group": "ማህበረሰብ",
+      "label": "የራስ አገዝ ቡድኖች",
+      "description": "የራስ አገዝ ቡድኖችንና የክላስተር ምደባቸውን ይመልከቱ።"
+    },
+    "member": {
+      "group": "ማህበረሰብ",
+      "label": "አባላት",
+      "description": "በራስ አገዝ ቡድኖች ውስጥ አባላትን ይመዝግቡና ያስተዳድሩ።"
+    },
+    "profile": {
+      "group": "መለያ",
+      "label": "የእኔ መገለጫ",
+      "description": "ስምዎን ያዘምኑና የመለያዎን ዝርዝር ይገምግሙ።"
+    },
+    "survey": {
+      "group": "ዳሰሳ",
+      "label": "ዳሰሳዎች",
+      "description": "የተመደቡ ዳሰሳዎችን ያስሱና የአባላት ምላሾችን ያስገቡ።"
+    },
+    "surveySubmissions": {
+      "group": "ዳሰሳ",
+      "label": "የዳሰሳ ገብቶዎች",
+      "description": "የገቡ ምላሾችን ሂደት ይገምግሙና የአባላትን መልሶች ያስገቡ።",
+      "answerWorkspace": "የመልስ መስሪያ ስፍራ",
+      "targetAnswers": "የ{name} መልሶች"
+    }
+  },
+
+  "auth": {
+    "login": {
+      "heading": "እንኳን ደህና መጡ",
+      "subheading": "ወደ WEEMA የአመቻች መለያዎ ይግቡ",
+      "email": "ኢሜይል",
+      "emailPlaceholder": "facilitator@weema.com",
+      "password": "የይለፍ ቃል",
+      "showPassword": "የይለፍ ቃሉን አሳይ",
+      "hidePassword": "የይለፍ ቃሉን ደብቅ",
+      "forgotPassword": "የይለፍ ቃል ረሳሁ?",
+      "submit": "ግባ",
+      "submitting": "በመግባት ላይ…",
+      "loggedInTitle": "ገብተዋል",
+      "loggedInMessage": "እንኳን ደህና ተመለሱ።",
+      "errorTitle": "መግባት አልተቻለም"
+    },
+    "forgotPassword": {
+      "title": "የይለፍ ቃል ዳግም አስጀምር",
+      "intro": "ኢሜይልዎን ያስገቡ፣ OTP ያረጋግጡ፣ ከዚያ አዲስ የይለፍ ቃል ያስቀምጡ።",
+      "email": "ኢሜይል",
+      "emailPlaceholder": "facilitator@weema.com",
+      "sendOtp": "OTP ላክ",
+      "otp": "OTP ኮድ",
+      "otpPlaceholder": "123456",
+      "verify": "አረጋግጥ",
+      "newPassword": "አዲስ የይለፍ ቃል",
+      "confirmPassword": "የይለፍ ቃል አረጋግጥ",
+      "reset": "የይለፍ ቃል ዳግም አስጀምር",
+      "resetting": "በመዳግም ማስጀመር ላይ…",
+      "rememberPassword": "የይለፍ ቃሉን አስታወስክ?",
+      "backToLogin": "ወደ መግቢያ ተመለስ",
+      "toast": {
+        "emailRequiredTitle": "ኢሜይል ያስፈልጋል",
+        "emailRequiredMessage": "OTP ለመጠየቅ ኢሜይልዎን ያስገቡ።",
+        "otpSentTitle": "OTP ተልኳል",
+        "otpErrorTitle": "OTP መላክ አልተቻለም",
+        "missingFieldsTitle": "ያልተሞሉ መስኮች",
+        "missingFieldsBothMessage": "ለማረጋገጥ ሁለቱንም ኢሜይልና OTP ያስገቡ።",
+        "otpVerifiedTitle": "OTP ተረጋግጧል",
+        "otpInvalidTitle": "ልክ ያልሆነ OTP",
+        "completeFieldsMessage": "ከማስገባት በፊት ሁሉንም መስኮች ይሙሉ።",
+        "verifyFirstTitle": "መጀመሪያ OTP ያረጋግጡ",
+        "verifyFirstMessage": "የይለፍ ቃል ከማዳግም ከማስጀመር በፊት OTP ያረጋግጡ።",
+        "passwordMismatchTitle": "የይለፍ ቃላት አይዛመዱም",
+        "passwordMismatchMessage": "የማረጋገጫ የይለፍ ቃል ከአዲሱ ጋር መዛመድ አለበት።",
+        "resetSuccessTitle": "የይለፍ ቃል በተሳካ ሁኔታ ዳግም ተጀምሯል",
+        "resetFailedTitle": "ዳግም ማስጀመር አልተሳካም"
+      }
+    }
+  },
+
+  "community": {
+    "shg": {
+      "page": {
+        "searchPlaceholder": "የራስ አገዝ ቡድኖችን ፈልግ",
+        "addButton": "SHG ጨምር",
+        "emptyHint": "ምንም የራስ አገዝ ቡድን አልተገኘም። ለመጀመር የመጀመሪያዎን SHG ይጨምሩ።",
+        "loadError": "የራስ አገዝ ቡድኖችን መጫን አልተቻለም።"
+      },
+      "card": {
+        "cluster": "ክላስተር",
+        "facilitator": "አመቻች",
+        "members": "አባላት",
+        "gps": "GPS",
+        "noCluster": "ክላስተር የለም",
+        "noFacilitator": "አመቻች የለም",
+        "noCoordinates": "መጋጠሚያ የለም",
+        "memberOne": "{count} አባል",
+        "memberOther": "{count} አባላት",
+        "viewDetailsAction": "ዝርዝር ተመልከት"
+      },
+      "detail": {
+        "title": "የራስ አገዝ ቡድን ዝርዝር",
+        "description": "የዚህ የራስ አገዝ ቡድን ሙሉ ዝርዝር።",
+        "fields": {
+          "name": "ስም",
+          "status": "ሁኔታ",
+          "cluster": "ክላስተር",
+          "woreda": "ወረዳ",
+          "kebele": "ቀበሌ",
+          "facilitator": "አመቻች",
+          "members": "አባላት",
+          "gps": "GPS",
+          "description": "መግለጫ"
+        },
+        "errorFallback": "ዝርዝሩን መጫን አልተቻለም።"
+      },
+      "form": {
+        "titleAdd": "የራስ አገዝ ቡድን ጨምር",
+        "titleEdit": "የራስ አገዝ ቡድን አርትዕ",
+        "descriptionAdd": "አዲስ የራስ አገዝ ቡድን ወደ ማህበረሰቡ መዋቅር ይጨምሩ። ይህን SHG ሲያርትዑ ከክላስተር ጋር ማገናኘት ይቻላል።",
+        "descriptionEdit": "የSHG ዝርዝሮችን ያዘምኑ፣ ከዚያ ለውጦችን ያስቀምጡ።",
+        "sectionDetails": "ዝርዝሮች",
+        "sectionCoordinates": "መጋጠሚያዎች",
+        "coordinatesHint": "የካርታ አገናኝ ይጠቀሙ (መጋጠሚያዎቹ ከአገናኙ ጋር ይቆለፋሉ) ወይም ኬክሮስና ኬንትሮስ ራስዎ ያስገቡ — በታች ባሉ እርምጃዎች አካሄዶችን ይቀያይሩ።",
+        "mapLink": "የካርታ አገናኝ",
+        "mapLinkPlaceholder": "የ Google Maps ወይም Apple Maps አጋራ አገናኝ ያስገቡ…",
+        "manualNote": "መጋጠሚያዎች በእጅ ሲገቡ የካርታ አገናኝ ተሰናክሏል።",
+        "useMapLinkInstead": "በምትኩ የካርታ አገናኝ ተጠቀም",
+        "editManually": "መጋጠሚያዎችን በእጅ አርትዕ",
+        "latitude": "ኬክሮስ",
+        "longitude": "ኬንትሮስ",
+        "latitudePlaceholder": "ምሳሌ፦ 9.03",
+        "longitudePlaceholder": "ምሳሌ፦ 38.75",
+        "descriptionLabel": "መግለጫ",
+        "descriptionPlaceholder": "ስለዚህ የራስ አገዝ ቡድን አማራጭ ማስታወሻዎች",
+        "nameLabel": "ስም",
+        "namePlaceholder": "የSHG ስም",
+        "cluster": "ክላስተር",
+        "clusterHint": "አማራጭ። ሲመደብ ይህን SHG ከክላስተር ጋር አገናኝ።",
+        "clusterPlaceholder": "ክላስተር ይምረጡ",
+        "woreda": "ወረዳ",
+        "woredaPlaceholder": "ወረዳ ይምረጡ (አማራጭ)",
+        "kebele": "ቀበሌ",
+        "kebelePlaceholder": "ቀበሌ ይምረጡ (አማራጭ)",
+        "status": "ሁኔታ",
+        "statusPlaceholder": "ሁኔታ ይምረጡ",
+        "options": {
+          "noWoreda": "ወረዳ የለም",
+          "noKebele": "ቀበሌ የለም"
+        },
+        "saveAddLabel": "SHG ጨምር",
+        "saveEditLabel": "SHG አስቀምጥ",
+        "saveAddPending": "በመጨመር ላይ…",
+        "saveEditPending": "በማስቀመጥ ላይ…"
+      },
+      "toasts": {
+        "missingNameTitle": "ስም ይጎድላል",
+        "missingNameMessage": "የSHG ስም ያስፈልጋል።",
+        "missingStatusTitle": "ሁኔታ ይጎድላል",
+        "missingStatusMessage": "እባክዎ ሁኔታ ይምረጡ።",
+        "addedTitle": "SHG ተጨምሯል",
+        "addedGenericMessage": "የራስ አገዝ ቡድን ተጨምሯል።",
+        "saveErrorTitle": "SHG ማስቀመጥ አልተቻለም",
+        "badMapLinkTitle": "መጋጠሚያዎችን ማንበብ አልተቻለም",
+        "badMapLinkMessage": "ሌላ አገናኝ ይሞክሩ ወይም በታች ኬክሮስና ኬንትሮስ ያስገቡ።"
+      }
+    },
+    "members": {
+      "table": {
+        "title": "አባላት",
+        "searchPlaceholder": "ስም፣ ስልክ፣ SHG፣ ሃይማኖት ፈልግ…",
+        "addButton": "አባል ጨምር",
+        "filters": "ማጣሪያዎች",
+        "filtersActiveLabel": "ማጣሪያዎች ንቁ ናቸው",
+        "emptyHint": "እስካሁን አባል የለም። የራስ አገዝ ቡድኖች ከተፈጠሩ በኋላ አባል ይጨምሩ።",
+        "columns": {
+          "name": "ስም",
+          "phone": "ስልክ",
+          "shg": "የራስ አገዝ ቡድን",
+          "gender": "ጾታ",
+          "status": "ሁኔታ",
+          "approval": "ማጽደቅ",
+          "actions": "እርምጃዎች"
+        }
+      },
+      "filters": {
+        "title": "አባላትን አጣራ",
+        "description": "ዝርዝሩን በሁኔታ፣ በስነ-ሕዝብ፣ በራስ አገዝ ቡድን፣ በሃይማኖት ወይም በዕድሜ ክልል ያጥብቡ። ለውጦች 'ማጣሪያዎችን ተግብር' ሲጫኑ ይተገበራሉ።",
+        "status": "ሁኔታ",
+        "statusAll": "ሁሉም ሁኔታዎች",
+        "approval": "የማጽደቅ ሁኔታ",
+        "approvalAll": "ሁሉም የማጽደቅ ሁኔታዎች",
+        "gender": "ጾታ",
+        "genderAll": "ሁሉም ጾታዎች",
+        "marital": "የጋብቻ ሁኔታ",
+        "maritalAll": "ሁሉም የጋብቻ ሁኔታዎች",
+        "shg": "የራስ አገዝ ቡድን",
+        "shgAll": "ሁሉም የራስ አገዝ ቡድኖች",
+        "religion": "ሃይማኖት",
+        "religionAll": "ሁሉም ሃይማኖቶች",
+        "dobLegend": "የትውልድ ቀን",
+        "ageLegend": "ዕድሜ",
+        "from": "ከ",
+        "to": "እስከ",
+        "clear": "ማጣሪያዎችን አጽዳ",
+        "apply": "ማጣሪያዎችን ተግብር"
+      },
+      "fields": {
+        "firstName": "ስም",
+        "lastName": "የአባት ስም",
+        "contactPhone": "የመገኛ ስልክ",
+        "dateOfBirth": "የትውልድ ቀን",
+        "dateJoinedShg": "SHG የተቀላቀሉበት ቀን",
+        "fan": "FAN",
+        "gender": "ጾታ",
+        "maritalStatus": "የጋብቻ ሁኔታ",
+        "religion": "ሃይማኖት",
+        "status": "ሁኔታ",
+        "shg": "የራስ አገዝ ቡድን",
+        "phone": "ስልክ",
+        "nationalId": "መታወቂያ",
+        "nationalIdOptional": "መታወቂያ (አማራጭ)"
+      },
+      "sections": {
+        "details": "ዝርዝሮች",
+        "classifications": "ምድቦች"
+      },
+      "options": {
+        "gender": {
+          "male": "ወንድ",
+          "female": "ሴት"
+        },
+        "marital": {
+          "single": "ያላገባ",
+          "married": "ያገባ",
+          "divorced": "የተፋታ"
+        },
+        "status": {
+          "active": "ንቁ",
+          "inactive": "ቆሟል"
+        },
+        "approval": {
+          "pending": "በመጠባበቅ ላይ",
+          "approved": "ጸድቋል",
+          "rejected": "ውድቅ ተደርጓል"
+        }
+      },
+      "placeholders": {
+        "firstName": "ስም",
+        "lastName": "የአባት ስም",
+        "contactPhone": "የመገኛ ስልክ",
+        "fan": "FAN",
+        "gender": "ጾታ",
+        "maritalStatus": "የጋብቻ ሁኔታ",
+        "religion": "ሃይማኖት",
+        "status": "ሁኔታ",
+        "shg": "የራስ አገዝ ቡድን"
+      },
+      "minAgeHint": "አባል ቢያንስ {years} ዓመት መሆን አለበት።",
+      "create": {
+        "title": "አባል ጨምር",
+        "description": "በራስ አገዝ ቡድን ስር አባል ይመዝግቡ። መታወቂያ አማራጭ ሲሆን በኋላም ሊጨመር ይችላል።",
+        "submit": "አባል ፍጠር",
+        "submitting": "በመፍጠር ላይ…",
+        "toasts": {
+          "createdTitle": "አባል ተፈጥሯል",
+          "errorTitle": "አባል መፍጠር አልተቻለም"
+        }
+      },
+      "edit": {
+        "title": "አባል አርትዕ",
+        "description": "የአባሉን ዝርዝሮች ያዘምኑ። መታወቂያ ለመቀየር 'ተመልከት' ከፍተው ሰነዱን ይጫኑ።",
+        "submit": "ለውጦችን አስቀምጥ",
+        "submitting": "በማስቀመጥ ላይ…",
+        "toasts": {
+          "updatedTitle": "አባል ተዘምኗል",
+          "errorTitle": "አባል ማዘመን አልተቻለም"
+        }
+      },
+      "detail": {
+        "titleFallback": "የአባል ዝርዝር",
+        "description": "መገለጫ፣ የፕሮግራም ዝርዝር እና የመታወቂያ ሰነዶች።",
+        "uploadHeading": "መታወቂያ",
+        "uploadHint": "የተቃኘ ምስል ወይም PDF ይጫኑ ወይም ይተኩ። ፋይሉ በደህና ወደ አገልጋዩ ይላካል።",
+        "loadError": "ይህን አባል መጫን አልተቻለም።",
+        "uploadSuccessTitle": "መታወቂያ ተጭኗል",
+        "uploadFailedTitle": "መጫን አልተሳካም"
+      },
+      "delete": {
+        "title": "አባል ሰርዝ",
+        "confirm": "<strong>{name}</strong> ይሰረዝ? ይህ እርምጃ መመለስ አይቻልም።",
+        "action": "አባል ሰርዝ",
+        "toasts": {
+          "deletedTitle": "አባል ተሰርዟል",
+          "errorTitle": "አባል መሰረዝ አልተቻለም"
+        }
+      },
+      "validation": {
+        "nameRequiredTitle": "ያስፈልጋል",
+        "nameRequiredMessage": "ስምና የአባት ስም ያስፈልጋሉ።",
+        "nameAndGenderRequiredMessage": "ስም፣ የአባት ስምና ጾታ ያስፈልጋሉ።",
+        "genderTitle": "ጾታ",
+        "genderMessage": "ጾታ ይምረጡ።",
+        "statusTitle": "ሁኔታ",
+        "statusMessage": "ሁኔታ ይምረጡ።",
+        "shgTitle": "የራስ አገዝ ቡድን",
+        "shgMessage": "ለዚህ አባል የራስ አገዝ ቡድን ይምረጡ።",
+        "dobTitle": "የትውልድ ቀን",
+        "dobMessage": "የትውልድ ቀን ያስፈልጋል።",
+        "invalidAgeTitle": "ልክ ያልሆነ ዕድሜ",
+        "invalidAgeMessage": "አባል ቢያንስ {years} ዓመት መሆን አለበት።",
+        "maritalTitle": "የጋብቻ ሁኔታ",
+        "maritalMessage": "የጋብቻ ሁኔታ ይምረጡ።"
+      }
+    }
+  },
+
+  "survey": {
+    "list": {
+      "searchPlaceholder": "ዳሰሳዎችን ፈልግ",
+      "emptyHint": "እስካሁን የተመደበ ዳሰሳ የለም።",
+      "loadError": "ዳሰሳዎችን መጫን አልተቻለም።",
+      "untitled": "ርእስ የሌለው ዳሰሳ",
+      "manageSubmissions": "ገቢዎችን አስተዳድር",
+      "card": {
+        "target": "ዒላማ",
+        "questions": "ጥያቄዎች",
+        "version": "ስሪት",
+        "status": "ሁኔታ",
+        "questionsOne": "{count} ጥያቄ",
+        "questionsOther": "{count} ጥያቄዎች"
+      },
+      "statusBadge": {
+        "published": "ታትሟል",
+        "draft": "ረቂቅ"
+      }
+    },
+    "filters": {
+      "title": "ዳሰሳዎችን አጣራ",
+      "description": "ዝርዝሩን በሁኔታ፣ በዒላማ ዓይነት እና በእንቅስቃሴ ሁኔታ ያጥብቡ። ለውጦች 'ማጣሪያዎችን ተግብር' ሲጫኑ ይተገበራሉ።",
+      "status": "ሁኔታ",
+      "statusAll": "ሁሉም ሁኔታዎች",
+      "targetType": "የዒላማ ዓይነት",
+      "targetTypeAll": "ሁሉም የዒላማ ዓይነቶች",
+      "activity": "እንቅስቃሴ",
+      "activityAll": "ሁሉም እንቅስቃሴዎች",
+      "clear": "ማጣሪያዎችን አጽዳ",
+      "apply": "ማጣሪያዎችን ተግብር"
+    },
+    "submissions": {
+      "backToSurveys": "ወደ ዳሰሳዎች ተመለስ",
+      "loadError": "በመጠባበቅ ያሉ ዒላማዎችን መጫን አልተቻለም።",
+      "status": {
+        "submitted": "ገብቷል",
+        "notStarted": "አልተጀመረም",
+        "inProgress": "በሂደት ላይ",
+        "pending": "በመጠባበቅ ላይ"
+      },
+      "approval": {
+        "approved": "ጸድቋል",
+        "rejected": "ተቃርቧል",
+        "pending": "በመጠባበቅ ላይ"
+      },
+      "targetLabels": {
+        "shgSingular": "SHG",
+        "shgPlural": "SHGዎች",
+        "clusterSingular": "ክላስተር",
+        "clusterPlural": "ክላስተሮች",
+        "memberSingular": "አባል",
+        "memberPlural": "አባላት",
+        "genericSingular": "ዒላማ",
+        "genericPlural": "ዒላማዎች"
+      },
+      "assignedTargets": {
+        "title": "ለ{surveyTitle} የተመደቡ የራስ አገዝ ቡድኖች",
+        "columnShg": "የራስ አገዝ ቡድን",
+        "columnApproval": "ማጽደቅ",
+        "columnActions": "እርምጃዎች",
+        "empty": "እስካሁን የተመደበ የራስ አገዝ ቡድን የለም።",
+        "unnamed": "ስም የሌለው ዒላማ",
+        "viewingMembers": "አባላትን በመመልከት ላይ",
+        "viewMembers": "አባላትን ተመልከት",
+        "pagination": "ከ{total} ውስጥ {from}–{to} በማሳየት ላይ"
+      },
+      "memberTable": {
+        "title": "የ{target} ገቢዎች",
+        "titleWithAssignment": "የ{target} ገቢዎች - {assignment}",
+        "columnStatus": "ሁኔታ",
+        "columnProgress": "ሂደት",
+        "columnSubmitted": "የገባበት ጊዜ",
+        "columnActions": "እርምጃዎች",
+        "empty": "ለዚህ ዳሰሳ ምንም የ{targets} ገቢ አልተገኘም።",
+        "emptyWithAssignment": "ለዚህ የራስ አገዝ ቡድን ምንም የ{targets} ገቢ አልተገኘም።",
+        "fill": "ዳሰሳ ሙላ",
+        "viewAnswers": "መልሶችን ተመልከት",
+        "unknown": "ያልታወቀ {target}",
+        "answeredCount": "{answered}/{total} ተመልሷል"
+      },
+      "workspace": {
+        "loading": "የገባ ምላሽ ዝርዝር በመጫን ላይ…",
+        "loadError": "የገባ ምላሽ ዝርዝር መጫን አልተቻለም።",
+        "backToTable": "ወደ ገቢዎች ሠንጠረዥ ተመለስ",
+        "notFound": "ገቢ አልተገኘም።"
+      }
+    },
+    "workspace": {
+      "row": "ረድፍ",
+      "noRows": "እስካሁን ረድፎች የሉም።",
+      "addRow": "ረድፍ ጨምር",
+      "item": "ንጥል",
+      "noGridRows": "የፍርግርግ ረድፎች አልተገኙም።",
+      "setRowAsCol": "{row}ን እንደ {col} አድርግ",
+      "jsonPlaceholder": "የተዋቀረ የመልስ መረጃ ለጥፍ",
+      "questionIndex": "ጥያቄ {index}",
+      "answer": "መልስ",
+      "numberPlaceholder": "የቁጥር መልስ ያስገቡ",
+      "selectAnswer": "መልስ ይምረጡ",
+      "yes": "አዎ",
+      "no": "አይ",
+      "selectOption": "አማራጭ ይምረጡ",
+      "optionIndex": "አማራጭ {index}",
+      "enterOption": "የተመረጠ አማራጭ ያስገቡ",
+      "enterOptions": "የተመረጡ አማራጮችን በኮማ ተለያይተው ያስገቡ",
+      "enterAnswer": "መልስ ያስገቡ",
+      "unknownTarget": "ያልታወቀ {target}",
+      "backToTable": "ወደ ገቢዎች ሠንጠረዥ ተመለስ",
+      "saving": "በማስቀመጥ ላይ…",
+      "saveChanges": "ለውጦችን አስቀምጥ",
+      "saveChangesCount": "ለውጦችን አስቀምጥ ({count})",
+      "submitting": "በማስገባት ላይ…",
+      "submitSubmission": "ገቢን አስገባ",
+      "responseWorkspace": "የምላሽ መዝገብ",
+      "responseWorkspaceTitled": "የ{target} ምላሽ መዝገብ",
+      "started": "የተጀመረበት: {value}",
+      "submittedAt": "የገባበት: {value}",
+      "totalQuestions": "ጠቅላላ ጥያቄዎች: {count}",
+      "answered": "የተመለሰ: {count}",
+      "noQuestions": "ለዚህ ዳሰሳ ጥያቄዎች አልተገኙም።",
+      "toasts": {
+        "savedTitle": "መልሶች ተቀምጠዋል",
+        "savedMessage": "የገቢ መልሶች በተሳካ ሁኔታ ተዘምነዋል።",
+        "saveErrorTitle": "መልሶችን ማስቀመጥ አልተቻለም",
+        "unexpected": "ያልተጠበቀ ስህተት",
+        "incompleteTitle": "በመጀመሪያ ሁሉንም ጥያቄዎች ያጠናቅቁ",
+        "incompleteMessage": "ከመስጠት በፊት ሁሉንም ጥያቄዎች ይመልሱ።",
+        "submittedTitle": "ገቢ ተጠናቋል",
+        "submittedMessage": "ገቢ በተሳካ ሁኔታ ተልኳል።",
+        "submitErrorTitle": "ማስገባት አልተቻለም"
+      }
+    },
+    "preview": {
+      "title": "ቀጥተኛ ቅድመ-እይታ",
+      "empty": "ቀጥተኛ ቅድመ-እይታ ለማየት ከግራ ጎን ከሚገኘው ዝርዝር ጥያቄ ይምረጡ።",
+      "untitledQuestion": "ርእስ የሌለው ጥያቄ",
+      "required": "ግዴታ",
+      "optional": "አማራጭ",
+      "answerPreview": "የመልስ ቅድመ-እይታ",
+      "true": "ልክ",
+      "false": "ሐሰት",
+      "untitledOption": "ርእስ የሌለው አማራጭ",
+      "untitledColumn": "ርእስ የሌለው አምድ",
+      "repeatableTable": "ተደጋጋሚ ሠንጠረዥ፦ ቢያንስ {min}፣ ቢበዛ {max}",
+      "grid": "ፍርግርግ ({type})",
+      "multiSelect": "ብዙ መምረጫ",
+      "singleSelect": "ነጠላ መምረጫ",
+      "gridDimensions": "{rows} ረድፎች x {cols} አምዶች",
+      "responseFieldFor": "ለ{type} የምላሽ መስክ ቅድመ-እይታ።",
+      "followUpVisibility": "የተከታይ ጥያቄ ታይነት",
+      "rule": "ደንብ {index}: ወላጅ ጥያቄ {operator} {value}",
+      "selectedValue": "የተመረጠ እሴት",
+      "operators": {
+        "equals": "እኩል ነው",
+        "notEquals": "እኩል አይደለም",
+        "greaterThan": "ይበልጣል",
+        "lessThan": "ያንሳል",
+        "contains": "ይይዛል"
+      }
+    }
+  },
+
+  "account": {
+    "profile": {
+      "title": "የመለያ ዝርዝር",
+      "descriptionSuperAdmin": "ስምዎ እንዴት እንደሚታይ ያስተዳድሩና የመግቢያዎን ደህንነት ይጠብቁ።",
+      "descriptionDefault": "ስምዎ እንዴት እንደሚታይ ያስተዳድሩና የመግቢያዎን ደህንነት ይጠብቁ። ኢሜይልና ሚና በአስተዳዳሪ ይስተካከላሉ።",
+      "loadError": "መለያዎን መጫን አልቻልንም። ገጹን ያድሱ ወይም እንደገና ይግቡ።",
+      "displayNameHeading": "የማሳያ ስም",
+      "displayNameHint": "በመድረኩ እና በሪፖርቶች ላይ ይታያል።",
+      "firstName": "ስም",
+      "lastName": "የአባት ስም",
+      "saveName": "ስም አስቀምጥ",
+      "saving": "በማስቀመጥ ላይ…",
+      "passwordHeading": "የይለፍ ቃል እና ደህንነት",
+      "passwordHint": "ለመግባት የሚጠቀሙበትን የይለፍ ቃል ያዘምኑ",
+      "currentPassword": "አሁን ያለ የይለፍ ቃል",
+      "newPassword": "አዲስ የይለፍ ቃል",
+      "confirmPassword": "አዲሱን የይለፍ ቃል አረጋግጥ",
+      "passwordsMustMatch": "አዲሶቹ የይለፍ ቃላት መዛመድ አለባቸው።",
+      "updatePassword": "የይለፍ ቃል አዘምን",
+      "updatingPassword": "በማዘመን ላይ…",
+      "toasts": {
+        "savedTitle": "መገለጫ ተዘምኗል",
+        "savedMessage": "ተቀምጧል።",
+        "saveErrorTitle": "መገለጫ ማዘመን አልተቻለም",
+        "requiredTitle": "ያስፈልጋል",
+        "requiredMessage": "ስምና የአባት ስም ያስፈልጋሉ።",
+        "passwordRequiredMessage": "የአሁኑን የይለፍ ቃልና አዲስ የይለፍ ቃል ያስገቡ።",
+        "passwordMismatchTitle": "አለመዛመድ",
+        "passwordMismatchMessage": "አዲሶቹ የይለፍ ቃላት አይዛመዱም።",
+        "passwordUpdatedTitle": "የይለፍ ቃል ተዘምኗል",
+        "passwordUpdatedMessage": "የይለፍ ቃልዎ ተቀይሯል።",
+        "passwordErrorTitle": "የይለፍ ቃል መቀየር አልተቻለም"
+      }
+    }
+  },
+
+  "listEmpty": {
+    "searchAndFilters": "ምንም {entity} ከፍለጋዎና ከማጣሪያዎችዎ ጋር አይዛመድም። ለማስተካከል ወይም ለማጽዳት ይሞክሩ።",
+    "searchOnly": "ምንም {entity} ከፍለጋዎ ጋር አይዛመድም። ሌላ ቃል ይሞክሩ።",
+    "filtersOnly": "ምንም {entity} ከማጣሪያዎችዎ ጋር አይዛመድም። ለማስተካከል ወይም ለማጽዳት ይሞክሩ።",
+    "entity": {
+      "members": "አባላት",
+      "shgs": "የራስ አገዝ ቡድኖች",
+      "surveys": "ዳሰሳዎች"
+    }
+  }
+}

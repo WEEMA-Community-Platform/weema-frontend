@@ -2,6 +2,7 @@
 
 import { useLogoutMutation } from "@weema/auth/react-query"
 import { LogOutIcon, ChevronsUpDownIcon, UserCircle2Icon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { sileo } from "sileo"
 
@@ -21,6 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { LanguageSwitcherSubMenu } from "@/components/language-switcher"
 
 export function NavUser({
   user,
@@ -35,6 +37,7 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const router = useRouter()
   const logoutMutation = useLogoutMutation({ baseUrl: "/api/auth" })
+  const t = useTranslations("nav.user")
 
   const initials = user.name
     .split(" ")
@@ -47,15 +50,18 @@ export function NavUser({
     try {
       const result = await logoutMutation.mutateAsync()
       sileo.success({
-        title: "Logged out",
-        description: result.message || "You have been signed out.",
+        title: t("loggedOut"),
+        description: result.message || t("loggedOutMessage"),
       })
       router.push("/login")
       router.refresh()
     } catch (error) {
       sileo.error({
-        title: "Logout failed",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("logoutFailed"),
+        description:
+          error instanceof Error
+            ? error.message
+            : "Unexpected error",
       })
     }
   }
@@ -112,15 +118,16 @@ export function NavUser({
             <DropdownMenuGroup className="gap-0.5">
               <DropdownMenuItem onClick={() => router.push("/?section=profile")}>
                 <UserCircle2Icon className="size-4 opacity-80" />
-                Profile
+                {t("profile")}
               </DropdownMenuItem>
+              <LanguageSwitcherSubMenu />
               <DropdownMenuItem
                 variant="destructive"
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
               >
                 <LogOutIcon className="size-4 opacity-90" />
-                {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                {logoutMutation.isPending ? t("loggingOut") : t("logout")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

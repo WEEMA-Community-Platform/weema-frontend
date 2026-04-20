@@ -11,18 +11,27 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon, PlusIcon, SaveIcon, Settings2Icon, Trash2Icon } from "lucide-react";
+import {
+  CheckSquare2Icon,
+  GripVerticalIcon,
+  PlusIcon,
+  SaveIcon,
+  Settings2Icon,
+  SquareIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { useSurveyBuilder } from "@/hooks/use-survey-builder";
-import type { SurveySection } from "@/lib/survey-builder/types";
+import type { ShowCondition, SurveyQuestion, SurveySection } from "@/lib/survey-builder/types";
 
 import {
   buildSectionQuestionTree,
   type EditorMode,
   type PendingDelete,
 } from "./shared";
+import { MultiFollowUpControls } from "./multi-follow-up-controls";
 
 type SortableListeners = ReturnType<typeof useSortable>["listeners"];
 type SortableAttributes = ReturnType<typeof useSortable>["attributes"];
@@ -92,6 +101,7 @@ function SortableQuestionRow({
 type BuilderNavigatorProps = {
   builder: ReturnType<typeof useSurveyBuilder>;
   initialSurveyId: string | null;
+  isTranslationMode?: boolean;
   editorMode: EditorMode;
   selectedSection: SurveySection | null;
   selectedQuestionClientId: string | null;
@@ -110,11 +120,20 @@ type BuilderNavigatorProps = {
   onPendingDelete: (payload: PendingDelete) => void;
   onSectionDragEnd: (event: DragEndEvent) => void;
   onQuestionDragEnd: (sectionClientId: string, event: DragEndEvent) => void;
+  multiFollowUpSelections: Record<string, string[]>;
+  multiFollowUpLogicTypeBySection: Record<string, ShowCondition["logicType"]>;
+  onMultiFollowUpLogicTypeChange: (
+    sectionClientId: string,
+    logicType: ShowCondition["logicType"]
+  ) => void;
+  onToggleMultiFollowUpQuestion: (sectionClientId: string, questionClientId: string) => void;
+  onCreateMultiFollowUp: (sectionClientId: string) => void;
 };
 
 export function BuilderNavigator({
   builder,
   initialSurveyId,
+  isTranslationMode = false,
   editorMode,
   selectedSection,
   selectedQuestionClientId,
@@ -133,14 +152,26 @@ export function BuilderNavigator({
   onPendingDelete,
   onSectionDragEnd,
   onQuestionDragEnd,
+  multiFollowUpSelections,
+  multiFollowUpLogicTypeBySection,
+  onMultiFollowUpLogicTypeChange,
+  onToggleMultiFollowUpQuestion,
+  onCreateMultiFollowUp,
 }: BuilderNavigatorProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const isStructureLocked = isTranslationMode;
 
   return (
     <aside className="flex w-[320px] shrink-0 flex-col border-r border-primary/10 bg-card/30">
       {/* Fixed top: notice + settings button */}
       <div className="shrink-0 px-4 pb-0 pt-4">
-        {!initialSurveyId ? (
+        {isTranslationMode ? (
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
+            <span className="font-medium text-primary">Translation mode</span> — update text only.
+            Survey structure is locked; you cannot add/remove/reorder sections, questions, or
+            follow-ups.
+          </div>
+        ) : !initialSurveyId ? (
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
             <span className="font-medium text-primary">New survey</span> —{" "}
             {totalQuestionCount === 0 ? (
@@ -184,7 +215,12 @@ export function BuilderNavigator({
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
-              {builder.state.sections.map((section, sectionIndex) => (
+              {builder.state.sections.map((section, sectionIndex) => {
+                const selectedMultiFollowUpQuestionIds =
+                  multiFollowUpSelections[section.clientId] ?? [];
+                const multiFollowUpLogicType =
+                  multiFollowUpLogicTypeBySection[section.clientId] ?? "AND";
+                return (
                 <SortableSectionItem
                   key={section.clientId}
                   id={section.clientId}
@@ -209,6 +245,7 @@ export function BuilderNavigator({
                               isDragging ? "cursor-grabbing" : "cursor-grab"
                             } ${isOver ? "text-primary" : ""}`}
                             onClick={(e) => e.stopPropagation()}
+                            disabled={isStructureLocked}
                             {...dragHandleAttributes}
                             {...dragHandleListeners}
                           >
@@ -222,7 +259,9 @@ export function BuilderNavigator({
                             onClick={(e) => e.stopPropagation()}
                             placeholder={`Section ${sectionIndex + 1}`}
                             className="h-9"
-                            disabled={savingSectionClientId === section.clientId || isSavingAllChanges}
+                            disabled={
+                              savingSectionClientId === section.clientId || isSavingAllChanges
+                            }
                           />
                           {initialSurveyId && section.id ? (
                             <Button
@@ -239,6 +278,7 @@ export function BuilderNavigator({
                             type="button"
                             variant="destructive"
                             size="icon-sm"
+                            disabled={isStructureLocked}
                             onClick={(e) => {
                               e.stopPropagation();
                               onPendingDelete({
@@ -288,11 +328,32 @@ export function BuilderNavigator({
                           >
                             {(() => {
                               const { rootIds, childMap, questionById } = buildSectionQuestionTree(section.questions);
-                              const renderNode = (questionId: string, depth = 0): ReactNode => {
+                              const sectionQuestionIds = new Set(
+                                section.questions.map((question) => question.clientId)
+                              );
+                              const getParentCount = (question: SurveyQuestion) =>
+                                new Set(
+                                  question.showConditions
+                                    .map((condition) => condition.parentQuestionClientId)
+                                    .filter((parentId) => sectionQuestionIds.has(parentId))
+                                ).size;
+                              const renderNode = (
+                                questionId: string,
+                                depth = 0,
+                                path = new Set<string>()
+                              ): ReactNode => {
+                                if (path.has(questionId)) return null;
+                                const nextPath = new Set(path);
+                                nextPath.add(questionId);
                                 const question = questionById.get(questionId);
                                 if (!question) return null;
                                 const questionIndex = section.questions.findIndex(
                                   (q) => q.clientId === question.clientId
+                                );
+                                const parentCount = getParentCount(question);
+                                const isMultiParentFollowUp = parentCount > 1;
+                                const isSelectedForMultiFollowUp = selectedMultiFollowUpQuestionIds.includes(
+                                  question.clientId
                                 );
                                 return (
                                   <div key={questionId} className="space-y-1">
@@ -319,6 +380,7 @@ export function BuilderNavigator({
                                               qDragging ? "cursor-grabbing" : "cursor-grab"
                                             } ${qOver ? "text-primary" : ""}`}
                                             onClick={(e) => e.stopPropagation()}
+                                            disabled={isStructureLocked}
                                             {...qAttrs}
                                             {...qListeners}
                                           >
@@ -335,15 +397,39 @@ export function BuilderNavigator({
                                           >
                                             {depth === 0
                                               ? `Q${questionIndex + 1}:`
-                                              : depth === 1
+                                              : isMultiParentFollowUp
+                                                ? `Multi follow-up (${parentCount}):`
+                                                : depth === 1
                                                 ? "Follow-up:"
                                                 : `Nested follow-up (L${depth}):`}{" "}
                                             {question.questionText || "Untitled question"}
                                           </button>
+                                          {!isStructureLocked && section.questions.length > 1 ? (
+                                            <button
+                                              type="button"
+                                              className="rounded p-0.5 text-muted-foreground/80 transition-colors hover:text-foreground"
+                                              title="Select as multi-follow-up parent"
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                onToggleMultiFollowUpQuestion(
+                                                  section.clientId,
+                                                  question.clientId
+                                                );
+                                              }}
+                                            >
+                                              {isSelectedForMultiFollowUp ? (
+                                                <CheckSquare2Icon className="size-3 text-primary" />
+                                              ) : (
+                                                <SquareIcon className="size-3" />
+                                              )}
+                                            </button>
+                                          ) : null}
                                         </>
                                       )}
                                     </SortableQuestionRow>
-                                    {(childMap.get(questionId) ?? []).map((id) => renderNode(id, depth + 1))}
+                                    {(childMap.get(questionId) ?? []).map((id) =>
+                                      renderNode(id, depth + 1, nextPath)
+                                    )}
                                   </div>
                                 );
                               };
@@ -356,20 +442,38 @@ export function BuilderNavigator({
                           variant="outline"
                           size="sm"
                           className="mt-1 w-full border-dashed"
+                          disabled={isStructureLocked}
                           onClick={() => onAddQuestion(section.clientId)}
                         >
                           <PlusIcon className="size-3.5" />
                           Add question
                         </Button>
+                        {!isStructureLocked && section.questions.length > 1 ? (
+                          <MultiFollowUpControls
+                            selectedCount={selectedMultiFollowUpQuestionIds.length}
+                            logicType={multiFollowUpLogicType}
+                            onLogicTypeChange={(logicType) =>
+                              onMultiFollowUpLogicTypeChange(section.clientId, logicType)
+                            }
+                            onCreate={() => onCreateMultiFollowUp(section.clientId)}
+                          />
+                        ) : null}
                       </div>
                     </>
                   )}
                 </SortableSectionItem>
-              ))}
+                );
+              })}
             </div>
           </SortableContext>
         </DndContext>
-        <Button type="button" variant="outline" className="mt-3 w-full" onClick={onAddSection}>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 w-full"
+          onClick={onAddSection}
+          disabled={isStructureLocked}
+        >
           <PlusIcon className="size-4" />
           Add section
         </Button>

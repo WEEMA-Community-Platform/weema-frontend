@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import type { Member } from "@/lib/api/members";
@@ -15,6 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
+import {
+  MIN_MEMBER_AGE_YEARS,
+  isAtLeastAge,
+} from "@/components/community/members/constants";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
 
@@ -32,6 +37,7 @@ function snapshotFromMember(m: Member) {
     contactPhone: (m.contactPhone ?? "").trim(),
     gender: m.gender,
     dateOfBirth: m.dateOfBirth ?? "",
+    dateJoinedShg: m.dateJoinedShg ?? "",
     maritalStatus: m.maritalStatus ?? "",
     religionId: m.religionId ?? "",
     status: m.status,
@@ -59,11 +65,15 @@ export function MemberEditDialog({
   isSubmitting,
   onDismiss,
 }: MemberEditDialogProps) {
+  const t = useTranslations("community.members");
+  const tEdit = useTranslations("community.members.edit");
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [gender, setGender] = useState("MALE");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateJoinedShg, setDateJoinedShg] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [religionId, setReligionId] = useState("");
   const [status, setStatus] = useState<EntityStatus>("ACTIVE");
@@ -80,6 +90,7 @@ export function MemberEditDialog({
       contactPhone: contactPhone.trim(),
       gender,
       dateOfBirth,
+      dateJoinedShg,
       maritalStatus,
       religionId,
       status,
@@ -92,6 +103,7 @@ export function MemberEditDialog({
       contactPhone,
       gender,
       dateOfBirth,
+      dateJoinedShg,
       maritalStatus,
       religionId,
       status,
@@ -112,6 +124,7 @@ export function MemberEditDialog({
       setContactPhone(member.contactPhone ?? "");
       setGender(member.gender);
       setDateOfBirth(member.dateOfBirth ?? "");
+      setDateJoinedShg(member.dateJoinedShg ?? "");
       setMaritalStatus(member.maritalStatus ?? "");
       setReligionId(member.religionId ?? "");
       setStatus((member.status as EntityStatus) || "ACTIVE");
@@ -141,8 +154,17 @@ export function MemberEditDialog({
     if (!member) return;
     if (!firstName.trim() || !lastName.trim() || !gender) {
       sileo.warning({
-        title: "Required fields",
-        description: "First name, last name, and gender are required.",
+        title: t("validation.nameRequiredTitle"),
+        description: t("validation.nameAndGenderRequiredMessage"),
+      });
+      return;
+    }
+    if (dateOfBirth && !isAtLeastAge(dateOfBirth, MIN_MEMBER_AGE_YEARS)) {
+      sileo.warning({
+        title: t("validation.invalidAgeTitle"),
+        description: t("validation.invalidAgeMessage", {
+          years: MIN_MEMBER_AGE_YEARS,
+        }),
       });
       return;
     }
@@ -157,6 +179,7 @@ export function MemberEditDialog({
           contactPhone: contactPhone.trim() || undefined,
           gender,
           dateOfBirth: dateOfBirth || null,
+          dateJoinedShg: dateJoinedShg || null,
           maritalStatus: maritalStatus || null,
           religionId: religionId || null,
           status,
@@ -164,12 +187,16 @@ export function MemberEditDialog({
           fan: fan.trim() || null,
         },
       });
-      sileo.success({ title: "Member updated", description: result.message });
+      sileo.success({
+        title: tEdit("toasts.updatedTitle"),
+        description: result.message,
+      });
       dismissAfterExit();
     } catch (error) {
       sileo.error({
-        title: "Could not update member",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tEdit("toasts.errorTitle"),
+        description:
+          error instanceof Error ? error.message : "Unexpected error",
       });
     }
   };
@@ -179,10 +206,8 @@ export function MemberEditDialog({
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,42rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <form onSubmit={submit} className="flex max-h-[85vh] flex-col">
           <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
-            <DialogTitle>Edit member</DialogTitle>
-            <DialogDescription>
-              Update member details. To change national ID, open View and upload a document.
-            </DialogDescription>
+            <DialogTitle>{tEdit("title")}</DialogTitle>
+            <DialogDescription>{tEdit("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 overflow-y-auto px-6 py-5">
             <MemberFormFields
@@ -194,6 +219,8 @@ export function MemberEditDialog({
               setContactPhone={setContactPhone}
               dateOfBirth={dateOfBirth}
               setDateOfBirth={setDateOfBirth}
+              dateJoinedShg={dateJoinedShg}
+              setDateJoinedShg={setDateJoinedShg}
               fan={fan}
               setFan={setFan}
               gender={gender}
@@ -213,8 +240,8 @@ export function MemberEditDialog({
           <DialogFooter className="flex flex-wrap items-center justify-end gap-3 border-t border-border/60 px-6 py-4">
             <SaveButton
               isPending={isSubmitting}
-              idleLabel="Save changes"
-              pendingLabel="Saving…"
+              idleLabel={tEdit("submit")}
+              pendingLabel={tEdit("submitting")}
               disabled={!isEditDirty}
             />
           </DialogFooter>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CheckIcon, PlusIcon, Trash2Icon, UserRoundIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import { PaginationRow, formTextareaClass } from "@/components/base-data/shared";
@@ -136,25 +137,26 @@ function getInitialDraftFromQuestion(question: WorkspaceQuestion): AnswerDraft {
 }
 
 function SubmissionStatusBadge({ status }: { status: string }) {
+  const t = useTranslations("survey.submissions.status");
   const normalized = status.toUpperCase();
   if (normalized === "FINISHED" || normalized === "SUBMITTED") {
     return (
       <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-        Submitted
+        {t("submitted")}
       </Badge>
     );
   }
   if (normalized === "NOT_STARTED" || normalized === "NOT STARTED") {
     return (
       <Badge className="border-transparent bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300">
-        Not started
+        {t("notStarted")}
       </Badge>
     );
   }
   if (normalized === "IN_PROGRESS" || normalized === "IN PROGRESS") {
     return (
       <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-        In progress
+        {t("inProgress")}
       </Badge>
     );
   }
@@ -170,6 +172,7 @@ function RepeatableEditor({
   config?: Extract<JsonQuestionConfig, { jsonType: "REPEATABLE_TABLE" }>;
   onChange: (next: unknown) => void;
 }) {
+  const t = useTranslations("survey.workspace");
   const rows = useMemo(() => {
     if (!Array.isArray(value)) return [];
     return value.filter((row) => isRecord(row)) as Array<Record<string, unknown>>;
@@ -216,7 +219,7 @@ function RepeatableEditor({
             {safeColumns.map((column) => (
               <TableHead key={column}>{toTitleCase(column)}</TableHead>
             ))}
-            <TableHead className="w-[96px]">Row</TableHead>
+            <TableHead className="w-[96px]">{t("row")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -226,7 +229,7 @@ function RepeatableEditor({
                 colSpan={safeColumns.length + 1}
                 className="py-6 text-center text-sm text-muted-foreground"
               >
-                No rows yet.
+                {t("noRows")}
               </TableCell>
             </TableRow>
           ) : (
@@ -259,7 +262,7 @@ function RepeatableEditor({
       </Table>
       <Button type="button" size="sm" variant="outline" onClick={addRow}>
         <PlusIcon className="size-4" />
-        Add row
+        {t("addRow")}
       </Button>
     </div>
   );
@@ -274,6 +277,7 @@ function GridEditor({
   config?: Extract<JsonQuestionConfig, { jsonType: "GRID" }>;
   onChange: (next: unknown) => void;
 }) {
+  const t = useTranslations("survey.workspace");
   const map = isRecord(value) ? (value as Record<string, unknown>) : {};
   const rows = config
     ? config.rows.map((row) => row.key || row.label)
@@ -326,7 +330,7 @@ function GridEditor({
       <Table>
         <TableHeader className="bg-muted/40">
           <TableRow>
-            <TableHead>Item</TableHead>
+            <TableHead>{t("item")}</TableHead>
             {cols.map((col) => (
               <TableHead key={col} className="text-center">{toTitleCase(col)}</TableHead>
             ))}
@@ -336,7 +340,7 @@ function GridEditor({
           {rows.length === 0 ? (
             <TableRow>
               <TableCell colSpan={cols.length + 1} className="py-6 text-center text-sm text-muted-foreground">
-                No grid rows found.
+                {t("noGridRows")}
               </TableCell>
             </TableRow>
           ) : (
@@ -347,7 +351,10 @@ function GridEditor({
                   <TableCell key={`${row}-${col}`} className="text-center">
                     <button
                       type="button"
-                      aria-label={`Set ${toTitleCase(row)} as ${toTitleCase(col)}`}
+                      aria-label={t("setRowAsCol", {
+                        row: toTitleCase(row),
+                        col: toTitleCase(col),
+                      })}
                       className={`mx-auto inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-1 transition-colors ${
                         isSelected(row, col)
                           ? "border-primary bg-primary text-primary-foreground"
@@ -377,6 +384,7 @@ function JsonQuestionEditor({
   questionConfig?: JsonQuestionConfig;
   onDraftChange: (patch: Partial<AnswerDraft>) => void;
 }) {
+  const t = useTranslations("survey.workspace");
   const isRepeatable =
     questionConfig?.jsonType === "REPEATABLE_TABLE" ||
     (Array.isArray(draft.jsonValue) &&
@@ -415,7 +423,7 @@ function JsonQuestionEditor({
           onDraftChange({ jsonValue: event.target.value });
         }
       }}
-      placeholder="Paste structured answer data"
+      placeholder={t("jsonPlaceholder")}
     />
   );
 }
@@ -431,19 +439,24 @@ function QuestionAnswerEditor({
   draft: AnswerDraft;
   onDraftChange: (patch: Partial<AnswerDraft>) => void;
 }) {
+  const t = useTranslations("survey.workspace");
   const type = question.questionType.toUpperCase();
   const options = question.options;
   return (
     <div className="rounded-xl border border-primary/10 bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">Question {index + 1}</p>
+        <p className="text-sm font-semibold text-foreground">
+          {t("questionIndex", { index: index + 1 })}
+        </p>
         <Badge variant="outline" className="text-[11px] uppercase tracking-wide">
           {normalizeQuestionType(question.questionType)}
         </Badge>
       </div>
       <p className="mt-2 text-sm text-foreground">{question.questionText}</p>
       <div className="mt-3 space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Answer</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t("answer")}
+        </p>
         <div className="w-full max-w-2xl">
           {type === "NUMBER" ? (
             <Input
@@ -451,7 +464,7 @@ function QuestionAnswerEditor({
               className="h-11 max-w-lg text-sm"
               value={draft.numberValue}
               onChange={(event) => onDraftChange({ numberValue: event.target.value })}
-              placeholder="Enter numeric answer"
+              placeholder={t("numberPlaceholder")}
             />
           ) : type === "DATE" ? (
             <Input
@@ -468,11 +481,11 @@ function QuestionAnswerEditor({
               }
             >
               <SelectTrigger className="h-11 max-w-lg text-sm">
-                <SelectValue placeholder="Select answer" />
+                <SelectValue placeholder={t("selectAnswer")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="true">Yes</SelectItem>
-                <SelectItem value="false">No</SelectItem>
+                <SelectItem value="true">{t("yes")}</SelectItem>
+                <SelectItem value="false">{t("no")}</SelectItem>
               </SelectContent>
             </Select>
           ) : type === "SINGLE_CHOICE" ? (
@@ -482,12 +495,15 @@ function QuestionAnswerEditor({
                 onValueChange={(value) => onDraftChange({ singleChoiceValue: value })}
               >
                 <SelectTrigger className="h-11 max-w-lg text-sm">
-                  <SelectValue placeholder="Select option" />
+                  <SelectValue placeholder={t("selectOption")} />
                 </SelectTrigger>
                 <SelectContent>
                   {options.map((option, optionIndex) => (
-                    <SelectItem key={option.id ?? `${question.key}-single-${optionIndex}`} value={option.text}>
-                      {option.text || `Option ${optionIndex + 1}`}
+                    <SelectItem
+                      key={option.id ?? `${question.key}-single-${optionIndex}`}
+                      value={option.text}
+                    >
+                      {option.text || t("optionIndex", { index: optionIndex + 1 })}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -497,14 +513,15 @@ function QuestionAnswerEditor({
                 className="h-11 max-w-lg text-sm"
                 value={draft.singleChoiceValue}
                 onChange={(event) => onDraftChange({ singleChoiceValue: event.target.value })}
-                placeholder="Enter selected option"
+                placeholder={t("enterOption")}
               />
             )
           ) : type === "MULTIPLE_CHOICE" ? (
             options.length > 0 ? (
               <div className="grid max-w-xl gap-2 sm:grid-cols-2">
                 {options.map((option, optionIndex) => {
-                  const text = option.text || `Option ${optionIndex + 1}`;
+                  const text =
+                    option.text || t("optionIndex", { index: optionIndex + 1 });
                   const selected = draft.multiChoiceValue
                     .split(",")
                     .map((item) => item.trim())
@@ -539,7 +556,7 @@ function QuestionAnswerEditor({
                 className={`${formTextareaClass} max-w-xl`}
                 value={draft.multiChoiceValue}
                 onChange={(event) => onDraftChange({ multiChoiceValue: event.target.value })}
-                placeholder="Enter selected options separated by commas"
+                placeholder={t("enterOptions")}
               />
             )
           ) : type === "JSON" ? (
@@ -553,14 +570,14 @@ function QuestionAnswerEditor({
               className={`${formTextareaClass} max-w-xl`}
               value={draft.textValue}
               onChange={(event) => onDraftChange({ textValue: event.target.value })}
-              placeholder="Enter answer"
+              placeholder={t("enterAnswer")}
             />
           ) : (
             <Input
               className="h-11 max-w-lg text-sm"
               value={draft.textValue}
               onChange={(event) => onDraftChange({ textValue: event.target.value })}
-              placeholder="Enter answer"
+              placeholder={t("enterAnswer")}
             />
           )}
         </div>
@@ -650,7 +667,7 @@ function buildSubmissionAnswerPayload(question: WorkspaceQuestion, draft: Answer
 
 export function SurveySubmissionAnswerWorkspace({
   submission,
-  targetLabelSingular = "member",
+  targetLabelSingular,
   questionTemplates,
   onBackToTable,
   onSubmissionUpdated,
@@ -661,6 +678,10 @@ export function SurveySubmissionAnswerWorkspace({
   onBackToTable: () => void;
   onSubmissionUpdated?: () => Promise<unknown> | void;
 }) {
+  const t = useTranslations("survey.workspace");
+  const tTargetLabels = useTranslations("survey.submissions.targetLabels");
+  const resolvedTargetLabel =
+    targetLabelSingular ?? tTargetLabels("memberSingular");
   const [draftOverrides, setDraftOverrides] = useState<Record<string, Partial<AnswerDraft>>>({});
   const [dirtyQuestionKeys, setDirtyQuestionKeys] = useState<Record<string, true>>({});
   const [answersPage, setAnswersPage] = useState(1);
@@ -731,7 +752,9 @@ export function SurveySubmissionAnswerWorkspace({
   const isSubmitting = submitSubmissionMutation.isPending;
   const dirtyCount = Object.keys(dirtyQuestionKeys).length;
   const displayTargetName =
-    submission.targetName || submission.memberName || `Unknown ${targetLabelSingular}`;
+    submission.targetName ||
+    submission.memberName ||
+    t("unknownTarget", { target: resolvedTargetLabel });
   const allQuestionsCompleted = questions.every((question) =>
     isQuestionAnswered(question, getDraft(question))
   );
@@ -771,13 +794,13 @@ export function SurveySubmissionAnswerWorkspace({
     try {
       await persistDirtyAnswers();
       sileo.success({
-        title: "Answers saved",
-        description: "Submission answers were updated successfully.",
+        title: t("toasts.savedTitle"),
+        description: t("toasts.savedMessage"),
       });
     } catch (error) {
       sileo.error({
-        title: "Failed to save answers",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("toasts.saveErrorTitle"),
+        description: error instanceof Error ? error.message : t("toasts.unexpected"),
       });
     }
   };
@@ -786,8 +809,8 @@ export function SurveySubmissionAnswerWorkspace({
     try {
       if (!allQuestionsCompleted) {
         sileo.warning({
-          title: "Complete all questions first",
-          description: "Please answer all questions before submitting.",
+          title: t("toasts.incompleteTitle"),
+          description: t("toasts.incompleteMessage"),
         });
         return;
       }
@@ -797,26 +820,38 @@ export function SurveySubmissionAnswerWorkspace({
         await onSubmissionUpdated();
       }
       sileo.success({
-        title: "Submission completed",
-        description: result.message || "Submission has been submitted successfully.",
+        title: t("toasts.submittedTitle"),
+        description: result.message || t("toasts.submittedMessage"),
       });
     } catch (error) {
       sileo.error({
-        title: "Failed to submit",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("toasts.submitErrorTitle"),
+        description: error instanceof Error ? error.message : t("toasts.unexpected"),
       });
     }
   };
+
+  const workspaceTitleTarget = resolvedTargetLabel[0]
+    ? `${resolvedTargetLabel[0].toUpperCase()}${resolvedTargetLabel.slice(1)}`
+    : "";
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button type="button" variant="outline" onClick={onBackToTable}>
-          Back to submissions table
+          {t("backToTable")}
         </Button>
         <div className="flex items-center gap-2">
-          <Button type="button" onClick={() => void handleSaveChanges()} disabled={isSaving || isSubmitting || dirtyCount === 0}>
-            {isSaving ? "Saving..." : dirtyCount > 0 ? `Save changes (${dirtyCount})` : "Save changes"}
+          <Button
+            type="button"
+            onClick={() => void handleSaveChanges()}
+            disabled={isSaving || isSubmitting || dirtyCount === 0}
+          >
+            {isSaving
+              ? t("saving")
+              : dirtyCount > 0
+                ? t("saveChangesCount", { count: dirtyCount })
+                : t("saveChanges")}
           </Button>
           {currentPage === totalPages ? (
             <Button
@@ -825,7 +860,7 @@ export function SurveySubmissionAnswerWorkspace({
               onClick={() => void handleSubmit()}
               disabled={isSaving || isSubmitting || !allQuestionsCompleted}
             >
-              {isSubmitting ? "Submitting..." : "Submit submission"}
+              {isSubmitting ? t("submitting") : t("submitSubmission")}
             </Button>
           ) : null}
         </div>
@@ -834,9 +869,9 @@ export function SurveySubmissionAnswerWorkspace({
       <Card className="border-primary/10">
         <CardHeader className="pb-3">
           <CardTitle>
-            {targetLabelSingular[0]
-              ? `${targetLabelSingular[0].toUpperCase()}${targetLabelSingular.slice(1)} response workspace`
-              : "Response workspace"}
+            {workspaceTitleTarget
+              ? t("responseWorkspaceTitled", { target: workspaceTitleTarget })
+              : t("responseWorkspace")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -851,16 +886,20 @@ export function SurveySubmissionAnswerWorkspace({
               <SubmissionStatusBadge status={submission.submissionStatus} />
             </div>
             <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-              <p>Started: {formatDateTime(submission.startedAt)}</p>
-              <p>Submitted: {formatDateTime(submission.submittedAt)}</p>
-              <p>Total questions: {totalQuestions || submission.totalQuestions}</p>
-              <p>Answered: {submission.answeredQuestions}</p>
+              <p>{t("started", { value: formatDateTime(submission.startedAt) })}</p>
+              <p>{t("submittedAt", { value: formatDateTime(submission.submittedAt) })}</p>
+              <p>
+                {t("totalQuestions", {
+                  count: totalQuestions || submission.totalQuestions,
+                })}
+              </p>
+              <p>{t("answered", { count: submission.answeredQuestions })}</p>
             </div>
           </div>
 
           {pageQuestions.length === 0 ? (
             <div className="rounded-lg border border-dashed border-primary/20 px-4 py-8 text-center text-sm text-muted-foreground">
-              No questions found for this survey.
+              {t("noQuestions")}
             </div>
           ) : (
             <div className="space-y-3">

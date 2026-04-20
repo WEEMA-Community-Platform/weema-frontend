@@ -1,7 +1,29 @@
-export const SECTION_META: Record<
-  string,
-  { group: string; label: string; description: string }
-> = {
+export type SectionMeta = {
+  group: string;
+  label: string;
+  description: string;
+};
+
+/**
+ * Translation-key maps. Actual copy is resolved in client components via
+ * `useTranslations("sections.*")`.
+ */
+export const SECTION_META_KEYS: Record<string, string> = {
+  shg: "sections.shg",
+  member: "sections.member",
+  profile: "sections.profile",
+};
+
+export const PATH_META_KEYS: Record<string, string> = {
+  "/survey": "sections.survey",
+  "/survey/submissions": "sections.surveySubmissions",
+};
+
+/**
+ * Back-compat English copy retained so any non-client context still renders
+ * sensible text; client components should prefer the translation keys above.
+ */
+export const SECTION_META: Record<string, SectionMeta> = {
   shg: {
     group: "Community",
     label: "Self-Help Groups",
@@ -19,11 +41,12 @@ export const SECTION_META: Record<
   },
 };
 
-export const PATH_META: Record<string, { group: string; label: string; description: string }> = {
+export const PATH_META: Record<string, SectionMeta> = {
   "/survey": {
     group: "Survey",
     label: "Surveys",
-    description: "Browse assigned surveys and submit responses for members.",
+    description:
+      "Browse assigned surveys and submit responses for members.",
   },
   "/survey/submissions": {
     group: "Survey",

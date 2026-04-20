@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { ChevronDown, Loader2, Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import { useCurrentUser } from "@/hooks/use-user";
@@ -33,6 +34,8 @@ export function ProfilePanel() {
   const user = data?.user;
   const mutation = useEditProfileMutation();
   const passwordMutation = useChangePasswordMutation();
+  const t = useTranslations("account.profile");
+  const tToasts = useTranslations("account.profile.toasts");
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -61,7 +64,10 @@ export function ProfilePanel() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
-      sileo.warning({ title: "Required", description: "First and last name are required." });
+      sileo.warning({
+        title: tToasts("requiredTitle"),
+        description: tToasts("requiredMessage"),
+      });
       return;
     }
     if (!dirty) return;
@@ -70,10 +76,13 @@ export function ProfilePanel() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       });
-      sileo.success({ title: "Profile updated", description: result.message || "Saved." });
+      sileo.success({
+        title: tToasts("savedTitle"),
+        description: result.message || tToasts("savedMessage"),
+      });
     } catch (err) {
       sileo.error({
-        title: "Could not update profile",
+        title: tToasts("saveErrorTitle"),
         description: err instanceof Error ? err.message : "Unexpected error",
       });
     }
@@ -83,13 +92,16 @@ export function ProfilePanel() {
     e.preventDefault();
     if (!oldPassword || !newPassword) {
       sileo.warning({
-        title: "Required",
-        description: "Enter your current password and a new password.",
+        title: tToasts("requiredTitle"),
+        description: tToasts("passwordRequiredMessage"),
       });
       return;
     }
     if (newPassword !== confirmPassword) {
-      sileo.warning({ title: "Mismatch", description: "New passwords do not match." });
+      sileo.warning({
+        title: tToasts("passwordMismatchTitle"),
+        description: tToasts("passwordMismatchMessage"),
+      });
       return;
     }
     try {
@@ -102,12 +114,12 @@ export function ProfilePanel() {
       setConfirmPassword("");
       setPasswordOpen(false);
       sileo.success({
-        title: "Password updated",
-        description: result.message || "Your password was changed.",
+        title: tToasts("passwordUpdatedTitle"),
+        description: result.message || tToasts("passwordUpdatedMessage"),
       });
     } catch (err) {
       sileo.error({
-        title: "Could not change password",
+        title: tToasts("passwordErrorTitle"),
         description: err instanceof Error ? err.message : "Unexpected error",
       });
     }
@@ -148,10 +160,8 @@ export function ProfilePanel() {
       <div className="w-full max-w-2xl self-start">
         <Card className="rounded-xl border border-primary/15 bg-card ring-0">
           <CardHeader>
-            <CardTitle>Account details</CardTitle>
-            <CardDescription>
-              We couldn&apos;t load your account. Try refreshing the page or signing in again.
-            </CardDescription>
+            <CardTitle>{t("title")}</CardTitle>
+            <CardDescription>{t("loadError")}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -164,21 +174,15 @@ export function ProfilePanel() {
     <div className="w-full max-w-2xl self-start">
       <Card className="rounded-xl border border-primary/15 bg-card ring-0">
         <CardHeader className="border-b border-border/50 pb-6">
-          <CardTitle className="text-lg font-semibold tracking-tight">Account details</CardTitle>
+          <CardTitle className="text-lg font-semibold tracking-tight">
+            {t("title")}
+          </CardTitle>
           <CardDescription className="text-[0.95rem] leading-relaxed">
-            {isSuperAdmin ? (
-              <>Manage how your name appears and keep your sign-in secure.</>
-            ) : (
-              <>
-                Manage how your name appears and keep your sign-in secure. Email and role are set by
-                an administrator.
-              </>
-            )}
+            {isSuperAdmin ? t("descriptionSuperAdmin") : t("descriptionDefault")}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="p-0">
-          {/* Identity */}
           <div className="flex gap-4 border-b border-border/50 px-6 py-6">
             <div
               className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-base font-semibold text-primary"
@@ -190,7 +194,9 @@ export function ProfilePanel() {
               <p className="text-lg font-semibold tracking-tight text-foreground">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+              <p className="truncate text-sm text-muted-foreground">
+                {user.email}
+              </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="default" className="font-normal capitalize">
                   {formatRoleLabel(user.role)}
@@ -199,17 +205,21 @@ export function ProfilePanel() {
             </div>
           </div>
 
-          {/* Name */}
-          <form onSubmit={submit} className="border-b border-border/50 px-6 py-6">
+          <form
+            onSubmit={submit}
+            className="border-b border-border/50 px-6 py-6"
+          >
             <div className="grid gap-6 sm:grid-cols-[1fr_1fr] sm:items-start">
               <div className="sm:col-span-2">
-                <h3 className="text-sm font-medium text-foreground">Display name</h3>
+                <h3 className="text-sm font-medium text-foreground">
+                  {t("displayNameHeading")}
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Shown across the platform and in reports.
+                  {t("displayNameHint")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="profile-first-name">First name</Label>
+                <Label htmlFor="profile-first-name">{t("firstName")}</Label>
                 <Input
                   id="profile-first-name"
                   value={firstName}
@@ -220,7 +230,7 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="profile-last-name">Last name</Label>
+                <Label htmlFor="profile-last-name">{t("lastName")}</Label>
                 <Input
                   id="profile-last-name"
                   value={lastName}
@@ -239,17 +249,16 @@ export function ProfilePanel() {
                   {mutation.isPending ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Saving…
+                      {t("saving")}
                     </>
                   ) : (
-                    "Save name"
+                    t("saveName")
                   )}
                 </Button>
               </div>
             </div>
           </form>
 
-          {/* Password — progressive disclosure */}
           <Collapsible
             open={passwordOpen}
             onOpenChange={setPasswordOpen}
@@ -264,10 +273,10 @@ export function ProfilePanel() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-foreground">
-                  Password & security
+                  {t("passwordHeading")}
                 </span>
                 <span className="mt-0.5 block text-sm text-muted-foreground">
-                  Update the password you use to sign in
+                  {t("passwordHint")}
                 </span>
               </span>
               <ChevronDown
@@ -283,7 +292,9 @@ export function ProfilePanel() {
               >
                 <div className="w-full space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="profile-old-password">Current password</Label>
+                    <Label htmlFor="profile-old-password">
+                      {t("currentPassword")}
+                    </Label>
                     <Input
                       id="profile-old-password"
                       type="password"
@@ -294,7 +305,9 @@ export function ProfilePanel() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="profile-new-password">New password</Label>
+                    <Label htmlFor="profile-new-password">
+                      {t("newPassword")}
+                    </Label>
                     <Input
                       id="profile-new-password"
                       type="password"
@@ -305,7 +318,9 @@ export function ProfilePanel() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="profile-confirm-password">Confirm new password</Label>
+                    <Label htmlFor="profile-confirm-password">
+                      {t("confirmPassword")}
+                    </Label>
                     <Input
                       id="profile-confirm-password"
                       type="password"
@@ -317,7 +332,7 @@ export function ProfilePanel() {
                     />
                     {passwordMismatch && (
                       <p className="text-xs text-destructive" role="status">
-                        New passwords must match.
+                        {t("passwordsMustMatch")}
                       </p>
                     )}
                   </div>
@@ -331,10 +346,10 @@ export function ProfilePanel() {
                       {passwordMutation.isPending ? (
                         <>
                           <Loader2 className="size-4 animate-spin" />
-                          Updating…
+                          {t("updatingPassword")}
                         </>
                       ) : (
-                        "Update password"
+                        t("updatePassword")
                       )}
                     </Button>
                   </div>

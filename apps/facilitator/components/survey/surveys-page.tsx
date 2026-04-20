@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CircleCheckBigIcon,
@@ -8,6 +8,7 @@ import {
   RefreshCcwDot,
   TextIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,24 +20,23 @@ import {
 import {
   DataToolbar,
   PaginationRow,
-  listEmptyMessage,
+  useListEmptyMessage,
 } from "@/components/base-data/shared";
 import {
   SurveyFiltersDialog,
   type SurveyAppliedFilters,
 } from "@/components/survey/survey-filters-dialog";
-import {
-  useSurveysQuery,
-} from "@/hooks/use-surveys";
+import { useSurveysQuery } from "@/hooks/use-surveys";
 
 const PAGE_SIZE = 10;
 
 function SurveyStatusBadge({ status }: { status?: string }) {
+  const tBadge = useTranslations("survey.list.statusBadge");
   const normalized = (status ?? "").toUpperCase();
   if (normalized === "PUBLISHED") {
     return (
       <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-        Published
+        {tBadge("published")}
       </Badge>
     );
   }
@@ -44,7 +44,7 @@ function SurveyStatusBadge({ status }: { status?: string }) {
   if (normalized === "DRAFT") {
     return (
       <Badge variant="secondary" className="bg-muted text-muted-foreground">
-        Draft
+        {tBadge("draft")}
       </Badge>
     );
   }
@@ -54,6 +54,12 @@ function SurveyStatusBadge({ status }: { status?: string }) {
 
 export function SurveysPage() {
   const router = useRouter();
+  const tList = useTranslations("survey.list");
+  const tCard = useTranslations("survey.list.card");
+  const tActions = useTranslations("common.actions");
+  const tEntity = useTranslations("listEmpty.entity");
+  const listEmptyMessage = useListEmptyMessage();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -77,7 +83,9 @@ export function SurveysPage() {
   });
 
   const surveys = surveysQuery.data?.surveys ?? [];
-  const hasActiveFilters = Boolean(appliedStatus || appliedTargetType || appliedActivity);
+  const hasActiveFilters = Boolean(
+    appliedStatus || appliedTargetType || appliedActivity
+  );
   const appliedFilters: SurveyAppliedFilters = useMemo(
     () => ({
       status: appliedStatus,
@@ -97,16 +105,16 @@ export function SurveysPage() {
 
   const hasSearch = Boolean(searchQuery.trim());
   const emptyMessage = listEmptyMessage({
-    entityPlural: "surveys",
+    entityPlural: tEntity("surveys"),
     hasSearch,
     hasFilters: hasActiveFilters,
-    emptyCatalogHint: "No surveys assigned yet.",
+    emptyCatalogHint: tList("emptyHint"),
   });
 
   return (
     <div className="space-y-4">
       <DataToolbar
-        searchPlaceholder="Search surveys"
+        searchPlaceholder={tList("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(value) => {
           setSearchQuery(value);
@@ -124,7 +132,7 @@ export function SurveysPage() {
           <p className="text-sm text-muted-foreground">
             {surveysQuery.error instanceof Error
               ? surveysQuery.error.message
-              : "Failed to load surveys."}
+              : tList("loadError")}
           </p>
           <Button
             type="button"
@@ -133,7 +141,7 @@ export function SurveysPage() {
             className="mt-4"
             onClick={() => surveysQuery.refetch()}
           >
-            Retry
+            {tActions("retry")}
           </Button>
         </div>
       ) : surveys.length === 0 ? (
@@ -143,32 +151,35 @@ export function SurveysPage() {
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {surveys.map((survey) => {
+            const questions = survey.totalQuestions ?? 0;
             return (
               <CommunityCard
                 key={survey.id}
-                title={survey.title || "Untitled survey"}
+                title={survey.title || tList("untitled")}
                 status={survey.isActive ? "ACTIVE" : "INACTIVE"}
                 onView={() =>
                   router.push(
                     `/survey/${survey.id}/submissions?surveyTitle=${encodeURIComponent(
-                      survey.title || "Untitled survey"
+                      survey.title || tList("untitled")
                     )}&targetType=${encodeURIComponent(survey.targetType || "")}`
                   )
                 }
                 showEditAction={false}
                 showDeleteAction={false}
-                viewActionLabel="Manage submissions"
+                viewActionLabel={tList("manageSubmissions")}
               >
-                <CardMetaRow icon={LayersIcon} label="Target">
+                <CardMetaRow icon={LayersIcon} label={tCard("target")}>
                   {survey.targetType || "-"}
                 </CardMetaRow>
-                <CardMetaRow icon={TextIcon} label="Questions">
-                  {survey.totalQuestions ?? 0} question{survey.totalQuestions === 1 ? "" : "s"}
+                <CardMetaRow icon={TextIcon} label={tCard("questions")}>
+                  {questions === 1
+                    ? tCard("questionsOne", { count: questions })
+                    : tCard("questionsOther", { count: questions })}
                 </CardMetaRow>
-                <CardMetaRow icon={RefreshCcwDot} label="Version">
+                <CardMetaRow icon={RefreshCcwDot} label={tCard("version")}>
                   {survey.version || "-"}
                 </CardMetaRow>
-                <CardMetaRow icon={CircleCheckBigIcon} label="Status">
+                <CardMetaRow icon={CircleCheckBigIcon} label={tCard("status")}>
                   <SurveyStatusBadge status={survey.status} />
                 </CardMetaRow>
               </CommunityCard>

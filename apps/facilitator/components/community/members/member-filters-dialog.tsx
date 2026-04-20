@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -51,9 +52,7 @@ const emptyFilters: MemberAppliedFilters = {
 type MemberFiltersDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Currently applied filters (synced into the dialog when it opens). */
   applied: MemberAppliedFilters;
-  /** Called when the user clicks Apply filters. */
   onApply: (filters: MemberAppliedFilters) => void;
   shgOptions: { value: string; label: string }[];
   religionOptions: { value: string; label: string }[];
@@ -67,6 +66,12 @@ export function MemberFiltersDialog({
   shgOptions,
   religionOptions,
 }: MemberFiltersDialogProps) {
+  const tFilters = useTranslations("community.members.filters");
+  const tStatus = useTranslations("community.members.options.status");
+  const tApproval = useTranslations("community.members.options.approval");
+  const tGender = useTranslations("community.members.options.gender");
+  const tMarital = useTranslations("community.members.options.marital");
+
   const [draft, setDraft] = useState<MemberAppliedFilters>(applied);
 
   useEffect(() => {
@@ -80,116 +85,159 @@ export function MemberFiltersDialog({
     onApply(emptyFilters);
   };
 
+  const statusOptions = STATUS_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tStatus(o.value.toLowerCase() as "active" | "inactive"),
+  }));
+  const approvalOptions = APPROVAL_STATUS_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tApproval(
+      o.value.toLowerCase() as "pending" | "approved" | "rejected"
+    ),
+  }));
+  const genderOptions = GENDER_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tGender(o.value.toLowerCase() as "male" | "female"),
+  }));
+  const maritalOptions = MARITAL_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tMarital(o.value.toLowerCase() as "single" | "married" | "divorced"),
+  }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,42rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader className="space-y-1">
-          <DialogTitle>Filter members</DialogTitle>
-          <DialogDescription>
-            Narrow the list by status, demographics, self-help group, religion, or age range. Changes apply when you click
-            Apply filters.
-          </DialogDescription>
+          <DialogTitle>{tFilters("title")}</DialogTitle>
+          <DialogDescription>{tFilters("description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-5 px-5 pb-2">
           <div className="grid min-w-0 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-status">Status</Label>
+              <Label htmlFor="member-filter-status">{tFilters("status")}</Label>
               <SelectField
                 id="member-filter-status"
                 value={draft.status}
-                placeholder="All statuses"
-                options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                placeholder={tFilters("statusAll")}
+                options={statusOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, status: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-approval-status">Approval status</Label>
+              <Label htmlFor="member-filter-approval-status">
+                {tFilters("approval")}
+              </Label>
               <SelectField
                 id="member-filter-approval-status"
                 value={draft.approvalStatus}
-                placeholder="All approval statuses"
-                options={APPROVAL_STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                onValueChange={(v) => setDraft((d) => ({ ...d, approvalStatus: v }))}
+                placeholder={tFilters("approvalAll")}
+                options={approvalOptions}
+                onValueChange={(v) =>
+                  setDraft((d) => ({ ...d, approvalStatus: v }))
+                }
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-gender">Gender</Label>
+              <Label htmlFor="member-filter-gender">{tFilters("gender")}</Label>
               <SelectField
                 id="member-filter-gender"
                 value={draft.gender}
-                placeholder="All genders"
-                options={[...GENDER_OPTIONS]}
+                placeholder={tFilters("genderAll")}
+                options={genderOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, gender: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-marital">Marital status</Label>
+              <Label htmlFor="member-filter-marital">
+                {tFilters("marital")}
+              </Label>
               <SelectField
                 id="member-filter-marital"
                 value={draft.marital}
-                placeholder="All marital statuses"
-                options={[...MARITAL_OPTIONS]}
+                placeholder={tFilters("maritalAll")}
+                options={maritalOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, marital: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-shg">Self-help group</Label>
+              <Label htmlFor="member-filter-shg">{tFilters("shg")}</Label>
               <SelectField
                 id="member-filter-shg"
                 value={draft.shgId}
-                placeholder="All self-help groups"
+                placeholder={tFilters("shgAll")}
                 options={shgOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, shgId: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-religion">Religion</Label>
+              <Label htmlFor="member-filter-religion">
+                {tFilters("religion")}
+              </Label>
               <SelectField
                 id="member-filter-religion"
                 value={draft.religionId}
-                placeholder="All religions"
+                placeholder={tFilters("religionAll")}
                 options={religionOptions}
-                onValueChange={(v) => setDraft((d) => ({ ...d, religionId: v }))}
+                onValueChange={(v) =>
+                  setDraft((d) => ({ ...d, religionId: v }))
+                }
               />
             </div>
           </div>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-medium text-muted-foreground">Date of birth</legend>
+            <legend className="text-xs font-medium text-muted-foreground">
+              {tFilters("dobLegend")}
+            </legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="member-filter-dob-from" className="text-xs text-muted-foreground">
-                  From
+                <label
+                  htmlFor="member-filter-dob-from"
+                  className="text-xs text-muted-foreground"
+                >
+                  {tFilters("from")}
                 </label>
                 <Input
                   id="member-filter-dob-from"
                   type="date"
                   className={inputClass}
                   value={draft.dobFrom}
-                  onChange={(e) => setDraft((d) => ({ ...d, dobFrom: e.target.value }))}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, dobFrom: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="member-filter-dob-to" className="text-xs text-muted-foreground">
-                  To
+                <label
+                  htmlFor="member-filter-dob-to"
+                  className="text-xs text-muted-foreground"
+                >
+                  {tFilters("to")}
                 </label>
                 <Input
                   id="member-filter-dob-to"
                   type="date"
                   className={inputClass}
                   value={draft.dobTo}
-                  onChange={(e) => setDraft((d) => ({ ...d, dobTo: e.target.value }))}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, dobTo: e.target.value }))
+                  }
                 />
               </div>
             </div>
           </fieldset>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-medium text-muted-foreground">Age</legend>
+            <legend className="text-xs font-medium text-muted-foreground">
+              {tFilters("ageLegend")}
+            </legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label htmlFor="member-filter-age-from" className="text-xs text-muted-foreground">
-                  From
+                <label
+                  htmlFor="member-filter-age-from"
+                  className="text-xs text-muted-foreground"
+                >
+                  {tFilters("from")}
                 </label>
                 <Input
                   id="member-filter-age-from"
@@ -197,12 +245,17 @@ export function MemberFiltersDialog({
                   min={0}
                   className={inputClass}
                   value={draft.ageFrom}
-                  onChange={(e) => setDraft((d) => ({ ...d, ageFrom: e.target.value }))}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, ageFrom: e.target.value }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="member-filter-age-to" className="text-xs text-muted-foreground">
-                  To
+                <label
+                  htmlFor="member-filter-age-to"
+                  className="text-xs text-muted-foreground"
+                >
+                  {tFilters("to")}
                 </label>
                 <Input
                   id="member-filter-age-to"
@@ -210,22 +263,29 @@ export function MemberFiltersDialog({
                   min={0}
                   className={inputClass}
                   value={draft.ageTo}
-                  onChange={(e) => setDraft((d) => ({ ...d, ageTo: e.target.value }))}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, ageTo: e.target.value }))
+                  }
                 />
               </div>
             </div>
           </fieldset>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" className="min-h-11" onClick={clearAndApply}>
-            Clear filters
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={clearAndApply}
+          >
+            {tFilters("clear")}
           </Button>
           <Button
             type="button"
             className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => onApply(draft)}
           >
-            Apply filters
+            {tFilters("apply")}
           </Button>
         </DialogFooter>
       </DialogContent>

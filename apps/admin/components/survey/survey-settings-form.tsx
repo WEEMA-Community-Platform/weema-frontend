@@ -11,15 +11,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formTextareaClass, inputClass } from "@/components/base-data/shared";
-import { TARGET_TYPES } from "@/lib/survey-builder/utils";
+import { SURVEY_LANGUAGES, TARGET_TYPES } from "@/lib/survey-builder/utils";
 
 type SurveySettingsFormProps = {
   title: string;
   description: string;
   targetType: string;
+  language: "en" | "am";
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onTargetTypeChange: (value: string) => void;
+  onLanguageChange: (value: "en" | "am") => void;
+  lockTargetType?: boolean;
+  lockLanguage?: boolean;
+  isTranslationMode?: boolean;
   showSaveAction?: boolean;
   onSave?: () => void;
   isSaving?: boolean;
@@ -49,7 +54,11 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
       </Field>
       <Field>
         <FieldLabel>Target type</FieldLabel>
-        <Select value={props.targetType} onValueChange={props.onTargetTypeChange}>
+        <Select
+          value={props.targetType}
+          onValueChange={props.onTargetTypeChange}
+          disabled={props.lockTargetType}
+        >
           <SelectTrigger className={inputClass}>
             <SelectValue placeholder="Select target type" />
           </SelectTrigger>
@@ -61,6 +70,30 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
             ))}
           </SelectContent>
         </Select>
+      </Field>
+      <Field>
+        <FieldLabel>Language</FieldLabel>
+        <Select
+          value={props.language}
+          onValueChange={(value) => props.onLanguageChange(value as "en" | "am")}
+          disabled={props.lockLanguage}
+        >
+          <SelectTrigger className={inputClass}>
+            <SelectValue placeholder="Select language" />
+          </SelectTrigger>
+          <SelectContent>
+            {SURVEY_LANGUAGES.map((language) => (
+              <SelectItem key={language.value} value={language.value}>
+                {language.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {props.isTranslationMode ? (
+          <p className="text-xs text-muted-foreground">
+            Translation mode keeps survey structure fixed. Only text content is editable.
+          </p>
+        ) : null}
       </Field>
       {props.showSaveAction ? (
         <div className="flex justify-end pt-2">

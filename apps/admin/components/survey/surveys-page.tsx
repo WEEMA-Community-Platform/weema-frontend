@@ -6,6 +6,7 @@ import {
   ClipboardListIcon,
   CircleCheckBigIcon,
   CopyIcon,
+  LanguagesIcon,
   LayersIcon,
   Link2Icon,
   SendHorizonalIcon,
@@ -261,6 +262,19 @@ export function SurveysPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
+                  onClick={() => {
+                    const sourceLanguage = survey.language === "am" ? "am" : "en";
+                    const targetLanguage = sourceLanguage === "en" ? "am" : "en";
+                    router.push(
+                      `/survey/builder?translateFrom=${survey.id}&translateLanguage=${targetLanguage}`
+                    );
+                  }}
+                >
+                  <LanguagesIcon className="size-4" />
+                  Translate survey
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-[12px] whitespace-nowrap"
                   onClick={() =>
                     openAssignTargets({
                       id: survey.id,
@@ -305,6 +319,9 @@ export function SurveysPage() {
             >
               <CardMetaRow icon={LayersIcon} label="Target">
                 {survey.targetType || "-"}
+              </CardMetaRow>
+              <CardMetaRow icon={LanguagesIcon} label="Language">
+                {survey.language === "am" ? "Amharic" : "English"}
               </CardMetaRow>
               <CardMetaRow icon={TextIcon} label="Questions">
                 {survey.totalQuestions ?? 0} question{survey.totalQuestions === 1 ? "" : "s"}

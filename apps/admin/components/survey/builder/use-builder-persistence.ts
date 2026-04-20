@@ -12,6 +12,7 @@ import {
   useDeleteSurveySectionMutation,
   useReorderQuestionsMutation,
   useReorderSurveySectionsMutation,
+  useTranslateSurveyMutation,
   useUpdateQuestionMutation,
   useUpdateSurveyMutation,
   useUpdateSurveySectionMutation,
@@ -24,6 +25,7 @@ import {
 import {
   normalizeSurveyResponse,
   serializeSurveyPayload,
+  serializeSurveyTranslationPayload,
   validateSurveyBuilderState,
 } from "@/lib/survey-builder/normalize";
 import type { SurveyBuilderState, SurveyValidationIssue } from "@/lib/survey-builder/types";
@@ -39,6 +41,7 @@ import {
 
 type Params = {
   initialSurveyId: string | null;
+  translationSourceSurveyId: string | null;
   setInitialSurveyId: React.Dispatch<React.SetStateAction<string | null>>;
   builder: ReturnType<typeof useSurveyBuilder>;
   questionIdByClientId: Map<string, string>;
@@ -54,6 +57,7 @@ type Params = {
 
 export function useBuilderPersistence({
   initialSurveyId,
+  translationSourceSurveyId,
   setInitialSurveyId,
   builder,
   questionIdByClientId,
@@ -68,6 +72,7 @@ export function useBuilderPersistence({
 }: Params) {
   const queryClient = useQueryClient();
   const createSurveyMutation = useCreateSurveyMutation();
+  const translateSurveyMutation = useTranslateSurveyMutation();
   const updateSurveyMutation = useUpdateSurveyMutation();
   const createSectionsMutation = useCreateSurveySectionsMutation();
   const updateSectionMutation = useUpdateSurveySectionMutation();
@@ -160,6 +165,55 @@ export function useBuilderPersistence({
       return;
     }
     try {
+      const isTranslationDraft =
+        !initialSurveyId &&
+        Boolean(translationSourceSurveyId) &&
+        builder.state.sections.every(
+          (section) =>
+            Boolean(section.id) &&
+            section.questions.every((question) => Boolean(question.id))
+        );
+
+      if (isTranslationDraft && translationSourceSurveyId) {
+        const payload = serializeSurveyTranslationPayload(builder.state);
+        const hasMissingIds = payload.sections.some(
+          (section) =>
+            !section.id ||
+            section.questions.some(
+              (question) =>
+                !question.id || question.options.some((option) => !option.id)
+            )
+        );
+
+        if (hasMissingIds) {
+          sileo.warning({
+            title: "Invalid translation structure",
+            description:
+              "Translation must keep the original structure. Reload and translate without adding/removing questions or options.",
+          });
+          return;
+        }
+
+        const result = await translateSurveyMutation.mutateAsync({
+          id: translationSourceSurveyId,
+          payload,
+        });
+        const createdSurveyId = extractCreatedSurveyId(result);
+        await queryClient.invalidateQueries({ queryKey: ["surveys"] });
+        queryClient.removeQueries({ queryKey: ["surveys"] });
+        if (createdSurveyId) {
+          setInitialSurveyId(createdSurveyId);
+          await reloadSurvey(createdSurveyId);
+        }
+        sileo.success({
+          title: "Survey translated",
+          description: createdSurveyId
+            ? result.message ?? "Translated survey created and opened in edit mode."
+            : result.message ?? "Translated survey has been created.",
+        });
+        return;
+      }
+
       if (!initialSurveyId) {
         const result = await createSurveyMutation.mutateAsync(serializeSurveyPayload(builder.state));
         const createdSurveyId = extractCreatedSurveyId(result);
@@ -189,6 +243,7 @@ export function useBuilderPersistence({
           title: builder.state.title.trim(),
           description: builder.state.description.trim(),
           targetType: builder.state.targetType,
+          language: builder.state.language,
         },
       });
       sileo.success({
@@ -249,6 +304,7 @@ export function useBuilderPersistence({
           title: builder.state.title.trim(),
           description: builder.state.description.trim(),
           targetType: builder.state.targetType,
+          language: builder.state.language,
         },
       });
       const unsyncedSections = builder.state.sections.filter((s) => !s.id);
@@ -490,7 +546,10 @@ export function useBuilderPersistence({
           sileo.success({ title: "Section deleted", description: "Unsynced section has been removed locally." });
         }
         setSelectedSectionClientId((prev) =>
-          prev === pendingDelete.sectionClientId ? null : prev
+          prev === pendingDelete.sectionClientId
+            ? builder.state.sections.find((s) => s.clientId !== pendingDelete.sectionClientId)
+                ?.clientId ?? null
+            : prev
         );
       } else {
         const section = builder.state.sections.find((s) => s.clientId === pendingDelete.sectionClientId);
@@ -519,7 +578,7 @@ export function useBuilderPersistence({
     savingQuestionClientId,
     isSavingAllChanges,
     isSavingReorder,
-    isCreatingSurvey: createSurveyMutation.isPending,
+    isCreatingSurvey: createSurveyMutation.isPending || translateSurveyMutation.isPending,
     // Sync
     lastSyncedSnapshot,
     setLastSyncedSnapshot,

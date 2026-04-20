@@ -6,6 +6,7 @@ import {
   assignSurveyTargets,
   unassignSurveyTargets,
   cloneSurvey,
+  translateSurvey,
   createQuestions,
   createSurvey,
   createSurveySections,
@@ -40,6 +41,7 @@ import {
   type StartSurveySubmissionPayload,
   type UpdateSurveyPayload,
   type SurveyAssignmentTargetsQuery,
+  type TranslateSurveyPayload,
 } from "@/lib/api/surveys";
 import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
 
@@ -255,6 +257,17 @@ export function useCloneSurveyMutation() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: CloneSurveyPayload }) =>
       cloneSurvey(id, payload),
+    onSuccess: () => {
+      invalidateSurveyQueries(queryClient);
+    },
+  });
+}
+
+export function useTranslateSurveyMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: TranslateSurveyPayload }) =>
+      translateSurvey(id, payload),
     onSuccess: () => {
       invalidateSurveyQueries(queryClient);
     },

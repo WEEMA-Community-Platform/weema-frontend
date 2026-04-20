@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type DragEndEvent } from "@dnd-kit/core";
 import { sileo } from "sileo";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSurveyBuilder } from "@/hooks/use-survey-builder";
-import type { SurveyValidationIssue } from "@/lib/survey-builder/types";
-import { createEmptySurvey, isChoiceType } from "@/lib/survey-builder/utils";
+import type { ShowCondition, SurveyValidationIssue } from "@/lib/survey-builder/types";
+import { createEmptySurvey } from "@/lib/survey-builder/utils";
 import { SurveyPreviewPanel } from "@/components/survey/survey-preview-panel";
 import { SurveySettingsForm } from "@/components/survey/survey-settings-form";
 import { QuestionCardsBoard } from "@/components/survey/builder/question-cards-board";
@@ -26,17 +36,46 @@ import {
   type SurveyQuestionWithContext,
 } from "@/components/survey/builder/shared";
 
-export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialSurveyId?: string | null }) {
+export function SurveyBuilderPage({
+  initialSurveyId: routeSurveyId,
+  translationSourceSurveyId,
+  translationLanguage,
+}: {
+  initialSurveyId?: string | null;
+  translationSourceSurveyId?: string | null;
+  translationLanguage?: "en" | "am";
+}) {
+  type PendingLeaveAction =
+    | { type: "browser-back" }
+    | { type: "link"; href: string }
+    | null;
+
   const [initialSurveyId, setInitialSurveyId] = useState<string | null>(routeSurveyId ?? null);
-  const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(Boolean(routeSurveyId));
+  const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(
+    Boolean(routeSurveyId || translationSourceSurveyId)
+  );
   const [editorMode, setEditorMode] = useState<EditorMode>("settings");
   const [selectedSectionClientId, setSelectedSectionClientId] = useState<string | null>(null);
   const [selectedQuestionClientId, setSelectedQuestionClientId] = useState<string | null>(null);
   const [issues, setIssues] = useState<SurveyValidationIssue[]>([]);
   const [lastMovedSectionClientId, setLastMovedSectionClientId] = useState<string | null>(null);
   const [lastMovedQuestionClientId, setLastMovedQuestionClientId] = useState<string | null>(null);
+  const [multiFollowUpSelections, setMultiFollowUpSelections] = useState<Record<string, string[]>>(
+    {}
+  );
+  const [multiFollowUpLogicTypeBySection, setMultiFollowUpLogicTypeBySection] = useState<
+    Record<string, ShowCondition["logicType"]>
+  >({});
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [pendingLeaveAction, setPendingLeaveAction] = useState<PendingLeaveAction>(null);
+  const initialDraftSnapshotRef = useRef<string | null>(null);
+  const hasHistoryGuardRef = useRef(false);
+  const bypassLeaveGuardRef = useRef(false);
 
   const builder = useSurveyBuilder(createEmptySurvey());
+  if (initialDraftSnapshotRef.current === null) {
+    initialDraftSnapshotRef.current = buildBuilderSnapshot(builder.state);
+  }
 
   // ─── Derived lookups ──────────────────────────────────────────────────────
 
@@ -98,11 +137,29 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
     null;
   const selectedQuestion =
     selectedSection?.questions.find((q) => q.clientId === selectedQuestionClientId) ?? null;
+  const isTranslationMode = Boolean(translationSourceSurveyId) || builder.state.isTranslation;
+  const isStructureLocked = isTranslationMode;
+
+  useEffect(() => {
+    if (editorMode === "settings") return;
+    if (selectedSectionClientId) return;
+    const firstSectionId = builder.state.sections[0]?.clientId;
+    if (!firstSectionId) return;
+    setSelectedSectionClientId(firstSectionId);
+  }, [builder.state.sections, editorMode, selectedSectionClientId]);
+
+  useEffect(() => {
+    if (editorMode !== "question") return;
+    if (selectedQuestion) return;
+    if (!selectedSection) return;
+    setEditorMode("cards");
+  }, [editorMode, selectedQuestion, selectedSection]);
 
   // ─── Persistence hook ─────────────────────────────────────────────────────
 
   const persistence = useBuilderPersistence({
     initialSurveyId,
+    translationSourceSurveyId: translationSourceSurveyId ?? null,
     setInitialSurveyId,
     builder,
     questionIdByClientId,
@@ -115,6 +172,12 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
     setLastMovedSectionClientId,
     setLastMovedQuestionClientId,
   });
+  const hasUnsavedDraftChanges = useMemo(() => {
+    if (initialSurveyId) {
+      return persistence.saveAllEligibility.hasUnsavedChanges;
+    }
+    return builderSnapshot !== initialDraftSnapshotRef.current;
+  }, [builderSnapshot, initialSurveyId, persistence.saveAllEligibility.hasUnsavedChanges]);
 
   // ─── Animation clear effects ──────────────────────────────────────────────
 
@@ -133,16 +196,22 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
   // ─── Initial survey load ──────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!routeSurveyId) {
+    const sourceSurveyId = translationSourceSurveyId ?? routeSurveyId;
+    if (!sourceSurveyId) {
       setInitialSurveyId(null);
       setIsLoadingInitialSurvey(false);
       return;
     }
     const load = async () => {
       try {
-        setInitialSurveyId(routeSurveyId);
+        setInitialSurveyId(translationSourceSurveyId ? null : sourceSurveyId);
         setIsLoadingInitialSurvey(true);
-        await persistence.reloadSurvey(routeSurveyId);
+        const loaded = await persistence.reloadSurvey(sourceSurveyId);
+        if (translationSourceSurveyId) {
+          const nextLanguage =
+            translationLanguage ?? (loaded.language === "en" ? "am" : "en");
+          builder.setHeaderField("language", nextLanguage);
+        }
         setEditorMode("settings");
       } catch (error) {
         sileo.error({
@@ -155,7 +224,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
     };
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeSurveyId]);
+  }, [routeSurveyId, translationSourceSurveyId, translationLanguage]);
 
   // ─── Navigation handlers ──────────────────────────────────────────────────
 
@@ -169,20 +238,26 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
     setSelectedQuestionClientId(null);
     setEditorMode("settings");
     setIssues([]);
+    setMultiFollowUpSelections({});
+    setMultiFollowUpLogicTypeBySection({});
+    initialDraftSnapshotRef.current = buildBuilderSnapshot(fresh);
   };
 
   const handleAddSection = () => {
+    if (isStructureLocked) return;
     builder.addSection();
     setEditorMode("cards");
   };
 
   const handleAddQuestion = (sectionClientId: string) => {
+    if (isStructureLocked) return;
     builder.addQuestion(sectionClientId);
     setSelectedSectionClientId(sectionClientId);
     setEditorMode("cards");
   };
 
   const handleSectionDragEnd = ({ active, over }: DragEndEvent) => {
+    if (isStructureLocked) return;
     if (!over || active.id === over.id) return;
     persistence.setPendingReorder({
       kind: "section",
@@ -192,6 +267,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
   };
 
   const handleQuestionDragEnd = (sectionClientId: string, { active, over }: DragEndEvent) => {
+    if (isStructureLocked) return;
     if (!over || active.id === over.id) return;
     persistence.setPendingReorder({
       kind: "question",
@@ -204,6 +280,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
   // ─── Follow-up helpers ────────────────────────────────────────────────────
 
   const handleAddFollowUp = () => {
+    if (isStructureLocked) return;
     if (!selectedSection || !selectedQuestion) return;
     const sectionQuestionIds = new Set(selectedSection.questions.map((q) => q.clientId));
     const directParentId =
@@ -221,6 +298,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
   };
 
   const handleAddNestedFollowUp = () => {
+    if (isStructureLocked) return;
     if (!selectedSection || !selectedQuestion) return;
     const sectionQuestionIds = new Set(selectedSection.questions.map((q) => q.clientId));
     const followUpDepth = getFollowUpDepth(selectedQuestion.clientId, questionByClientId, sectionQuestionIds);
@@ -243,6 +321,145 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
     }));
     setSelectedQuestionClientId(nextId);
     setEditorMode("question");
+  };
+
+  const handleAddCondition = () => {
+    if (isStructureLocked) return;
+    if (!selectedSection || !selectedQuestion) return;
+    const sectionQuestionIds = new Set(selectedSection.questions.map((q) => q.clientId));
+    const preferredParentId = getQuestionParentId(selectedQuestion, sectionQuestionIds);
+    const fallbackParent =
+      selectedSection.questions.find((q) => q.clientId === preferredParentId) ??
+      selectedSection.questions.find((q) => q.clientId !== selectedQuestion.clientId);
+    if (!fallbackParent) return;
+    builder.addCondition(
+      selectedSection.clientId,
+      selectedQuestion.clientId,
+      createFollowUpCondition(fallbackParent)
+    );
+  };
+
+  const handleToggleMultiFollowUpQuestion = (sectionClientId: string, questionClientId: string) => {
+    if (isStructureLocked) return;
+    setMultiFollowUpSelections((prev) => {
+      const current = prev[sectionClientId] ?? [];
+      const next = current.includes(questionClientId)
+        ? current.filter((item) => item !== questionClientId)
+        : [...current, questionClientId];
+      return { ...prev, [sectionClientId]: next };
+    });
+  };
+
+  const handleCreateMultiFollowUp = (sectionClientId: string) => {
+    if (isStructureLocked) return;
+    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
+    if (!section) return;
+    const selectedParentIds = multiFollowUpSelections[sectionClientId] ?? [];
+    const parentQuestions = section.questions.filter((question) =>
+      selectedParentIds.includes(question.clientId)
+    );
+    if (parentQuestions.length < 2) {
+      sileo.warning({
+        title: "Select more parent questions",
+        description: "Choose at least two questions in the same section.",
+      });
+      return;
+    }
+    const logicType = multiFollowUpLogicTypeBySection[sectionClientId] ?? "AND";
+    const nextId = builder.addQuestion(sectionClientId);
+    builder.updateQuestion(sectionClientId, nextId, (question) => ({
+      ...question,
+      questionText: "",
+      showConditions: parentQuestions.map((parentQuestion) => ({
+        ...createFollowUpCondition(parentQuestion),
+        logicType,
+      })),
+    }));
+    setMultiFollowUpSelections((prev) => ({ ...prev, [sectionClientId]: [] }));
+    setSelectedSectionClientId(sectionClientId);
+    setSelectedQuestionClientId(nextId);
+    setEditorMode("question");
+  };
+
+  useEffect(() => {
+    if (!hasUnsavedDraftChanges) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (bypassLeaveGuardRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedDraftChanges]);
+
+  useEffect(() => {
+    if (!hasUnsavedDraftChanges) {
+      hasHistoryGuardRef.current = false;
+      setIsLeaveDialogOpen(false);
+      setPendingLeaveAction(null);
+      return;
+    }
+
+    if (!hasHistoryGuardRef.current) {
+      window.history.pushState({ surveyBuilderGuard: true }, "", window.location.href);
+      hasHistoryGuardRef.current = true;
+    }
+
+    const handlePopState = () => {
+      window.history.pushState({ surveyBuilderGuard: true }, "", window.location.href);
+      setPendingLeaveAction({ type: "browser-back" });
+      setIsLeaveDialogOpen(true);
+    };
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (bypassLeaveGuardRef.current) return;
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (event.defaultPrevented) return;
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (anchor.target && anchor.target !== "_self") return;
+
+      const destination = new URL(anchor.href, window.location.href);
+      if (destination.href === window.location.href) return;
+
+      event.preventDefault();
+      setPendingLeaveAction({ type: "link", href: destination.href });
+      setIsLeaveDialogOpen(true);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    document.addEventListener("click", handleDocumentClick, true);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [hasUnsavedDraftChanges]);
+
+  const handleConfirmLeave = () => {
+    if (!pendingLeaveAction) {
+      setIsLeaveDialogOpen(false);
+      return;
+    }
+
+    bypassLeaveGuardRef.current = true;
+    setIsLeaveDialogOpen(false);
+    const action = pendingLeaveAction;
+    setPendingLeaveAction(null);
+
+    if (action.type === "browser-back") {
+      hasHistoryGuardRef.current = false;
+      window.history.back();
+      return;
+    }
+
+    window.location.assign(action.href);
+  };
+
+  const handleStayOnPage = () => {
+    setIsLeaveDialogOpen(false);
+    setPendingLeaveAction(null);
   };
 
   // ─── Loading skeleton ─────────────────────────────────────────────────────
@@ -289,6 +506,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
     <div className="min-h-screen bg-background">
       <BuilderHeader
         initialSurveyId={initialSurveyId}
+        isTranslationMode={isTranslationMode}
         totalQuestionCount={totalQuestionCount}
         isCreatingSurvey={persistence.isCreatingSurvey}
         isSavingAllChanges={persistence.isSavingAllChanges}
@@ -302,6 +520,7 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
         <BuilderNavigator
           builder={builder}
           initialSurveyId={initialSurveyId}
+          isTranslationMode={isTranslationMode}
           editorMode={editorMode}
           selectedSection={selectedSection}
           selectedQuestionClientId={selectedQuestionClientId}
@@ -324,6 +543,16 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
           onPendingDelete={persistence.setPendingDelete}
           onSectionDragEnd={handleSectionDragEnd}
           onQuestionDragEnd={handleQuestionDragEnd}
+          multiFollowUpSelections={multiFollowUpSelections}
+          multiFollowUpLogicTypeBySection={multiFollowUpLogicTypeBySection}
+          onMultiFollowUpLogicTypeChange={(sectionClientId, logicType) =>
+            setMultiFollowUpLogicTypeBySection((prev) => ({
+              ...prev,
+              [sectionClientId]: logicType,
+            }))
+          }
+          onToggleMultiFollowUpQuestion={handleToggleMultiFollowUpQuestion}
+          onCreateMultiFollowUp={handleCreateMultiFollowUp}
         />
 
         <main className="min-w-0 flex-1 overflow-y-auto border-r border-primary/10 p-6">
@@ -337,9 +566,14 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
                   title={builder.state.title}
                   description={builder.state.description}
                   targetType={builder.state.targetType}
+                  language={builder.state.language}
                   onTitleChange={(v) => builder.setHeaderField("title", v)}
                   onDescriptionChange={(v) => builder.setHeaderField("description", v)}
                   onTargetTypeChange={(v) => builder.setHeaderField("targetType", v)}
+                  onLanguageChange={(v) => builder.setHeaderField("language", v)}
+                  lockTargetType={isTranslationMode}
+                  lockLanguage={isTranslationMode}
+                  isTranslationMode={isTranslationMode}
                   showSaveAction={Boolean(initialSurveyId)}
                   onSave={() => void persistence.handleSaveSurvey()}
                   isSaving={false}
@@ -352,11 +586,13 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
               section={selectedSection}
               questionByClientId={questionByClientId}
               dependentsMap={dependentsMap}
+              isTranslationMode={isTranslationMode}
               onOpen={(questionClientId) => {
                 setSelectedQuestionClientId(questionClientId);
                 setEditorMode("question");
               }}
               onDelete={(questionClientId) => {
+                if (isStructureLocked) return;
                 if (!selectedSection) return;
                 const q = selectedSection.questions.find((q) => q.clientId === questionClientId);
                 persistence.setPendingDelete({
@@ -370,10 +606,10 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
           ) : selectedSection && selectedQuestion ? (
             <QuestionEditor
               question={selectedQuestion}
-              allQuestions={allQuestions}
               section={selectedSection}
               questionByClientId={questionByClientId}
               dependentsMap={dependentsMap}
+              isTranslationMode={isTranslationMode}
               onBackToCards={() => setEditorMode("cards")}
               backToCardsLabel={initialSurveyId ? "Back to cards" : "Back to questions"}
               onPrimaryAction={() => {
@@ -410,30 +646,45 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
                 builder.setQuestionType(selectedSection.clientId, selectedQuestion.clientId, nextType)
               }
               onDelete={() =>
-                persistence.setPendingDelete({
-                  kind: "question",
-                  sectionClientId: selectedSection.clientId,
-                  questionClientId: selectedQuestion.clientId,
-                  questionText: selectedQuestion.questionText || "Untitled question",
-                })
+                isStructureLocked
+                  ? undefined
+                  : persistence.setPendingDelete({
+                      kind: "question",
+                      sectionClientId: selectedSection.clientId,
+                      questionClientId: selectedQuestion.clientId,
+                      questionText: selectedQuestion.questionText || "Untitled question",
+                    })
               }
-              onAddOption={() => builder.addOption(selectedSection.clientId, selectedQuestion.clientId)}
+              onAddOption={() =>
+                isStructureLocked
+                  ? undefined
+                  : builder.addOption(selectedSection.clientId, selectedQuestion.clientId)
+              }
               onUpdateOption={(optionClientId, patch) =>
                 builder.updateOption(selectedSection.clientId, selectedQuestion.clientId, optionClientId, patch)
               }
               onDeleteOption={(optionClientId) =>
-                builder.deleteOption(selectedSection.clientId, selectedQuestion.clientId, optionClientId)
+                isStructureLocked
+                  ? undefined
+                  : builder.deleteOption(
+                      selectedSection.clientId,
+                      selectedQuestion.clientId,
+                      optionClientId
+                    )
               }
               onQuestionConfigChange={(config) =>
                 builder.setQuestionConfig(selectedSection.clientId, selectedQuestion.clientId, config)
               }
               onAddFollowUpQuestion={handleAddFollowUp}
               onAddNestedFollowUpQuestion={handleAddNestedFollowUp}
+              onAddCondition={handleAddCondition}
               onUpdateCondition={(idx, updater) =>
                 builder.updateCondition(selectedSection.clientId, selectedQuestion.clientId, idx, updater)
               }
               onDeleteCondition={(idx) =>
-                builder.deleteCondition(selectedSection.clientId, selectedQuestion.clientId, idx)
+                isStructureLocked
+                  ? undefined
+                  : builder.deleteCondition(selectedSection.clientId, selectedQuestion.clientId, idx)
               }
             />
           ) : null}
@@ -464,6 +715,20 @@ export function SurveyBuilderPage({ initialSurveyId: routeSurveyId }: { initialS
         onReorderOpenChange={(open) => { if (!open) persistence.setPendingReorder(null); }}
         onReorderConfirm={() => void persistence.confirmReorder()}
       />
+      <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved survey updates. If you leave now, your recent edits will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleStayOnPage}>Stay here</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLeave}>Leave page</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

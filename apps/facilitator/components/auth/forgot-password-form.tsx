@@ -1,6 +1,7 @@
 "use client";
 
 import { useResetPasswordMutation, useRequestOtpMutation, useVerifyOtpMutation } from "@weema/auth/react-query";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -19,6 +20,9 @@ export function ForgotPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isOtpVerified, setIsOtpVerified] = useState(false);
 
+  const t = useTranslations("auth.forgotPassword");
+  const tToasts = useTranslations("auth.forgotPassword.toast");
+
   const requestOtpMutation = useRequestOtpMutation({ baseUrl: "/api/auth" });
   const verifyOtpMutation = useVerifyOtpMutation({ baseUrl: "/api/auth" });
   const resetPasswordMutation = useResetPasswordMutation({ baseUrl: "/api/auth" });
@@ -26,23 +30,21 @@ export function ForgotPasswordForm() {
   return (
     <Card className="mx-auto w-full max-w-md border-primary/15 shadow-lg shadow-primary/5">
       <CardHeader>
-        <CardTitle className="text-xl">Reset password</CardTitle>
+        <CardTitle className="text-xl">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <FieldGroup>
-          <p className="text-sm text-muted-foreground">
-            Enter your email, verify the OTP, then set a new password.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("intro")}</p>
 
           <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
             <div className="flex gap-2">
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="facilitator@weema.com"
+                placeholder={t("emailPlaceholder")}
                 className="h-11"
                 required
               />
@@ -54,8 +56,8 @@ export function ForgotPasswordForm() {
                 onClick={async () => {
                   if (!email.trim()) {
                     sileo.warning({
-                      title: "Email required",
-                      description: "Enter your email to request an OTP.",
+                      title: tToasts("emailRequiredTitle"),
+                      description: tToasts("emailRequiredMessage"),
                     });
                     return;
                   }
@@ -63,25 +65,25 @@ export function ForgotPasswordForm() {
                   try {
                     const result = await requestOtpMutation.mutateAsync(email.trim());
                     sileo.success({
-                      title: "OTP sent",
+                      title: tToasts("otpSentTitle"),
                       description: result.message,
                     });
                   } catch (error) {
                     sileo.error({
-                      title: "Could not send OTP",
+                      title: tToasts("otpErrorTitle"),
                       description:
                         error instanceof Error ? error.message : "Unexpected error",
                     });
                   }
                 }}
               >
-                Send OTP
+                {t("sendOtp")}
               </Button>
             </div>
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="otp">OTP code</FieldLabel>
+            <FieldLabel htmlFor="otp">{t("otp")}</FieldLabel>
             <div className="flex gap-2">
               <Input
                 id="otp"
@@ -90,7 +92,7 @@ export function ForgotPasswordForm() {
                   setOtp(event.target.value);
                   setIsOtpVerified(false);
                 }}
-                placeholder="123456"
+                placeholder={t("otpPlaceholder")}
                 className="h-11"
                 required
               />
@@ -102,8 +104,8 @@ export function ForgotPasswordForm() {
                 onClick={async () => {
                   if (!email.trim() || !otp.trim()) {
                     sileo.warning({
-                      title: "Missing fields",
-                      description: "Enter both email and OTP to verify.",
+                      title: tToasts("missingFieldsTitle"),
+                      description: tToasts("missingFieldsBothMessage"),
                     });
                     return;
                   }
@@ -115,26 +117,26 @@ export function ForgotPasswordForm() {
                     });
                     setIsOtpVerified(true);
                     sileo.success({
-                      title: "OTP verified",
+                      title: tToasts("otpVerifiedTitle"),
                       description: result.message,
                     });
                   } catch (error) {
                     setIsOtpVerified(false);
                     sileo.error({
-                      title: "Invalid OTP",
+                      title: tToasts("otpInvalidTitle"),
                       description:
                         error instanceof Error ? error.message : "Unexpected error",
                     });
                   }
                 }}
               >
-                Verify
+                {t("verify")}
               </Button>
             </div>
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="newPassword">New password</FieldLabel>
+            <FieldLabel htmlFor="newPassword">{t("newPassword")}</FieldLabel>
             <Input
               id="newPassword"
               type="password"
@@ -146,7 +148,9 @@ export function ForgotPasswordForm() {
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel>
+            <FieldLabel htmlFor="confirmPassword">
+              {t("confirmPassword")}
+            </FieldLabel>
             <Input
               id="confirmPassword"
               type="password"
@@ -164,24 +168,24 @@ export function ForgotPasswordForm() {
             onClick={async () => {
               if (!email.trim() || !otp.trim() || !newPassword || !confirmPassword) {
                 sileo.warning({
-                  title: "Missing fields",
-                  description: "Complete all fields before submitting.",
+                  title: tToasts("missingFieldsTitle"),
+                  description: tToasts("completeFieldsMessage"),
                 });
                 return;
               }
 
               if (!isOtpVerified) {
                 sileo.warning({
-                  title: "Verify OTP first",
-                  description: "Please verify the OTP before resetting password.",
+                  title: tToasts("verifyFirstTitle"),
+                  description: tToasts("verifyFirstMessage"),
                 });
                 return;
               }
 
               if (newPassword !== confirmPassword) {
                 sileo.warning({
-                  title: "Passwords do not match",
-                  description: "Confirm password must match the new password.",
+                  title: tToasts("passwordMismatchTitle"),
+                  description: tToasts("passwordMismatchMessage"),
                 });
                 return;
               }
@@ -193,26 +197,26 @@ export function ForgotPasswordForm() {
                   newPassword,
                 });
                 sileo.success({
-                  title: "Password reset successful",
+                  title: tToasts("resetSuccessTitle"),
                   description: result.message,
                 });
                 router.push("/login");
               } catch (error) {
                 sileo.error({
-                  title: "Reset failed",
+                  title: tToasts("resetFailedTitle"),
                   description:
                     error instanceof Error ? error.message : "Unexpected error",
                 });
               }
             }}
           >
-            {resetPasswordMutation.isPending ? "Resetting..." : "Reset password"}
+            {resetPasswordMutation.isPending ? t("resetting") : t("reset")}
           </Button>
 
           <p className="text-sm text-muted-foreground">
-            Remembered your password?{" "}
+            {t("rememberPassword")}{" "}
             <Link href="/login" className="text-primary underline-offset-2 hover:underline">
-              Back to login
+              {t("backToLogin")}
             </Link>
           </p>
         </FieldGroup>

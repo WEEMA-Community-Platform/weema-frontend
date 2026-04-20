@@ -1,0 +1,626 @@
+{
+  "meta": {
+    "appTitle": "WEEMA Facilitator",
+    "appDescription": "WEEMA Community Platform Facilitator Application",
+    "brand": {
+      "name": "WEEMA Facilitator",
+      "tagline": "Community Platform"
+    }
+  },
+
+  "common": {
+    "actions": {
+      "save": "Save",
+      "saveChanges": "Save changes",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "close": "Close",
+      "edit": "Edit",
+      "delete": "Delete",
+      "view": "View",
+      "viewDetails": "View details",
+      "add": "Add",
+      "retry": "Retry",
+      "confirm": "Confirm",
+      "apply": "Apply",
+      "clear": "Clear",
+      "back": "Back",
+      "next": "Next",
+      "previous": "Previous",
+      "upload": "Upload",
+      "open": "Open",
+      "openDocument": "Open document"
+    },
+    "states": {
+      "loading": "Loading…",
+      "loadingDetails": "Loading details…",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "active": "Active",
+      "inactive": "Inactive",
+      "draft": "Draft",
+      "published": "Published",
+      "submitted": "Submitted",
+      "notStarted": "Not started",
+      "inProgress": "In progress"
+    },
+    "empty": {
+      "noResults": "No results",
+      "failedToLoad": "Failed to load data.",
+      "notUploaded": "Not uploaded yet",
+      "dash": "—",
+      "untitled": "Untitled"
+    },
+    "validation": {
+      "required": "Required",
+      "requiredFields": "Required fields",
+      "missingFields": "Missing fields",
+      "unexpectedError": "Unexpected error",
+      "somethingWentWrong": "Something went wrong. Please try again."
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "resultOne": "result",
+      "resultOther": "results",
+      "showing": "Showing {from}–{to} of {total} {label}",
+      "previous": "Previous page",
+      "next": "Next page"
+    },
+    "language": {
+      "label": "Language",
+      "english": "English",
+      "amharic": "አማርኛ"
+    }
+  },
+
+  "nav": {
+    "groupLabel": "Navigation",
+    "items": {
+      "community": "Community",
+      "shg": "Self-Help Groups",
+      "members": "Members",
+      "survey": "Survey",
+      "surveys": "Surveys"
+    },
+    "user": {
+      "profile": "Profile",
+      "logout": "Log out",
+      "loggingOut": "Logging out…",
+      "loggedOut": "Logged out",
+      "loggedOutMessage": "You have been signed out.",
+      "logoutFailed": "Logout failed",
+      "openMenu": "Open menu",
+      "changeLanguage": "Change language"
+    }
+  },
+
+  "sections": {
+    "shg": {
+      "group": "Community",
+      "label": "Self-Help Groups",
+      "description": "View self-help groups and their cluster assignments."
+    },
+    "member": {
+      "group": "Community",
+      "label": "Members",
+      "description": "Register and manage members within self-help groups."
+    },
+    "profile": {
+      "group": "Account",
+      "label": "My profile",
+      "description": "Update your name and review your account details."
+    },
+    "survey": {
+      "group": "Survey",
+      "label": "Surveys",
+      "description": "Browse assigned surveys and submit responses for members."
+    },
+    "surveySubmissions": {
+      "group": "Survey",
+      "label": "Survey submissions",
+      "description": "Review submission progress and fill in member answers.",
+      "answerWorkspace": "Answer workspace",
+      "targetAnswers": "{name} answers"
+    }
+  },
+
+  "auth": {
+    "login": {
+      "heading": "Welcome back",
+      "subheading": "Sign in to your WEEMA Facilitator account",
+      "email": "Email",
+      "emailPlaceholder": "facilitator@weema.com",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "forgotPassword": "Forgot your password?",
+      "submit": "Login",
+      "submitting": "Signing in…",
+      "loggedInTitle": "Logged in",
+      "loggedInMessage": "Welcome back.",
+      "errorTitle": "Couldn't sign in"
+    },
+    "forgotPassword": {
+      "title": "Reset password",
+      "intro": "Enter your email, verify the OTP, then set a new password.",
+      "email": "Email",
+      "emailPlaceholder": "facilitator@weema.com",
+      "sendOtp": "Send OTP",
+      "otp": "OTP code",
+      "otpPlaceholder": "123456",
+      "verify": "Verify",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "reset": "Reset password",
+      "resetting": "Resetting…",
+      "rememberPassword": "Remembered your password?",
+      "backToLogin": "Back to login",
+      "toast": {
+        "emailRequiredTitle": "Email required",
+        "emailRequiredMessage": "Enter your email to request an OTP.",
+        "otpSentTitle": "OTP sent",
+        "otpErrorTitle": "Could not send OTP",
+        "missingFieldsTitle": "Missing fields",
+        "missingFieldsBothMessage": "Enter both email and OTP to verify.",
+        "otpVerifiedTitle": "OTP verified",
+        "otpInvalidTitle": "Invalid OTP",
+        "completeFieldsMessage": "Complete all fields before submitting.",
+        "verifyFirstTitle": "Verify OTP first",
+        "verifyFirstMessage": "Please verify the OTP before resetting password.",
+        "passwordMismatchTitle": "Passwords do not match",
+        "passwordMismatchMessage": "Confirm password must match the new password.",
+        "resetSuccessTitle": "Password reset successful",
+        "resetFailedTitle": "Reset failed"
+      }
+    }
+  },
+
+  "community": {
+    "shg": {
+      "page": {
+        "searchPlaceholder": "Search self-help groups",
+        "addButton": "Add SHG",
+        "emptyHint": "No self-help groups found. Add your first SHG to get started.",
+        "loadError": "Failed to load self-help groups."
+      },
+      "card": {
+        "cluster": "Cluster",
+        "facilitator": "Facilitator",
+        "members": "Members",
+        "gps": "GPS",
+        "noCluster": "No cluster",
+        "noFacilitator": "No facilitator",
+        "noCoordinates": "No coordinates",
+        "memberOne": "{count} member",
+        "memberOther": "{count} members",
+        "viewDetailsAction": "View details"
+      },
+      "detail": {
+        "title": "Self-Help Group details",
+        "description": "Full details for this self-help group.",
+        "fields": {
+          "name": "Name",
+          "status": "Status",
+          "cluster": "Cluster",
+          "woreda": "Woreda",
+          "kebele": "Kebele",
+          "facilitator": "Facilitator",
+          "members": "Members",
+          "gps": "GPS",
+          "description": "Description"
+        },
+        "errorFallback": "Could not load details."
+      },
+      "form": {
+        "titleAdd": "Add self-help group",
+        "titleEdit": "Edit self-help group",
+        "descriptionAdd": "Add a new self-help group to the community structure. Cluster can be linked when you edit this SHG.",
+        "descriptionEdit": "Update SHG details, then save your changes.",
+        "sectionDetails": "Details",
+        "sectionCoordinates": "Coordinates",
+        "coordinatesHint": "Use a map link (coordinates locked to the link) or enter latitude and longitude yourself — switch modes with the actions below.",
+        "mapLink": "Map link",
+        "mapLinkPlaceholder": "Paste a Google Maps or Apple Maps share link…",
+        "manualNote": "Map link is disabled while entering coordinates manually.",
+        "useMapLinkInstead": "Use map link instead",
+        "editManually": "Edit coordinates manually",
+        "latitude": "Latitude",
+        "longitude": "Longitude",
+        "latitudePlaceholder": "e.g. 9.03",
+        "longitudePlaceholder": "e.g. 38.75",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Optional notes about this self-help group",
+        "nameLabel": "Name",
+        "namePlaceholder": "SHG name",
+        "cluster": "Cluster",
+        "clusterHint": "Optional. Link this SHG to a cluster when assigned.",
+        "clusterPlaceholder": "Select cluster",
+        "woreda": "Woreda",
+        "woredaPlaceholder": "Select woreda (optional)",
+        "kebele": "Kebele",
+        "kebelePlaceholder": "Select kebele (optional)",
+        "status": "Status",
+        "statusPlaceholder": "Select status",
+        "options": {
+          "noWoreda": "No woreda",
+          "noKebele": "No kebele"
+        },
+        "saveAddLabel": "Add SHG",
+        "saveEditLabel": "Save SHG",
+        "saveAddPending": "Adding…",
+        "saveEditPending": "Saving…"
+      },
+      "toasts": {
+        "missingNameTitle": "Missing name",
+        "missingNameMessage": "SHG name is required.",
+        "missingStatusTitle": "Missing status",
+        "missingStatusMessage": "Please select a status.",
+        "addedTitle": "SHG added",
+        "addedGenericMessage": "Self-help group added.",
+        "saveErrorTitle": "Could not save SHG",
+        "badMapLinkTitle": "Could not read coordinates",
+        "badMapLinkMessage": "Try another link or enter latitude and longitude below."
+      }
+    },
+    "members": {
+      "table": {
+        "title": "Members",
+        "searchPlaceholder": "Search name, phone, SHG, religion…",
+        "addButton": "Add member",
+        "filters": "Filters",
+        "filtersActiveLabel": "Filters active",
+        "emptyHint": "No members yet. Add a member once self-help groups exist.",
+        "columns": {
+          "name": "Name",
+          "phone": "Phone",
+          "shg": "Self-help group",
+          "gender": "Gender",
+          "status": "Status",
+          "approval": "Approval",
+          "actions": "Actions"
+        }
+      },
+      "filters": {
+        "title": "Filter members",
+        "description": "Narrow the list by status, demographics, self-help group, religion, or age range. Changes apply when you click Apply filters.",
+        "status": "Status",
+        "statusAll": "All statuses",
+        "approval": "Approval status",
+        "approvalAll": "All approval statuses",
+        "gender": "Gender",
+        "genderAll": "All genders",
+        "marital": "Marital status",
+        "maritalAll": "All marital statuses",
+        "shg": "Self-help group",
+        "shgAll": "All self-help groups",
+        "religion": "Religion",
+        "religionAll": "All religions",
+        "dobLegend": "Date of birth",
+        "ageLegend": "Age",
+        "from": "From",
+        "to": "To",
+        "clear": "Clear filters",
+        "apply": "Apply filters"
+      },
+      "fields": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "contactPhone": "Contact phone",
+        "dateOfBirth": "Date of birth",
+        "dateJoinedShg": "Date joined SHG",
+        "fan": "FAN",
+        "gender": "Gender",
+        "maritalStatus": "Marital status",
+        "religion": "Religion",
+        "status": "Status",
+        "shg": "Self-help group",
+        "phone": "Phone",
+        "nationalId": "National ID",
+        "nationalIdOptional": "National ID (optional)"
+      },
+      "sections": {
+        "details": "Details",
+        "classifications": "Classifications"
+      },
+      "options": {
+        "gender": {
+          "male": "Male",
+          "female": "Female"
+        },
+        "marital": {
+          "single": "Single",
+          "married": "Married",
+          "divorced": "Divorced"
+        },
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "approval": {
+          "pending": "Pending",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        }
+      },
+      "placeholders": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "contactPhone": "Contact phone",
+        "fan": "FAN",
+        "gender": "Gender",
+        "maritalStatus": "Marital status",
+        "religion": "Religion",
+        "status": "Status",
+        "shg": "Self-help group"
+      },
+      "minAgeHint": "Member must be at least {years} years old.",
+      "create": {
+        "title": "Add member",
+        "description": "Register a member under a self-help group. National ID is optional and can be added later.",
+        "submit": "Create member",
+        "submitting": "Creating…",
+        "toasts": {
+          "createdTitle": "Member created",
+          "errorTitle": "Could not create member"
+        }
+      },
+      "edit": {
+        "title": "Edit member",
+        "description": "Update member details. To change national ID, open View and upload a document.",
+        "submit": "Save changes",
+        "submitting": "Saving…",
+        "toasts": {
+          "updatedTitle": "Member updated",
+          "errorTitle": "Could not update member"
+        }
+      },
+      "detail": {
+        "titleFallback": "Member details",
+        "description": "Profile, program details, and identification documents.",
+        "uploadHeading": "National ID",
+        "uploadHint": "Upload or replace a scanned image or PDF. The file is sent securely to the server.",
+        "loadError": "Could not load this member.",
+        "uploadSuccessTitle": "National ID uploaded",
+        "uploadFailedTitle": "Upload failed"
+      },
+      "delete": {
+        "title": "Delete member",
+        "confirm": "Delete <strong>{name}</strong>? This action cannot be undone.",
+        "action": "Delete member",
+        "toasts": {
+          "deletedTitle": "Member deleted",
+          "errorTitle": "Could not delete member"
+        }
+      },
+      "validation": {
+        "nameRequiredTitle": "Required fields",
+        "nameRequiredMessage": "First name and last name are required.",
+        "nameAndGenderRequiredMessage": "First name, last name, and gender are required.",
+        "genderTitle": "Gender",
+        "genderMessage": "Select a gender.",
+        "statusTitle": "Status",
+        "statusMessage": "Select a status.",
+        "shgTitle": "Self-help group",
+        "shgMessage": "Select a self-help group for this member.",
+        "dobTitle": "Date of birth",
+        "dobMessage": "Date of birth is required.",
+        "invalidAgeTitle": "Invalid age",
+        "invalidAgeMessage": "Member must be at least {years} years old.",
+        "maritalTitle": "Marital status",
+        "maritalMessage": "Select a marital status."
+      }
+    }
+  },
+
+  "survey": {
+    "list": {
+      "searchPlaceholder": "Search surveys",
+      "emptyHint": "No surveys assigned yet.",
+      "loadError": "Failed to load surveys.",
+      "untitled": "Untitled survey",
+      "manageSubmissions": "Manage submissions",
+      "card": {
+        "target": "Target",
+        "questions": "Questions",
+        "version": "Version",
+        "status": "Status",
+        "questionsOne": "{count} question",
+        "questionsOther": "{count} questions"
+      },
+      "statusBadge": {
+        "published": "Published",
+        "draft": "Draft"
+      }
+    },
+    "filters": {
+      "title": "Filter surveys",
+      "description": "Narrow the list by lifecycle status, target type, and activity state. Changes apply when you click Apply filters.",
+      "status": "Status",
+      "statusAll": "All statuses",
+      "targetType": "Target type",
+      "targetTypeAll": "All target types",
+      "activity": "Activity",
+      "activityAll": "All activity states",
+      "clear": "Clear filters",
+      "apply": "Apply filters"
+    },
+    "submissions": {
+      "backToSurveys": "Back to surveys",
+      "loadError": "Failed to load pending targets.",
+      "status": {
+        "submitted": "Submitted",
+        "notStarted": "Not started",
+        "inProgress": "In progress",
+        "pending": "Pending"
+      },
+      "approval": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "pending": "Pending"
+      },
+      "targetLabels": {
+        "shgSingular": "SHG",
+        "shgPlural": "SHGs",
+        "clusterSingular": "cluster",
+        "clusterPlural": "clusters",
+        "memberSingular": "member",
+        "memberPlural": "members",
+        "genericSingular": "target",
+        "genericPlural": "targets"
+      },
+      "assignedTargets": {
+        "title": "Assigned self-help groups for {surveyTitle}",
+        "columnShg": "Self-help group",
+        "columnApproval": "Approval",
+        "columnActions": "Actions",
+        "empty": "No assigned self-help groups yet.",
+        "unnamed": "Unnamed target",
+        "viewingMembers": "Viewing members",
+        "viewMembers": "View members",
+        "pagination": "Showing {from}–{to} of {total} groups"
+      },
+      "memberTable": {
+        "title": "{target} submissions",
+        "titleWithAssignment": "{target} submissions - {assignment}",
+        "columnStatus": "Status",
+        "columnProgress": "Progress",
+        "columnSubmitted": "Submitted",
+        "columnActions": "Actions",
+        "empty": "No {targets} submissions found for this survey.",
+        "emptyWithAssignment": "No {targets} submissions found for this self-help group.",
+        "fill": "Fill survey",
+        "viewAnswers": "View answers",
+        "unknown": "Unknown {target}",
+        "answeredCount": "{answered}/{total} answered"
+      },
+      "workspace": {
+        "loading": "Loading submission details…",
+        "loadError": "Failed to load submission details.",
+        "backToTable": "Back to submissions table",
+        "notFound": "Submission not found."
+      }
+    },
+    "workspace": {
+      "row": "Row",
+      "noRows": "No rows yet.",
+      "addRow": "Add row",
+      "item": "Item",
+      "noGridRows": "No grid rows found.",
+      "setRowAsCol": "Set {row} as {col}",
+      "jsonPlaceholder": "Paste structured answer data",
+      "questionIndex": "Question {index}",
+      "answer": "Answer",
+      "numberPlaceholder": "Enter numeric answer",
+      "selectAnswer": "Select answer",
+      "yes": "Yes",
+      "no": "No",
+      "selectOption": "Select option",
+      "optionIndex": "Option {index}",
+      "enterOption": "Enter selected option",
+      "enterOptions": "Enter selected options separated by commas",
+      "enterAnswer": "Enter answer",
+      "unknownTarget": "Unknown {target}",
+      "backToTable": "Back to submissions table",
+      "saving": "Saving…",
+      "saveChanges": "Save changes",
+      "saveChangesCount": "Save changes ({count})",
+      "submitting": "Submitting…",
+      "submitSubmission": "Submit submission",
+      "responseWorkspace": "Response workspace",
+      "responseWorkspaceTitled": "{target} response workspace",
+      "started": "Started: {value}",
+      "submittedAt": "Submitted: {value}",
+      "totalQuestions": "Total questions: {count}",
+      "answered": "Answered: {count}",
+      "noQuestions": "No questions found for this survey.",
+      "toasts": {
+        "savedTitle": "Answers saved",
+        "savedMessage": "Submission answers were updated successfully.",
+        "saveErrorTitle": "Failed to save answers",
+        "unexpected": "Unexpected error",
+        "incompleteTitle": "Complete all questions first",
+        "incompleteMessage": "Please answer all questions before submitting.",
+        "submittedTitle": "Submission completed",
+        "submittedMessage": "Submission has been submitted successfully.",
+        "submitErrorTitle": "Failed to submit"
+      }
+    },
+    "preview": {
+      "title": "Live preview",
+      "empty": "Select a question from the left sidebar to see a live preview.",
+      "untitledQuestion": "Untitled question",
+      "required": "Required",
+      "optional": "Optional",
+      "answerPreview": "Answer preview",
+      "true": "True",
+      "false": "False",
+      "untitledOption": "Untitled option",
+      "untitledColumn": "Untitled column",
+      "repeatableTable": "Repeatable table: min {min}, max {max}",
+      "grid": "Grid ({type})",
+      "multiSelect": "multi select",
+      "singleSelect": "single select",
+      "gridDimensions": "{rows} rows x {cols} columns",
+      "responseFieldFor": "Response field preview for {type}.",
+      "followUpVisibility": "Follow-up visibility",
+      "rule": "Rule {index}: parent question {operator} {value}",
+      "selectedValue": "selected value",
+      "operators": {
+        "equals": "equals",
+        "notEquals": "does not equal",
+        "greaterThan": "is greater than",
+        "lessThan": "is less than",
+        "contains": "contains"
+      }
+    }
+  },
+
+  "account": {
+    "profile": {
+      "title": "Account details",
+      "descriptionSuperAdmin": "Manage how your name appears and keep your sign-in secure.",
+      "descriptionDefault": "Manage how your name appears and keep your sign-in secure. Email and role are set by an administrator.",
+      "loadError": "We couldn't load your account. Try refreshing the page or signing in again.",
+      "displayNameHeading": "Display name",
+      "displayNameHint": "Shown across the platform and in reports.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "saveName": "Save name",
+      "saving": "Saving…",
+      "passwordHeading": "Password & security",
+      "passwordHint": "Update the password you use to sign in",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "passwordsMustMatch": "New passwords must match.",
+      "updatePassword": "Update password",
+      "updatingPassword": "Updating…",
+      "toasts": {
+        "savedTitle": "Profile updated",
+        "savedMessage": "Saved.",
+        "saveErrorTitle": "Could not update profile",
+        "requiredTitle": "Required",
+        "requiredMessage": "First and last name are required.",
+        "passwordRequiredMessage": "Enter your current password and a new password.",
+        "passwordMismatchTitle": "Mismatch",
+        "passwordMismatchMessage": "New passwords do not match.",
+        "passwordUpdatedTitle": "Password updated",
+        "passwordUpdatedMessage": "Your password was changed.",
+        "passwordErrorTitle": "Could not change password"
+      }
+    }
+  },
+
+  "listEmpty": {
+    "searchAndFilters": "No {entity} match your search and filters. Try adjusting or clearing them.",
+    "searchOnly": "No {entity} match your search. Try a different term.",
+    "filtersOnly": "No {entity} match your filters. Try adjusting or clearing filters.",
+    "entity": {
+      "members": "members",
+      "shgs": "self-help groups",
+      "surveys": "surveys"
+    }
+  }
+}

@@ -6,6 +6,7 @@ import {
   ClipboardListIcon,
   NetworkIcon,
 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
@@ -18,31 +19,38 @@ import {
 } from "@/components/ui/sidebar"
 import { useCurrentUser } from "@/hooks/use-user"
 
-const baseNavMain = [
-  {
-    title: "Community",
-    url: "/?section=shg",
-    icon: <NetworkIcon />,
-    isActive: true,
-    items: [
-      { title: "Self-Help Groups", url: "/?section=shg" },
-      { title: "Members",          url: "/?section=member" },
-    ],
-  },
-  {
-    title: "Survey",
-    url: "/survey",
-    icon: <ClipboardListIcon />,
-    isActive: false,
-  },
-]
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: currentUserData } = useCurrentUser()
-  const navMain = useMemo(() => [...baseNavMain], [])
+  const t = useTranslations("nav.items")
+  const tMeta = useTranslations("meta.brand")
+  const tCommon = useTranslations("common.states")
+
+  const navMain = useMemo(
+    () => [
+      {
+        title: t("community"),
+        url: "/?section=shg",
+        icon: <NetworkIcon />,
+        isActive: true,
+        items: [
+          { title: t("shg"), url: "/?section=shg" },
+          { title: t("members"), url: "/?section=member" },
+        ],
+      },
+      {
+        title: t("survey"),
+        url: "/survey",
+        icon: <ClipboardListIcon />,
+        isActive: false,
+      },
+    ],
+    [t]
+  )
 
   const user = currentUserData?.user
-  const displayName = user ? `${user.firstName} ${user.lastName}` : "Loading..."
+  const displayName = user
+    ? `${user.firstName} ${user.lastName}`
+    : `${tCommon("loading")}`
   const displayEmail = user?.email ?? ""
   const displayRole = user?.role?.replace("ROLE_", "").replace(/_/g, " ") ?? ""
 
@@ -57,8 +65,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <Building2Icon className="size-4" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <p className="text-sm font-semibold">WEEMA Facilitator</p>
-            <p className="text-xs text-muted-foreground">Community Platform</p>
+            <p className="text-sm font-semibold">{tMeta("name")}</p>
+            <p className="text-xs text-muted-foreground">{tMeta("tagline")}</p>
           </div>
         </Link>
       </SidebarHeader>

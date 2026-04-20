@@ -27,6 +27,27 @@ type BackendSurveyCondition = {
   logicType?: "AND" | "OR";
 };
 
+function isOperatorAllowedForQuestionType(questionType: QuestionType, operator: ConditionOperator) {
+  if (questionType === "NUMBER" || questionType === "DATE") {
+    return (
+      operator === "EQUALS" ||
+      operator === "NOT_EQUALS" ||
+      operator === "GREATER_THAN" ||
+      operator === "LESS_THAN"
+    );
+  }
+
+  if (questionType === "BOOLEAN") {
+    return operator === "EQUALS" || operator === "NOT_EQUALS";
+  }
+
+  if (questionType === "SHORT_TEXT" || questionType === "LONG_TEXT") {
+    return operator === "EQUALS" || operator === "NOT_EQUALS" || operator === "CONTAINS";
+  }
+
+  return operator === "EQUALS" || operator === "NOT_EQUALS";
+}
+
 type BackendSurveyOption = {
   id?: string;
   clientId?: string;
@@ -88,6 +109,8 @@ export type BackendSurveyRecord = {
   title?: string;
   description?: string;
   targetType?: string;
+  language?: string;
+  isTranslation?: boolean;
   sections?: BackendSurveySection[];
 };
 
@@ -95,6 +118,7 @@ export type CreateSurveyPayload = {
   title: string;
   description: string;
   targetType: string;
+  language: "en" | "am";
   sections: Array<{
     title: string;
     description: string;
@@ -268,11 +292,14 @@ function normalizeQuestion(question: BackendSurveyQuestion, index: number): Surv
 }
 
 export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuilderState {
+  const language = (record.language ?? "en").toLowerCase() === "am" ? "am" : "en";
   const normalized: SurveyBuilderState = {
     id: record.id,
     title: record.title ?? "",
     description: record.description ?? "",
     targetType: record.targetType ?? "MEMBER",
+    language,
+    isTranslation: Boolean(record.isTranslation),
     sections: applyOrderNo(
       (record.sections ?? []).map((section, index) => ({
         id: section.id,
@@ -323,6 +350,7 @@ export function serializeSurveyPayload(state: SurveyBuilderState): CreateSurveyP
     title: state.title.trim(),
     description: state.description.trim(),
     targetType: state.targetType,
+    language: state.language,
     sections: applyOrderNo(state.sections).map((section) => ({
       title: section.title.trim(),
       description: section.description.trim(),
@@ -348,16 +376,56 @@ export function serializeSurveyPayload(state: SurveyBuilderState): CreateSurveyP
               : undefined,
           showConditions:
             item.showConditions.length > 0
-              ? item.showConditions.map((condition) => ({
+              ? item.showConditions.map((condition, index) => ({
                   parentQuestionClientId: condition.parentQuestionClientId,
                   operator: condition.operator,
                   optionClientId: condition.optionClientId || undefined,
                   expectedValue: condition.expectedValue?.trim() || undefined,
-                  logicType: condition.logicType,
+                  logicType: index === 0 ? "AND" : condition.logicType,
                 }))
               : undefined,
         };
       }),
+    })),
+  };
+}
+
+export type TranslateSurveyPayload = {
+  language: "en" | "am";
+  title: string;
+  description: string;
+  sections: Array<{
+    id: string;
+    title: string;
+    description: string;
+    questions: Array<{
+      id: string;
+      questionText: string;
+      options: Array<{
+        id: string;
+        optionText: string;
+      }>;
+    }>;
+  }>;
+};
+
+export function serializeSurveyTranslationPayload(state: SurveyBuilderState): TranslateSurveyPayload {
+  return {
+    language: state.language,
+    title: state.title.trim(),
+    description: state.description.trim(),
+    sections: state.sections.map((section) => ({
+      id: section.id ?? "",
+      title: section.title.trim(),
+      description: section.description.trim(),
+      questions: section.questions.map((question) => ({
+        id: question.id ?? "",
+        questionText: question.questionText.trim(),
+        options: question.options.map((option) => ({
+          id: option.id ?? "",
+          optionText: option.text.trim(),
+        })),
+      })),
     })),
   };
 }
@@ -369,6 +437,9 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
   }
   if (!state.targetType.trim()) {
     issues.push({ path: "targetType", message: "Target type is required." });
+  }
+  if (!state.language) {
+    issues.push({ path: "language", message: "Survey language is required." });
   }
   if (state.sections.length === 0) {
     issues.push({ path: "sections", message: "At least one section is required." });
@@ -466,6 +537,13 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
           });
         }
 
+        if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, condition.operator)) {
+          issues.push({
+            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.operator`,
+            message: `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`,
+          });
+        }
+
         if (isChoiceType(parentQuestion.questionType) && condition.optionClientId) {
           const optionExists = parentQuestion.options.some(
             (option) => option.clientId === condition.optionClientId
@@ -476,6 +554,23 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
               message: "Condition option reference is invalid.",
             });
           }
+        }
+
+        if (isChoiceType(parentQuestion.questionType) && !condition.optionClientId) {
+          issues.push({
+            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.optionClientId`,
+            message: "Condition option is required for choice parent questions.",
+          });
+        }
+
+        if (
+          !isChoiceType(parentQuestion.questionType) &&
+          !(condition.expectedValue ?? "").trim()
+        ) {
+          issues.push({
+            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.expectedValue`,
+            message: "Condition expected value is required for non-choice parent questions.",
+          });
         }
       }
     }

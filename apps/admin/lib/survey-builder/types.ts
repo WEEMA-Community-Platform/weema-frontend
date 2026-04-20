@@ -96,6 +96,8 @@ export type SurveyBuilderState = {
   title: string;
   description: string;
   targetType: string;
+  language: "en" | "am";
+  isTranslation: boolean;
   sections: SurveySection[];
 };
 

@@ -13,7 +13,7 @@ export const QUESTION_TYPES: Array<{ value: QuestionType; label: string }> = [
   { value: "LONG_TEXT", label: "Long text" },
   { value: "NUMBER", label: "Number" },
   { value: "DATE", label: "Date" },
-  { value: "BOOLEAN", label: "Yes / No" },
+  { value: "BOOLEAN", label: "True / False" },
   { value: "SINGLE_CHOICE", label: "Single choice" },
   { value: "MULTIPLE_CHOICE", label: "Multiple choice" },
   { value: "JSON", label: "JSON component" },
@@ -24,6 +24,11 @@ export const TARGET_TYPES = [
   { value: "SELF_HELP_GROUP", label: "Self-Help Group" },
   { value: "CLUSTER", label: "Cluster" },
   { value: "FEDERATION", label: "Federation" },
+];
+
+export const SURVEY_LANGUAGES: Array<{ value: "en" | "am"; label: string }> = [
+  { value: "en", label: "English" },
+  { value: "am", label: "Amharic" },
 ];
 
 export const JSON_TYPES: Array<{ value: "REPEATABLE_TABLE" | "GRID"; label: string }> = [
@@ -93,6 +98,8 @@ export function createEmptySurvey(): SurveyBuilderState {
     title: "",
     description: "",
     targetType: "MEMBER",
+    language: "en",
+    isTranslation: false,
     sections: [createEmptySection(1)],
   };
 }

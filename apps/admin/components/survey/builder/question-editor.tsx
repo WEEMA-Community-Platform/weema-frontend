@@ -27,14 +27,13 @@ import {
   OPERATOR_OPTIONS,
   describeCondition,
   getFollowUpDepth,
+  getOperatorOptionsForQuestionType,
   getQuestionParentId,
   getQuestionText,
-  type SurveyQuestionWithContext,
 } from "./shared";
 
 export function QuestionEditor(props: {
   question: SurveyQuestion;
-  allQuestions: SurveyQuestionWithContext[];
   section: SurveySection;
   questionByClientId: Map<string, SurveyQuestion>;
   dependentsMap: Map<string, string[]>;
@@ -54,15 +53,15 @@ export function QuestionEditor(props: {
   onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"]) => void;
   onAddFollowUpQuestion: () => void;
   onAddNestedFollowUpQuestion: () => void;
+  onAddCondition: () => void;
   onUpdateCondition: (
     conditionIndex: number,
     updater: (condition: ShowCondition) => ShowCondition
   ) => void;
   onDeleteCondition: (conditionIndex: number) => void;
+  isTranslationMode?: boolean;
 }) {
-  const parentCandidates = props.allQuestions.filter(
-    (item) => item.clientId !== props.question.clientId
-  );
+  const parentCandidates = props.section.questions.filter((item) => item.clientId !== props.question.clientId);
   const dependentIds = props.dependentsMap.get(props.question.clientId) ?? [];
   const sectionQuestionIds = new Set(props.section.questions.map((item) => item.clientId));
   const parentQuestionId = getQuestionParentId(props.question, sectionQuestionIds);
@@ -73,6 +72,7 @@ export function QuestionEditor(props: {
     props.questionByClientId,
     sectionQuestionIds
   );
+  const isStructureLocked = Boolean(props.isTranslationMode);
 
   return (
     <Card className="border-primary/15">
@@ -90,12 +90,19 @@ export function QuestionEditor(props: {
           >
             {props.isPrimaryActionPending ? "Saving..." : props.primaryActionLabel}
           </Button>
-          <Button type="button" variant="destructive" onClick={props.onDelete}>
-            Delete question
-          </Button>
+          {!isStructureLocked ? (
+            <Button type="button" variant="destructive" onClick={props.onDelete}>
+              Delete question
+            </Button>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {isStructureLocked ? (
+          <p className="rounded-md border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            Translation mode is active. You can edit text labels only.
+          </p>
+        ) : null}
         <Input
           value={props.question.questionText}
           onChange={(event) => props.onUpdate({ questionText: event.target.value })}
@@ -107,6 +114,7 @@ export function QuestionEditor(props: {
           <Select
             value={props.question.questionType}
             onValueChange={(value) => props.onTypeChange(value as SurveyQuestion["questionType"])}
+            disabled={isStructureLocked}
           >
             <SelectTrigger className={inputClass}>
               <SelectValue placeholder="Question type" />
@@ -124,6 +132,7 @@ export function QuestionEditor(props: {
               type="checkbox"
               checked={props.question.required}
               onChange={(event) => props.onUpdate({ required: event.target.checked })}
+              disabled={isStructureLocked}
             />
             Required question
           </label>
@@ -146,10 +155,12 @@ export function QuestionEditor(props: {
           <div className="space-y-2 rounded-lg border border-primary/10 p-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">Options</p>
-              <Button type="button" variant="outline" size="sm" onClick={props.onAddOption}>
-                <PlusIcon className="size-3.5" />
-                Add option
-              </Button>
+              {!isStructureLocked ? (
+                <Button type="button" variant="outline" size="sm" onClick={props.onAddOption}>
+                  <PlusIcon className="size-3.5" />
+                  Add option
+                </Button>
+              ) : null}
             </div>
             {props.question.options.map((option) => (
               <div key={option.clientId} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
@@ -174,6 +185,7 @@ export function QuestionEditor(props: {
                   variant="destructive"
                   size="icon-sm"
                   className="self-center"
+                  disabled={isStructureLocked}
                   onClick={() => props.onDeleteOption(option.clientId)}
                 >
                   <Trash2Icon className="size-4" />
@@ -183,7 +195,7 @@ export function QuestionEditor(props: {
           </div>
         ) : null}
 
-        {props.question.questionType === "JSON" ? (
+        {props.question.questionType === "JSON" && !isStructureLocked ? (
           <JsonQuestionConfigEditor
             question={props.question}
             onQuestionConfigChange={props.onQuestionConfigChange}
@@ -195,25 +207,36 @@ export function QuestionEditor(props: {
             <div>
               <p className="text-sm font-medium">Follow-up rules</p>
               <p className="text-xs text-muted-foreground">
-                This question appears only when these conditions match.
+                This question appears only when these conditions match. Conditions are evaluated
+                left to right using AND/OR.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={props.onAddFollowUpQuestion}>
-                <PlusIcon className="size-3.5" />
-                {isFollowUpQuestion ? "Add sibling follow-up" : "Add follow-up question"}
-              </Button>
-              {isFollowUpQuestion ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={props.onAddNestedFollowUpQuestion}
-                  disabled={followUpDepth >= 2}
-                >
-                  <PlusIcon className="size-3.5" />
-                  Add nested follow-up
-                </Button>
+              {!isStructureLocked ? (
+                <>
+                  <Button type="button" variant="outline" size="sm" onClick={props.onAddFollowUpQuestion}>
+                    <PlusIcon className="size-3.5" />
+                    {isFollowUpQuestion ? "Add sibling follow-up" : "Add follow-up question"}
+                  </Button>
+                  {isFollowUpQuestion ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={props.onAddNestedFollowUpQuestion}
+                      disabled={followUpDepth >= 2}
+                    >
+                      <PlusIcon className="size-3.5" />
+                      Add nested follow-up
+                    </Button>
+                  ) : null}
+                  {isFollowUpQuestion ? (
+                    <Button type="button" variant="outline" size="sm" onClick={props.onAddCondition}>
+                      <PlusIcon className="size-3.5" />
+                      Add condition
+                    </Button>
+                  ) : null}
+                </>
               ) : null}
             </div>
           </div>
@@ -250,6 +273,7 @@ export function QuestionEditor(props: {
           ) : null}
           {isFollowUpQuestion
             ? props.question.showConditions.map((condition, index) => {
+                const hasMultipleConditions = props.question.showConditions.length > 1;
                 const selectedParentQuestion = parentCandidates.find(
                   (candidate) => candidate.clientId === condition.parentQuestionClientId
                 );
@@ -257,6 +281,16 @@ export function QuestionEditor(props: {
                 const parentIsChoice = selectedParentQuestion
                   ? isChoiceType(selectedParentQuestion.questionType)
                   : false;
+                const parentIsBoolean = selectedParentQuestion?.questionType === "BOOLEAN";
+                const parentIsNumber = selectedParentQuestion?.questionType === "NUMBER";
+                const availableOperators = selectedParentQuestion
+                  ? getOperatorOptionsForQuestionType(selectedParentQuestion.questionType)
+                  : OPERATOR_OPTIONS;
+                const operatorValue = availableOperators.some(
+                  (item) => item.value === condition.operator
+                )
+                  ? condition.operator
+                  : availableOperators[0]?.value ?? "EQUALS";
 
                 return (
                   <div
@@ -266,55 +300,99 @@ export function QuestionEditor(props: {
                     <p className="text-xs text-muted-foreground wrap-break-word whitespace-normal">
                       {describeCondition(condition, props.questionByClientId)}
                     </p>
-                    <div className="grid gap-2 md:grid-cols-4">
-                      <div className="flex items-center rounded-md border border-primary/10 bg-muted/40 px-2 text-xs text-muted-foreground wrap-break-word whitespace-normal">
-                        {selectedParentQuestion?.questionText || "Parent question"}
-                      </div>
+                    <div
+                      className={`grid gap-2 ${
+                        hasMultipleConditions
+                          ? "md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_96px_auto]"
+                          : "md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                      }`}
+                    >
                       <Select
-                        value={condition.operator}
+                        value={condition.parentQuestionClientId}
+                        onValueChange={(value) => {
+                          const parentQuestion = parentCandidates.find(
+                            (candidate) => candidate.clientId === value
+                          );
+                          if (!parentQuestion) return;
+                          props.onUpdateCondition(index, (prev) => ({
+                            ...prev,
+                            parentQuestionClientId: parentQuestion.clientId,
+                            operator:
+                              getOperatorOptionsForQuestionType(parentQuestion.questionType)[0]
+                                ?.value ?? "EQUALS",
+                            optionClientId: isChoiceType(parentQuestion.questionType)
+                              ? parentQuestion.options[0]?.clientId
+                              : undefined,
+                            expectedValue: isChoiceType(parentQuestion.questionType) ? undefined : "",
+                          }));
+                        }}
+                        disabled={isStructureLocked}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Parent question" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {parentCandidates.map((candidate) => (
+                            <SelectItem key={candidate.clientId} value={candidate.clientId}>
+                              {candidate.questionText || "Untitled question"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={operatorValue}
                         onValueChange={(value) =>
                           props.onUpdateCondition(index, (prev) => ({
                             ...prev,
                             operator: value as ShowCondition["operator"],
                           }))
                         }
+                        disabled={isStructureLocked}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Operator" />
                         </SelectTrigger>
                         <SelectContent>
-                          {OPERATOR_OPTIONS.map((operator) => (
+                          {availableOperators.map((operator) => (
                             <SelectItem key={operator.value} value={operator.value}>
                               {operator.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Select
-                        value={condition.logicType}
-                        onValueChange={(value) =>
-                          props.onUpdateCondition(index, (prev) => ({
-                            ...prev,
-                            logicType: value as ShowCondition["logicType"],
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Logic type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {LOGIC_TYPE_OPTIONS.map((logicType) => (
-                            <SelectItem key={logicType.value} value={logicType.value}>
-                              {logicType.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {hasMultipleConditions ? (
+                        <Select
+                          value={condition.logicType}
+                          onValueChange={(value) =>
+                            props.onUpdateCondition(index, (prev) => ({
+                              ...prev,
+                              logicType: value as ShowCondition["logicType"],
+                            }))
+                          }
+                          disabled={isStructureLocked || index === 0}
+                        >
+                          <SelectTrigger className="h-11 w-[72px] min-w-[72px] px-2 text-[10px] [&_svg]:ml-auto [&_svg]:size-3">
+                            <SelectValue placeholder="Logic type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LOGIC_TYPE_OPTIONS.map((logicType) => (
+                              <SelectItem
+                                key={logicType.value}
+                                value={logicType.value}
+                                className="text-[11px]"
+                              >
+                                {logicType.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : null}
                       <Button
                         type="button"
                         variant="destructive"
                         size="icon-sm"
-                        className="h-9 w-9 self-center justify-self-center"
+                        className="h-11 w-11 justify-self-end"
+                        disabled={isStructureLocked}
                         onClick={() => props.onDeleteCondition(index)}
                       >
                         <Trash2Icon className="size-3.5" />
@@ -329,6 +407,7 @@ export function QuestionEditor(props: {
                             optionClientId: value,
                           }))
                         }
+                        disabled={isStructureLocked}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Expected option" />
@@ -341,8 +420,28 @@ export function QuestionEditor(props: {
                           ))}
                         </SelectContent>
                       </Select>
+                    ) : parentIsBoolean ? (
+                      <Select
+                        value={condition.expectedValue ?? ""}
+                        onValueChange={(value) =>
+                          props.onUpdateCondition(index, (prev) => ({
+                            ...prev,
+                            expectedValue: value,
+                          }))
+                        }
+                        disabled={isStructureLocked}
+                      >
+                        <SelectTrigger className={inputClass}>
+                          <SelectValue placeholder="Expected value" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">True</SelectItem>
+                          <SelectItem value="false">False</SelectItem>
+                        </SelectContent>
+                      </Select>
                     ) : (
                       <Input
+                        type={parentIsNumber ? "number" : "text"}
                         value={condition.expectedValue ?? ""}
                         onChange={(event) =>
                           props.onUpdateCondition(index, (prev) => ({
@@ -352,8 +451,14 @@ export function QuestionEditor(props: {
                         }
                         placeholder="Expected value"
                         className={inputClass}
+                        disabled={isStructureLocked}
                       />
                     )}
+                    {hasMultipleConditions && index === 0 ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        First condition has no join operator. AND/OR applies from the second row.
+                      </p>
+                    ) : null}
                   </div>
                 );
               })

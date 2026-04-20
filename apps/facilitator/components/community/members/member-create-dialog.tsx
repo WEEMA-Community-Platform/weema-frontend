@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -15,6 +16,10 @@ import { Label } from "@/components/ui/label";
 import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
 import { NationalIdDropzone } from "@/components/community/members/national-id-dropzone";
+import {
+  MIN_MEMBER_AGE_YEARS,
+  isAtLeastAge,
+} from "@/components/community/members/constants";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
 
@@ -37,6 +42,7 @@ function emptyForm() {
     contactPhone: "",
     gender: "",
     dateOfBirth: "",
+    dateJoinedShg: "",
     maritalStatus: "",
     religionId: "",
     status: "",
@@ -55,11 +61,15 @@ export function MemberCreateDialog({
   isSubmitting,
   setPage,
 }: MemberCreateDialogProps) {
+  const t = useTranslations("community.members");
+  const tCreate = useTranslations("community.members.create");
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateJoinedShg, setDateJoinedShg] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [religionId, setReligionId] = useState("");
   const [status, setStatus] = useState("");
@@ -74,6 +84,7 @@ export function MemberCreateDialog({
     setContactPhone(e.contactPhone);
     setGender(e.gender);
     setDateOfBirth(e.dateOfBirth);
+    setDateJoinedShg(e.dateJoinedShg);
     setMaritalStatus(e.maritalStatus);
     setReligionId(e.religionId);
     setStatus(e.status);
@@ -99,29 +110,52 @@ export function MemberCreateDialog({
     event.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
       sileo.warning({
-        title: "Required fields",
-        description: "First name and last name are required.",
+        title: t("validation.nameRequiredTitle"),
+        description: t("validation.nameRequiredMessage"),
       });
       return;
     }
     if (!gender) {
       sileo.warning({
-        title: "Gender",
-        description: "Select a gender.",
+        title: t("validation.genderTitle"),
+        description: t("validation.genderMessage"),
       });
       return;
     }
     if (!status) {
       sileo.warning({
-        title: "Status",
-        description: "Select a status.",
+        title: t("validation.statusTitle"),
+        description: t("validation.statusMessage"),
+      });
+      return;
+    }
+    if (!maritalStatus) {
+      sileo.warning({
+        title: t("validation.maritalTitle"),
+        description: t("validation.maritalMessage"),
+      });
+      return;
+    }
+    if (!dateOfBirth) {
+      sileo.warning({
+        title: t("validation.dobTitle"),
+        description: t("validation.dobMessage"),
+      });
+      return;
+    }
+    if (!isAtLeastAge(dateOfBirth, MIN_MEMBER_AGE_YEARS)) {
+      sileo.warning({
+        title: t("validation.invalidAgeTitle"),
+        description: t("validation.invalidAgeMessage", {
+          years: MIN_MEMBER_AGE_YEARS,
+        }),
       });
       return;
     }
     if (!selfHelpGroupId) {
       sileo.warning({
-        title: "Self-help group",
-        description: "Select a self-help group for this member.",
+        title: t("validation.shgTitle"),
+        description: t("validation.shgMessage"),
       });
       return;
     }
@@ -130,8 +164,9 @@ export function MemberCreateDialog({
     fd.append("lastName", lastName.trim());
     if (contactPhone.trim()) fd.append("contactPhone", contactPhone.trim());
     fd.append("gender", gender);
-    if (dateOfBirth) fd.append("dateOfBirth", dateOfBirth);
-    if (maritalStatus) fd.append("maritalStatus", maritalStatus);
+    fd.append("dateOfBirth", dateOfBirth);
+    if (dateJoinedShg) fd.append("dateJoinedShg", dateJoinedShg);
+    fd.append("maritalStatus", maritalStatus);
     if (religionId) fd.append("religionId", religionId);
     fd.append("status", status);
     fd.append("selfHelpGroupId", selfHelpGroupId);
@@ -140,13 +175,17 @@ export function MemberCreateDialog({
 
     try {
       const result = await createMutation.mutateAsync(fd);
-      sileo.success({ title: "Member created", description: result.message });
+      sileo.success({
+        title: tCreate("toasts.createdTitle"),
+        description: result.message,
+      });
       setPage(1);
       dismissAfterExit();
     } catch (error) {
       sileo.error({
-        title: "Could not create member",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tCreate("toasts.errorTitle"),
+        description:
+          error instanceof Error ? error.message : "Unexpected error",
       });
     }
   };
@@ -156,11 +195,8 @@ export function MemberCreateDialog({
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
         <form onSubmit={submit} className="flex max-h-[85vh] flex-col">
           <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
-            <DialogTitle>Add member</DialogTitle>
-            <DialogDescription>
-              Register a member under a self-help group. National ID is optional and can be added
-              later.
-            </DialogDescription>
+            <DialogTitle>{tCreate("title")}</DialogTitle>
+            <DialogDescription>{tCreate("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 overflow-y-auto px-6 py-5">
             <MemberFormFields
@@ -172,6 +208,8 @@ export function MemberCreateDialog({
               setContactPhone={setContactPhone}
               dateOfBirth={dateOfBirth}
               setDateOfBirth={setDateOfBirth}
+              dateJoinedShg={dateJoinedShg}
+              setDateJoinedShg={setDateJoinedShg}
               fan={fan}
               setFan={setFan}
               gender={gender}
@@ -188,7 +226,9 @@ export function MemberCreateDialog({
               shgOptions={shgOptions}
               nationalIdSection={
                 <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-4">
-                  <Label className="text-foreground">National ID (optional)</Label>
+                  <Label className="text-foreground">
+                    {t("fields.nationalIdOptional")}
+                  </Label>
                   <NationalIdDropzone
                     mode="pick"
                     variant="compact"
@@ -202,8 +242,8 @@ export function MemberCreateDialog({
           <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
             <SaveButton
               isPending={isSubmitting}
-              idleLabel="Create member"
-              pendingLabel="Creating…"
+              idleLabel={tCreate("submit")}
+              pendingLabel={tCreate("submitting")}
             />
           </DialogFooter>
         </form>

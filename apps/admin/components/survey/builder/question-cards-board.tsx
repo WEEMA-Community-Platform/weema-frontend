@@ -12,6 +12,7 @@ export function QuestionCardsBoard(props: {
   section: SurveySection | null;
   questionByClientId: Map<string, SurveyQuestion>;
   dependentsMap: Map<string, string[]>;
+  isTranslationMode?: boolean;
   onOpen: (questionClientId: string) => void;
   onDelete: (questionClientId: string) => void;
 }) {
@@ -29,7 +30,10 @@ export function QuestionCardsBoard(props: {
   const rootQuestions = props.section.questions.filter(
     (question) => !getQuestionParentId(question, sectionQuestionIds)
   );
-  const renderDependentNode = (questionClientId: string): ReactNode => {
+  const renderDependentNode = (questionClientId: string, path: Set<string>): ReactNode => {
+    if (path.has(questionClientId)) return null;
+    const nextPath = new Set(path);
+    nextPath.add(questionClientId);
     const question = props.questionByClientId.get(questionClientId);
     if (!question) return null;
     const nestedDependents = props.dependentsMap.get(questionClientId) ?? [];
@@ -44,7 +48,7 @@ export function QuestionCardsBoard(props: {
         </span>
         {nestedDependents.length > 0 ? (
           <ul className="space-y-1 pl-3">
-            {nestedDependents.map((nestedId) => renderDependentNode(nestedId))}
+            {nestedDependents.map((nestedId) => renderDependentNode(nestedId, nextPath))}
           </ul>
         ) : null}
       </li>
@@ -55,7 +59,11 @@ export function QuestionCardsBoard(props: {
     <div className="space-y-3">
       <div>
         <h2 className="text-lg font-semibold">{props.section.title || "Untitled section"}</h2>
-        <p className="text-sm text-muted-foreground">Card view: open a question to edit details.</p>
+        <p className="text-sm text-muted-foreground">
+          {props.isTranslationMode
+            ? "Translation card view: open a question to edit text only."
+            : "Card view: open a question to edit details."}
+        </p>
       </div>
       {rootQuestions.map((question, index) => {
         const dependentIds = props.dependentsMap.get(question.clientId) ?? [];
@@ -88,17 +96,19 @@ export function QuestionCardsBoard(props: {
                   >
                     Open
                   </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      props.onDelete(question.clientId);
-                    }}
-                  >
-                    Delete
-                  </Button>
+                  {!props.isTranslationMode ? (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        props.onDelete(question.clientId);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  ) : null}
                 </div>
               </div>
 
@@ -122,7 +132,7 @@ export function QuestionCardsBoard(props: {
                 <div className="rounded-md border border-primary/10 p-2 text-xs">
                   <p className="mb-1 font-medium">Follow-up questions triggered by this question:</p>
                   <ul className="space-y-1">
-                    {dependentIds.map((dependentId) => renderDependentNode(dependentId))}
+                    {dependentIds.map((dependentId) => renderDependentNode(dependentId, new Set()))}
                   </ul>
                 </div>
               ) : null}

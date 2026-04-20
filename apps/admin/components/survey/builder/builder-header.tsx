@@ -10,6 +10,7 @@ import type { SaveAllEligibility } from "./shared";
 
 type BuilderHeaderProps = {
   initialSurveyId: string | null;
+  isTranslationMode?: boolean;
   totalQuestionCount: number;
   isCreatingSurvey: boolean;
   isSavingAllChanges: boolean;
@@ -21,6 +22,7 @@ type BuilderHeaderProps = {
 
 export function BuilderHeader({
   initialSurveyId,
+  isTranslationMode = false,
   totalQuestionCount,
   isCreatingSurvey,
   isSavingAllChanges,
@@ -37,6 +39,11 @@ export function BuilderHeader({
       </Button>
 
       <div className="flex items-center gap-2">
+        {isTranslationMode ? (
+          <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-xs text-primary">
+            Translation mode
+          </span>
+        ) : null}
         <Button type="button" variant="outline" onClick={onCreateNew}>
           <PlusIcon className="size-4" />
           New survey
@@ -58,12 +65,20 @@ export function BuilderHeader({
               }
             >
               <SaveIcon className="size-4" />
-              {isCreatingSurvey ? "Creating..." : "Create survey"}
+              {isCreatingSurvey
+                ? isTranslationMode
+                  ? "Creating translation..."
+                  : "Creating..."
+                : isTranslationMode
+                  ? "Create translation"
+                  : "Create survey"}
             </TooltipTrigger>
             <TooltipContent>
               {totalQuestionCount === 0
                 ? "Add at least one question before creating the survey."
-                : "Create the survey with all current settings and questions."}
+                : isTranslationMode
+                  ? "Create the translated survey from the current edits."
+                  : "Create the survey with all current settings and questions."}
             </TooltipContent>
           </Tooltip>
         ) : (

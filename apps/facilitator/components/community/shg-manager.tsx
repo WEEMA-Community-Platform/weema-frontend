@@ -2,6 +2,7 @@
 
 import { type ClipboardEvent, FormEvent, useMemo, useState } from "react";
 import { LayersIcon, MapPinIcon, UsersIcon, UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -20,19 +21,30 @@ import { Button } from "@/components/ui/button";
 import {
   DataToolbar,
   PaginationRow,
-  listEmptyMessage,
+  useListEmptyMessage,
 } from "@/components/base-data/shared";
 import {
   SHGDetailDialog,
   SHGFormDialog,
 } from "@/components/community/shg-manager-dialogs";
 
-const STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
-];
-
 export function SHGManager() {
+  const tPage = useTranslations("community.shg.page");
+  const tCard = useTranslations("community.shg.card");
+  const tToasts = useTranslations("community.shg.toasts");
+  const tStatus = useTranslations("community.members.options.status");
+  const tActions = useTranslations("common.actions");
+  const tEntity = useTranslations("listEmpty.entity");
+  const tForm = useTranslations("community.shg.form");
+
+  const STATUS_OPTIONS = useMemo(
+    () => [
+      { value: "ACTIVE", label: tStatus("active") },
+      { value: "INACTIVE", label: tStatus("inactive") },
+    ],
+    [tStatus]
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
@@ -55,17 +67,17 @@ export function SHGManager() {
 
   const woredaOptions = useMemo(
     () => [
-      { value: "none", label: "No woreda" },
+      { value: "none", label: tForm("options.noWoreda") },
       ...(woredaData?.woredas ?? []).map((w: { id: string; name: string }) => ({ value: w.id, label: w.name })),
     ],
-    [woredaData?.woredas]
+    [woredaData?.woredas, tForm]
   );
   const kebeleOptions = useMemo(
     () => [
-      { value: "none", label: "No kebele" },
+      { value: "none", label: tForm("options.noKebele") },
       ...(kebeleData?.kebeles ?? []).map((k: { id: string; name: string }) => ({ value: k.id, label: k.name })),
     ],
-    [kebeleData?.kebeles]
+    [kebeleData?.kebeles, tForm]
   );
 
   const resetForm = () => {
@@ -111,8 +123,8 @@ export function SHGManager() {
     const ok = applyMapsUrl(trimmed);
     if (!ok && /https?:|maps\.|apple\.|goo\.|google\.com\/maps/i.test(trimmed)) {
       sileo.warning({
-        title: "Could not read coordinates",
-        description: "Try another link or enter latitude and longitude below.",
+        title: tToasts("badMapLinkTitle"),
+        description: tToasts("badMapLinkMessage"),
       });
     }
   };
@@ -149,8 +161,20 @@ export function SHGManager() {
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim()) { sileo.warning({ title: "Missing name", description: "SHG name is required." }); return; }
-    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
+    if (!name.trim()) {
+      sileo.warning({
+        title: tToasts("missingNameTitle"),
+        description: tToasts("missingNameMessage"),
+      });
+      return;
+    }
+    if (!status) {
+      sileo.warning({
+        title: tToasts("missingStatusTitle"),
+        description: tToasts("missingStatusMessage"),
+      });
+      return;
+    }
     const resolvedWoredaId = woredaId && woredaId !== "none" ? woredaId : undefined;
     const resolvedKebeleId = kebeleId && kebeleId !== "none" ? kebeleId : undefined;
     const lat = latitude ? parseFloat(latitude) : undefined;
@@ -165,32 +189,39 @@ export function SHGManager() {
         latitude: lat,
         longitude: lng,
       });
-      sileo.success({ title: "SHG added", description: result.message });
+      sileo.success({
+        title: tToasts("addedTitle"),
+        description: result.message || tToasts("addedGenericMessage"),
+      });
       setPage(1);
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
-      sileo.error({ title: "Could not save SHG", description: error instanceof Error ? error.message : "Unexpected error" });
+      sileo.error({
+        title: tToasts("saveErrorTitle"),
+        description: error instanceof Error ? error.message : "Unexpected error",
+      });
     }
   };
 
   const shgs = shgsQuery.data?.selfHelpGroups ?? [];
   const hasSearch = Boolean(searchQuery.trim());
+  const listEmptyMessage = useListEmptyMessage();
   const emptyMessage = listEmptyMessage({
-    entityPlural: "self-help groups",
+    entityPlural: tEntity("shgs"),
     hasSearch,
     hasFilters: false,
-    emptyCatalogHint: "No self-help groups found. Add your first SHG to get started.",
+    emptyCatalogHint: tPage("emptyHint"),
   });
 
   return (
     <div className="space-y-4">
       <DataToolbar
-        searchPlaceholder="Search self-help groups"
+        searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
-        addLabel="Add SHG"
+        addLabel={tPage("addButton")}
       />
 
       {shgsQuery.isLoading ? (
@@ -198,10 +229,18 @@ export function SHGManager() {
       ) : shgsQuery.isError ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            {shgsQuery.error instanceof Error ? shgsQuery.error.message : "Failed to load self-help groups."}
+            {shgsQuery.error instanceof Error
+              ? shgsQuery.error.message
+              : tPage("loadError")}
           </p>
-          <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => shgsQuery.refetch()}>
-            Retry
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="mt-4"
+            onClick={() => shgsQuery.refetch()}
+          >
+            {tActions("retry")}
           </Button>
         </div>
       ) : shgs.length === 0 ? (
@@ -212,6 +251,7 @@ export function SHGManager() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {shgs.map((s: SHG) => {
             const hasGps = s.latitude != null && s.longitude != null;
+            const memberCount = s.memberCount ?? 0;
             return (
               <CommunityCard
                 key={s.id}
@@ -220,19 +260,23 @@ export function SHGManager() {
                 onView={() => setViewingId(s.id)}
                 showEditAction={false}
                 showDeleteAction={false}
-                viewActionLabel="View details"
+                viewActionLabel={tCard("viewDetailsAction")}
               >
-                <CardMetaRow icon={LayersIcon} label="Cluster">
-                  {s.clusterName ?? "No cluster"}
+                <CardMetaRow icon={LayersIcon} label={tCard("cluster")}>
+                  {s.clusterName ?? tCard("noCluster")}
                 </CardMetaRow>
-                <CardMetaRow icon={UserIcon} label="Facilitator">
-                  {s.facilitatorName ?? "No facilitator"}
+                <CardMetaRow icon={UserIcon} label={tCard("facilitator")}>
+                  {s.facilitatorName ?? tCard("noFacilitator")}
                 </CardMetaRow>
-                <CardMetaRow icon={UsersIcon} label="Members">
-                  {s.memberCount ?? 0} {s.memberCount === 1 ? "member" : "members"}
+                <CardMetaRow icon={UsersIcon} label={tCard("members")}>
+                  {memberCount === 1
+                    ? tCard("memberOne", { count: memberCount })
+                    : tCard("memberOther", { count: memberCount })}
                 </CardMetaRow>
-                <CardMetaRow icon={MapPinIcon} label="GPS">
-                  {hasGps ? `${s.latitude}, ${s.longitude}` : "No coordinates"}
+                <CardMetaRow icon={MapPinIcon} label={tCard("gps")}>
+                  {hasGps
+                    ? `${s.latitude}, ${s.longitude}`
+                    : tCard("noCoordinates")}
                 </CardMetaRow>
               </CommunityCard>
             );

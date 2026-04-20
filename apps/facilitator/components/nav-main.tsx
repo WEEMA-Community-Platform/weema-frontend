@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { usePathname, useSearchParams } from "next/navigation"
 import {
   Collapsible,
@@ -34,6 +35,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
   const searchParams = useSearchParams()
   const activeSection = searchParams.get("section")
   const { state } = useSidebar()
+  const tNav = useTranslations("nav")
 
   const isLinkActive = (url: string) => {
     if (url.startsWith("/?section=")) {
@@ -62,7 +64,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+      <SidebarGroupLabel>{tNav("groupLabel")}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) =>
           state === "collapsed" ? (

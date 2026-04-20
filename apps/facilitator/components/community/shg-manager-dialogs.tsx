@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 import { useSHGDetailQuery } from "@/hooks/use-community";
@@ -30,7 +31,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SaveButton, inputClass } from "@/components/base-data/shared";
 import { SelectField } from "@/components/base-data/select-field";
 
-function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailField({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <>
       <dt className="text-sm text-muted-foreground">{label}</dt>
@@ -41,45 +48,99 @@ function DetailField({ label, value }: { label: string; value: React.ReactNode }
   );
 }
 
-export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
+export function SHGDetailDialog({
+  id,
+  open,
+  onClose,
+}: {
+  id: string | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const tDetail = useTranslations("community.shg.detail");
+  const tActions = useTranslations("common.actions");
   const [activeId, setActiveId] = useState<string | null>(id);
 
   useEffect(() => {
     if (open && id) setActiveId(id);
   }, [open, id]);
 
-  const { data, isLoading, isError, error, refetch } = useSHGDetailQuery(activeId);
+  const { data, isLoading, isError, error, refetch } =
+    useSHGDetailQuery(activeId);
   const shg = data?.selfHelpGroup;
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
       <DialogContent className="w-[min(100vw-1.5rem,42rem)] sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{shg?.name ?? "Self-Help Group details"}</DialogTitle>
-          <DialogDescription>Full details for this self-help group.</DialogDescription>
+          <DialogTitle>{shg?.name ?? tDetail("title")}</DialogTitle>
+          <DialogDescription>{tDetail("description")}</DialogDescription>
         </DialogHeader>
         <div className="px-5 pb-2">
           {isLoading ? (
-            <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}</div>
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
           ) : isError ? (
             <div className="py-4 text-center">
               <p className="text-sm text-muted-foreground">
-                {error instanceof Error ? error.message : "Could not load details."}
+                {error instanceof Error
+                  ? error.message
+                  : tDetail("errorFallback")}
               </p>
-              <button type="button" onClick={() => refetch()} className="mt-3 text-sm font-medium text-primary hover:underline">
-                Retry
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-3 text-sm font-medium text-primary hover:underline"
+              >
+                {tActions("retry")}
               </button>
             </div>
           ) : shg ? (
             <dl className="grid grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 ">
-              <DetailField label="Name" value={shg.name} />
-              <DetailField label="Status" value={<StatusBadge status={shg.status} />} />
-              <DetailField label="Cluster" value={shg.clusterName} />
-              <DetailField label="Woreda" value={shg.woredaName} />
-              <DetailField label="Kebele" value={shg.kebeleName} />
-              <DetailField label="Facilitator" value={shg.facilitatorName} />
-              <DetailField label="Members" value={shg.memberCount} />
-              <DetailField label="GPS" value={shg.latitude != null && shg.longitude != null ? `${shg.latitude}, ${shg.longitude}` : null} />
-              <DetailField label="Description" value={shg.description} />
+              <DetailField label={tDetail("fields.name")} value={shg.name} />
+              <DetailField
+                label={tDetail("fields.status")}
+                value={<StatusBadge status={shg.status} />}
+              />
+              <DetailField
+                label={tDetail("fields.cluster")}
+                value={shg.clusterName}
+              />
+              <DetailField
+                label={tDetail("fields.woreda")}
+                value={shg.woredaName}
+              />
+              <DetailField
+                label={tDetail("fields.kebele")}
+                value={shg.kebeleName}
+              />
+              <DetailField
+                label={tDetail("fields.facilitator")}
+                value={shg.facilitatorName}
+              />
+              <DetailField
+                label={tDetail("fields.members")}
+                value={shg.memberCount}
+              />
+              <DetailField
+                label={tDetail("fields.gps")}
+                value={
+                  shg.latitude != null && shg.longitude != null
+                    ? `${shg.latitude}, ${shg.longitude}`
+                    : null
+                }
+              />
+              <DetailField
+                label={tDetail("fields.description")}
+                value={shg.description}
+              />
             </dl>
           ) : null}
         </div>
@@ -155,26 +216,35 @@ export function SHGFormDialog({
   onSubmit: (event: React.FormEvent) => void;
   isSubmitting: boolean;
 }) {
+  const tForm = useTranslations("community.shg.form");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
-        <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={onSubmit}>
+        <form
+          className="flex max-h-[85vh] flex-col overflow-hidden"
+          onSubmit={onSubmit}
+        >
           <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
-            <DialogTitle>{editingSHG ? "Edit self-help group" : "Add self-help group"}</DialogTitle>
+            <DialogTitle>
+              {editingSHG ? tForm("titleEdit") : tForm("titleAdd")}
+            </DialogTitle>
             <DialogDescription>
               {editingSHG
-                ? "Update SHG details, then save your changes."
-                : "Add a new self-help group to the community structure. Cluster can be linked when you edit this SHG."}
+                ? tForm("descriptionEdit")
+                : tForm("descriptionAdd")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 overflow-y-auto px-6 py-5">
             <div className="space-y-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {tForm("sectionDetails")}
+              </p>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-name">Name</Label>
+                <Label htmlFor="shg-name">{tForm("nameLabel")}</Label>
                 <Input
                   id="shg-name"
-                  placeholder="SHG name"
+                  placeholder={tForm("namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className={inputClass}
@@ -183,66 +253,69 @@ export function SHGFormDialog({
               </div>
               {editingSHG ? (
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-cluster">Cluster</Label>
-                  <p className="text-xs text-muted-foreground">Optional. Link this SHG to a cluster when assigned.</p>
+                  <Label htmlFor="shg-cluster">{tForm("cluster")}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {tForm("clusterHint")}
+                  </p>
                   <SelectField
                     id="shg-cluster"
                     value={clusterId || "none"}
                     onValueChange={setClusterId}
                     options={clusterFormOptions}
-                    placeholder="Select cluster"
+                    placeholder={tForm("clusterPlaceholder")}
                     className="h-11"
                   />
                 </div>
               ) : null}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-woreda">Woreda</Label>
+                  <Label htmlFor="shg-woreda">{tForm("woreda")}</Label>
                   <SelectField
                     id="shg-woreda"
                     value={woredaId || "none"}
                     onValueChange={setWoredaId}
                     options={woredaOptions}
-                    placeholder="Select woreda (optional)"
+                    placeholder={tForm("woredaPlaceholder")}
                     className="h-11"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-status">Status</Label>
+                  <Label htmlFor="shg-status">{tForm("status")}</Label>
                   <SelectField
                     id="shg-status"
                     value={status}
                     onValueChange={(v) => setStatus(v as EntityStatus | "")}
                     options={statusOptions}
-                    placeholder="Select status"
+                    placeholder={tForm("statusPlaceholder")}
                     className="h-11"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-kebele">Kebele</Label>
+                <Label htmlFor="shg-kebele">{tForm("kebele")}</Label>
                 <SelectField
                   id="shg-kebele"
                   value={kebeleId || "none"}
                   onValueChange={setKebeleId}
                   options={kebeleOptions}
-                  placeholder="Select kebele (optional)"
+                  placeholder={tForm("kebelePlaceholder")}
                   className="h-11"
                 />
               </div>
             </div>
             <div className="space-y-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Coordinates</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {tForm("sectionCoordinates")}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Use a map link (coordinates locked to the link) or enter latitude and longitude yourself - switch modes
-                with the actions below.
+                {tForm("coordinatesHint")}
               </p>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-maps-url">Map link</Label>
+                <Label htmlFor="shg-maps-url">{tForm("mapLink")}</Label>
                 <Input
                   id="shg-maps-url"
                   type="text"
-                  placeholder="Paste a Google Maps or Apple Maps share link..."
+                  placeholder={tForm("mapLinkPlaceholder")}
                   value={mapsUrl}
                   onChange={(e) => handleMapsUrlChange(e.target.value)}
                   onBlur={handleMapsUrlBlur}
@@ -250,19 +323,20 @@ export function SHGFormDialog({
                   disabled={coordinateMode === "manual"}
                   className={cn(
                     inputClass,
-                    coordinateMode === "manual" && "cursor-not-allowed bg-muted/50 opacity-80",
+                    coordinateMode === "manual" &&
+                      "cursor-not-allowed bg-muted/50 opacity-80"
                   )}
                   autoComplete="off"
                 />
                 {coordinateMode === "manual" ? (
                   <p className="text-xs text-muted-foreground">
-                    Map link is disabled while entering coordinates manually.{" "}
+                    {tForm("manualNote")}{" "}
                     <button
                       type="button"
                       className="font-medium text-primary underline-offset-4 hover:underline"
                       onClick={switchToMapLinkEntry}
                     >
-                      Use map link instead
+                      {tForm("useMapLinkInstead")}
                     </button>
                   </p>
                 ) : null}
@@ -275,51 +349,59 @@ export function SHGFormDialog({
                       setMapsUrl("");
                     }}
                   >
-                    Edit coordinates manually
+                    {tForm("editManually")}
                   </button>
                 ) : null}
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-latitude">Latitude</Label>
+                  <Label htmlFor="shg-latitude">{tForm("latitude")}</Label>
                   <Input
                     id="shg-latitude"
-                    placeholder="e.g. 9.03"
+                    placeholder={tForm("latitudePlaceholder")}
                     type="number"
                     step="any"
                     value={latitude}
-                    onChange={(e) => handleManualCoordinateInput("lat", e.target.value)}
+                    onChange={(e) =>
+                      handleManualCoordinateInput("lat", e.target.value)
+                    }
                     readOnly={coordinateMode === "map"}
                     className={cn(
                       inputClass,
-                      coordinateMode === "map" && "cursor-not-allowed bg-muted/50",
+                      coordinateMode === "map" &&
+                        "cursor-not-allowed bg-muted/50"
                     )}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-longitude">Longitude</Label>
+                  <Label htmlFor="shg-longitude">{tForm("longitude")}</Label>
                   <Input
                     id="shg-longitude"
-                    placeholder="e.g. 38.75"
+                    placeholder={tForm("longitudePlaceholder")}
                     type="number"
                     step="any"
                     value={longitude}
-                    onChange={(e) => handleManualCoordinateInput("lng", e.target.value)}
+                    onChange={(e) =>
+                      handleManualCoordinateInput("lng", e.target.value)
+                    }
                     readOnly={coordinateMode === "map"}
                     className={cn(
                       inputClass,
-                      coordinateMode === "map" && "cursor-not-allowed bg-muted/50",
+                      coordinateMode === "map" &&
+                        "cursor-not-allowed bg-muted/50"
                     )}
                   />
                 </div>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="shg-description">Description</Label>
+              <Label htmlFor="shg-description">
+                {tForm("descriptionLabel")}
+              </Label>
               <textarea
                 id="shg-description"
                 className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                placeholder="Optional notes about this self-help group"
+                placeholder={tForm("descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -328,8 +410,14 @@ export function SHGFormDialog({
           <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
             <SaveButton
               isPending={isSubmitting}
-              idleLabel={editingSHG ? "Save SHG" : "Add SHG"}
-              pendingLabel={editingSHG ? "Saving..." : "Adding..."}
+              idleLabel={
+                editingSHG ? tForm("saveEditLabel") : tForm("saveAddLabel")
+              }
+              pendingLabel={
+                editingSHG
+                  ? tForm("saveEditPending")
+                  : tForm("saveAddPending")
+              }
             />
           </DialogFooter>
         </form>
@@ -347,18 +435,26 @@ export function SHGDeleteDialog({
   onOpenChange: (open: boolean) => void;
   onConfirmDelete: () => Promise<void>;
 }) {
+  const tActions = useTranslations("common.actions");
   return (
     <AlertDialog open={!!pendingDelete} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete self-help group</AlertDialogTitle>
           <AlertDialogDescription>
-            Delete <span className="font-semibold text-foreground">{pendingDelete?.name}</span>? This action cannot be undone.
+            Delete{" "}
+            <span className="font-semibold text-foreground">
+              {pendingDelete?.name}
+            </span>
+            ? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={() => void onConfirmDelete()}>
+          <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => void onConfirmDelete()}
+          >
             Delete SHG
           </AlertDialogAction>
         </AlertDialogFooter>

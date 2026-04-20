@@ -1,6 +1,11 @@
 import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
 import { serializeSurveyPayload } from "@/lib/survey-builder/normalize";
-import type { ShowCondition, SurveyBuilderState, SurveyQuestion } from "@/lib/survey-builder/types";
+import type {
+  QuestionType,
+  ShowCondition,
+  SurveyBuilderState,
+  SurveyQuestion,
+} from "@/lib/survey-builder/types";
 import { isChoiceType } from "@/lib/survey-builder/utils";
 
 export type SurveyQuestionWithContext = SurveyQuestion & {
@@ -23,6 +28,45 @@ export const OPERATOR_OPTIONS: Array<{ value: ShowCondition["operator"]; label: 
 
 export function getOperatorLabel(operator: ShowCondition["operator"]) {
   return OPERATOR_OPTIONS.find((item) => item.value === operator)?.label ?? operator;
+}
+
+export function getOperatorOptionsForQuestionType(questionType: QuestionType) {
+  if (questionType === "NUMBER") {
+    return OPERATOR_OPTIONS.filter(
+      (item) =>
+        item.value === "EQUALS" ||
+        item.value === "NOT_EQUALS" ||
+        item.value === "GREATER_THAN" ||
+        item.value === "LESS_THAN"
+    );
+  }
+
+  if (questionType === "BOOLEAN") {
+    return OPERATOR_OPTIONS.filter(
+      (item) => item.value === "EQUALS" || item.value === "NOT_EQUALS"
+    );
+  }
+
+  if (questionType === "SHORT_TEXT" || questionType === "LONG_TEXT") {
+    return OPERATOR_OPTIONS.filter(
+      (item) =>
+        item.value === "EQUALS" || item.value === "NOT_EQUALS" || item.value === "CONTAINS"
+    );
+  }
+
+  if (questionType === "DATE") {
+    return OPERATOR_OPTIONS.filter(
+      (item) =>
+        item.value === "EQUALS" ||
+        item.value === "NOT_EQUALS" ||
+        item.value === "GREATER_THAN" ||
+        item.value === "LESS_THAN"
+    );
+  }
+
+  return OPERATOR_OPTIONS.filter(
+    (item) => item.value === "EQUALS" || item.value === "NOT_EQUALS"
+  );
 }
 
 export const LOGIC_TYPE_OPTIONS: Array<{ value: ShowCondition["logicType"]; label: string }> = [
@@ -49,11 +93,24 @@ export function describeCondition(
 }
 
 export function getQuestionParentId(question: SurveyQuestion, sectionQuestionIds: Set<string>) {
-  return (
-    question.showConditions
-      .map((condition) => condition.parentQuestionClientId)
-      .find((parentId) => sectionQuestionIds.has(parentId)) ?? null
-  );
+  return getQuestionParentIds(question, sectionQuestionIds)[0] ?? null;
+}
+
+export function getQuestionParentIds(question: SurveyQuestion, sectionQuestionIds: Set<string>) {
+  const parentIds: string[] = [];
+  const seen = new Set<string>();
+  for (const condition of question.showConditions) {
+    const parentId = condition.parentQuestionClientId;
+    if (!sectionQuestionIds.has(parentId)) continue;
+    if (seen.has(parentId)) continue;
+    seen.add(parentId);
+    parentIds.push(parentId);
+  }
+  return parentIds;
+}
+
+function getPrimaryParentId(question: CreateSurveyPayload["sections"][number]["questions"][number]) {
+  return question.showConditions?.[0]?.parentQuestionClientId;
 }
 
 export function getFollowUpDepth(
@@ -155,12 +212,13 @@ export function getSaveAllEligibility(
     const metadataChanged =
       current.title !== last.title ||
       current.description !== last.description ||
-      current.targetType !== last.targetType;
+      current.targetType !== last.targetType ||
+      current.language !== last.language;
     if (metadataChanged) {
       return {
         canSaveAll: true,
         hasUnsavedChanges: true,
-        reason: "Survey metadata changed. Save all will sync title, description, and target type.",
+        reason: "Survey metadata changed. Save all will sync title, description, target type, and language.",
       };
     }
     const currentRows = current.sections.flatMap((s, si) =>
@@ -172,11 +230,11 @@ export function getSaveAllEligibility(
     const currentParent = new Map<string, string>();
     const lastParent = new Map<string, string>();
     for (const { q } of currentRows) {
-      const p = q.showConditions?.[0]?.parentQuestionClientId;
+      const p = getPrimaryParentId(q);
       if (p) currentParent.set(q.clientId, p);
     }
     for (const { q } of lastRows) {
-      const p = q.showConditions?.[0]?.parentQuestionClientId;
+      const p = getPrimaryParentId(q);
       if (p) lastParent.set(q.clientId, p);
     }
     const depth = (id: string, map: Map<string, string>) => {

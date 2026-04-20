@@ -15,6 +15,7 @@ export type Member = {
   selfHelpGroupId: string;
   selfHelpGroupName: string;
   fan: string | null;
+  dateJoinedShg: string | null;
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | string;
   rejectionReason?: string | null;
 };
@@ -58,6 +59,7 @@ export type MemberPatchPayload = {
   status?: string;
   selfHelpGroupId?: string;
   fan?: string | null;
+  dateJoinedShg?: string | null;
 };
 
 export type RejectMemberPayload = {

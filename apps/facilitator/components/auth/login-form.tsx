@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useLoginMutation } from "@weema/auth/react-query";
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,6 +18,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { LanguageSwitcherButton } from "@/components/language-switcher";
 
 export function LoginForm({
   className,
@@ -28,6 +30,9 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const t = useTranslations("auth.login");
+  const tValidation = useTranslations("common.validation");
+
   const rawReturnTo = searchParams.get("returnTo");
   const returnTo =
     rawReturnTo && rawReturnTo.startsWith("/") && !rawReturnTo.startsWith("//")
@@ -38,8 +43,8 @@ export function LoginForm({
     baseUrl: "/api/auth",
     onSuccess: (data) => {
       sileo.success({
-        title: "Logged in",
-        description: data.message || "Welcome back.",
+        title: t("loggedInTitle"),
+        description: data.message || t("loggedInMessage"),
       });
       router.push(returnTo);
       router.refresh();
@@ -48,9 +53,9 @@ export function LoginForm({
       const description =
         error instanceof Error && error.message.trim()
           ? error.message
-          : "Something went wrong. Please try again.";
+          : tValidation("somethingWentWrong");
       sileo.error({
-        title: "Couldn't sign in",
+        title: t("errorTitle"),
         description,
       });
     },
@@ -58,6 +63,9 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <div className="flex justify-end">
+        <LanguageSwitcherButton />
+      </div>
       <Card className="overflow-hidden border-primary/15 p-0 shadow-lg shadow-primary/5">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form
@@ -70,19 +78,19 @@ export function LoginForm({
             <FieldGroup>
               <div className="flex flex-col items-center gap-1 text-center">
                 <h1 className="text-2xl font-bold tracking-tight">
-                  Welcome back
+                  {t("heading")}
                 </h1>
                 <p className="text-balance text-muted-foreground">
-                  Sign in to your WEEMA Facilitator account
+                  {t("subheading")}
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="facilitator@weema.com"
+                  placeholder={t("emailPlaceholder")}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="h-11 border-primary/20 bg-background px-3 text-[0.95rem] md:text-base focus-visible:border-primary focus-visible:ring-0"
@@ -91,7 +99,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
                 </div>
                 <div className="relative">
                   <Input
@@ -107,7 +115,7 @@ export function LoginForm({
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     aria-label={
-                      showPassword ? "Hide password" : "Show password"
+                      showPassword ? t("hidePassword") : t("showPassword")
                     }
                     className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                   >
@@ -119,7 +127,7 @@ export function LoginForm({
                     href="/forgot-password"
                     className="text-sm text-primary underline-offset-2 hover:underline"
                   >
-                    Forgot your password?
+                    {t("forgotPassword")}
                   </Link>
                 </div>
               </Field>
@@ -129,7 +137,7 @@ export function LoginForm({
                   className="w-full bg-primary py-5 text-primary-foreground hover:bg-primary/90"
                   disabled={loginMutation.isPending}
                 >
-                  {loginMutation.isPending ? "Signing in..." : "Login"}
+                  {loginMutation.isPending ? t("submitting") : t("submit")}
                 </Button>
               </Field>
             </FieldGroup>
@@ -149,4 +157,3 @@ export function LoginForm({
     </div>
   );
 }
-

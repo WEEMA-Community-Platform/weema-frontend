@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,16 +28,6 @@ const emptyFilters: SurveyAppliedFilters = {
   activity: "",
 };
 
-const SURVEY_STATUS_OPTIONS = [
-  { value: "DRAFT", label: "Draft" },
-  { value: "PUBLISHED", label: "Published" },
-];
-
-const ACTIVITY_OPTIONS = [
-  { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
-];
-
 type SurveyFiltersDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -50,6 +41,10 @@ export function SurveyFiltersDialog({
   applied,
   onApply,
 }: SurveyFiltersDialogProps) {
+  const tFilters = useTranslations("survey.filters");
+  const tBadge = useTranslations("survey.list.statusBadge");
+  const tStatus = useTranslations("community.members.options.status");
+
   const [draft, setDraft] = useState<SurveyAppliedFilters>(applied);
 
   useEffect(() => {
@@ -63,64 +58,95 @@ export function SurveyFiltersDialog({
     onApply(emptyFilters);
   };
 
+  const SURVEY_STATUS_OPTIONS = useMemo(
+    () => [
+      { value: "DRAFT", label: tBadge("draft") },
+      { value: "PUBLISHED", label: tBadge("published") },
+    ],
+    [tBadge]
+  );
+
+  const ACTIVITY_OPTIONS = useMemo(
+    () => [
+      { value: "ACTIVE", label: tStatus("active") },
+      { value: "INACTIVE", label: tStatus("inactive") },
+    ],
+    [tStatus]
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,32rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader className="space-y-1">
-          <DialogTitle>Filter surveys</DialogTitle>
-          <DialogDescription>
-            Narrow the list by lifecycle status, target type, and activity state. Changes apply when
-            you click Apply filters.
-          </DialogDescription>
+          <DialogTitle>{tFilters("title")}</DialogTitle>
+          <DialogDescription>{tFilters("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 px-5 pb-2">
           <div className="grid min-w-0 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="survey-filter-status">Status</Label>
+              <Label htmlFor="survey-filter-status">{tFilters("status")}</Label>
               <SelectField
                 id="survey-filter-status"
                 value={draft.status}
-                placeholder="All statuses"
+                placeholder={tFilters("statusAll")}
                 options={SURVEY_STATUS_OPTIONS}
-                onValueChange={(value) => setDraft((prev) => ({ ...prev, status: value }))}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({ ...prev, status: value }))
+                }
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="survey-filter-target-type">Target type</Label>
+              <Label htmlFor="survey-filter-target-type">
+                {tFilters("targetType")}
+              </Label>
               <SelectField
                 id="survey-filter-target-type"
                 value={draft.targetType}
-                placeholder="All target types"
-                options={TARGET_TYPES.map((item) => ({ value: item.value, label: item.label }))}
-                onValueChange={(value) => setDraft((prev) => ({ ...prev, targetType: value }))}
+                placeholder={tFilters("targetTypeAll")}
+                options={TARGET_TYPES.map((item) => ({
+                  value: item.value,
+                  label: item.label,
+                }))}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({ ...prev, targetType: value }))
+                }
               />
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="survey-filter-activity">Activity</Label>
+              <Label htmlFor="survey-filter-activity">
+                {tFilters("activity")}
+              </Label>
               <SelectField
                 id="survey-filter-activity"
                 value={draft.activity}
-                placeholder="All activity states"
+                placeholder={tFilters("activityAll")}
                 options={ACTIVITY_OPTIONS}
-                onValueChange={(value) => setDraft((prev) => ({ ...prev, activity: value }))}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({ ...prev, activity: value }))
+                }
               />
             </div>
           </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button type="button" variant="outline" className="min-h-11" onClick={clearAndApply}>
-            Clear filters
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={clearAndApply}
+          >
+            {tFilters("clear")}
           </Button>
           <Button
             type="button"
             className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => onApply(draft)}
           >
-            Apply filters
+            {tFilters("apply")}
           </Button>
         </DialogFooter>
       </DialogContent>

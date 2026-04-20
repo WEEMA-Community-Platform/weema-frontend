@@ -1,6 +1,7 @@
 "use client";
 
 import { SquareKanban, MoreVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import type { EntityStatus } from "@/lib/api/community";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +18,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function StatusBadge({ status }: { status: EntityStatus }) {
+  const tStatus = useTranslations("community.members.options.status");
   return (
-    <Badge variant={status === "ACTIVE" ? "default" : "secondary"} className="text-[11px] font-medium px-2 py-0.5 shrink-0">
-      {status === "ACTIVE" ? "Active" : "Inactive"}
+    <Badge
+      variant={status === "ACTIVE" ? "default" : "secondary"}
+      className="text-[11px] font-medium px-2 py-0.5 shrink-0"
+    >
+      {status === "ACTIVE" ? tStatus("active") : tStatus("inactive")}
     </Badge>
   );
 }
@@ -47,8 +52,8 @@ export function CommunityCard({
   showViewAction = true,
   showEditAction = true,
   showDeleteAction = true,
-  viewActionLabel = "View details",
-  editActionLabel = "Edit",
+  viewActionLabel,
+  editActionLabel,
 }: {
   title: string;
   status: EntityStatus;
@@ -63,6 +68,9 @@ export function CommunityCard({
   viewActionLabel?: string;
   editActionLabel?: string;
 }) {
+  const tActions = useTranslations("common.actions");
+  const resolvedViewLabel = viewActionLabel ?? tActions("viewDetails");
+  const resolvedEditLabel = editActionLabel ?? tActions("edit");
   const hasPrimaryActions = showViewAction || showEditAction;
   const hasAnyMenuContent = hasPrimaryActions || extraMenuItems || showDeleteAction;
   return (
@@ -76,7 +84,7 @@ export function CommunityCard({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button type="button" variant="ghost" size="icon" className="-mr-1 shrink-0 text-muted-foreground size-9 min-w-9 min-h-9" aria-label="Open actions menu">
+                <Button type="button" variant="ghost" size="icon" className="-mr-1 shrink-0 text-muted-foreground size-9 min-w-9 min-h-9" aria-label={tActions("open")}>
                   <MoreVerticalIcon className="size-4" />
                 </Button>
               }
@@ -85,10 +93,10 @@ export function CommunityCard({
               {hasPrimaryActions ? (
                 <DropdownMenuGroup>
                   {showViewAction && onView ? (
-                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><SquareKanban />{viewActionLabel}</DropdownMenuItem>
+                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><SquareKanban />{resolvedViewLabel}</DropdownMenuItem>
                   ) : null}
                   {showEditAction && onEdit ? (
-                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{editActionLabel}</DropdownMenuItem>
+                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{resolvedEditLabel}</DropdownMenuItem>
                   ) : null}
                 </DropdownMenuGroup>
               ) : null}
@@ -102,7 +110,7 @@ export function CommunityCard({
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />Delete</DropdownMenuItem>
+                    <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />{tActions("delete")}</DropdownMenuItem>
                   </DropdownMenuGroup>
                 </>
               ) : null}

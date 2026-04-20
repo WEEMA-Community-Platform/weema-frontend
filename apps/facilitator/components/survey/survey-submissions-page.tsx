@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { type QuestionTemplate } from "@/components/survey/survey-submission-answer-workspace";
@@ -20,14 +20,19 @@ import {
 import type { SurveySubmissionRecord } from "@/lib/api/surveys";
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
-function labelsForTargetType(targetType: string | undefined) {
-  const normalized = (targetType ?? "").toUpperCase();
-  if (normalized === "CLUSTER" || normalized === "SELF_HELP_GROUP") {
-    return { singular: "SHG", plural: "SHGs" };
-  }
-  if (normalized === "FEDERATION") return { singular: "cluster", plural: "clusters" };
-  if (normalized === "MEMBER") return { singular: "member", plural: "members" };
-  return { singular: "target", plural: "targets" };
+function useLabelsForTargetType() {
+  const t = useTranslations("survey.submissions.targetLabels");
+  return (targetType: string | undefined) => {
+    const normalized = (targetType ?? "").toUpperCase();
+    if (normalized === "CLUSTER" || normalized === "SELF_HELP_GROUP") {
+      return { singular: t("shgSingular"), plural: t("shgPlural") };
+    }
+    if (normalized === "FEDERATION")
+      return { singular: t("clusterSingular"), plural: t("clusterPlural") };
+    if (normalized === "MEMBER")
+      return { singular: t("memberSingular"), plural: t("memberPlural") };
+    return { singular: t("genericSingular"), plural: t("genericPlural") };
+  };
 }
 
 function isNotStartedStatus(status?: string | null) {
@@ -45,6 +50,8 @@ export function SurveySubmissionsPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const tPage = useTranslations("survey.submissions");
+  const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
   const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
 
@@ -125,7 +132,7 @@ export function SurveySubmissionsPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button type="button" variant="ghost" render={<Link href="/survey" />}>
           <ArrowLeftIcon className="size-4" />
-          Back to surveys
+          {tPage("backToSurveys")}
         </Button>
       </div>
 
@@ -155,7 +162,7 @@ export function SurveySubmissionsPage({
             errorMessage={
               submissionsQuery.error instanceof Error
                 ? submissionsQuery.error.message
-                : "Failed to load pending targets."
+                : tPage("loadError")
             }
             onRetry={() => submissionsQuery.refetch()}
             onPrimaryAction={(submission) => void handlePrimaryAction(submission)}
