@@ -7,8 +7,10 @@ import { sileo } from "sileo";
 import {
   useAssignSurveyTargetsMutation,
   useSurveyAssignmentTargetsQuery,
+  useSurveyDetailQuery,
   useUnassignSurveyTargetsMutation,
 } from "@/hooks/use-surveys";
+import { useUsersQuery } from "@/hooks/use-users-admin";
 import type { SurveyAssignmentTargetRow } from "@/lib/api/surveys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,18 +36,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { inputClass } from "@/components/base-data/shared";
+import { SelectField } from "@/components/base-data/select-field";
 
-type AssignmentBucket = "targets" | "clusters" | "selfHelpGroups";
-type PendingRemove = { row: SurveyAssignmentTargetRow; bucket: AssignmentBucket } | null;
+type PendingRemove = SurveyAssignmentTargetRow | null;
 
-const BUCKET_META: Record<
-  AssignmentBucket,
-  { tabLabel: string; singular: string; plural: string; searchLabel: string }
-> = {
-  targets: { tabLabel: "Targets", singular: "target", plural: "targets", searchLabel: "targets" },
-  clusters: { tabLabel: "Clusters", singular: "cluster", plural: "clusters", searchLabel: "clusters" },
-  selfHelpGroups: { tabLabel: "SHGs", singular: "SHG", plural: "SHGs", searchLabel: "SHGs" },
-};
+function getAssignmentEntity(targetType?: string) {
+  const normalized = (targetType ?? "").toUpperCase();
+  if (normalized === "CLUSTER") {
+    return { singular: "cluster", plural: "clusters" };
+  }
+  // MEMBER and SELF_HELP_GROUP/SHG surveys are assigned to SHGs.
+  return { singular: "SHG", plural: "SHGs" };
+}
+
+function resolveAssignmentRows(
+  primary: SurveyAssignmentTargetRow[] | null | undefined,
+  fallbackA?: SurveyAssignmentTargetRow[] | null,
+  fallbackB?: SurveyAssignmentTargetRow[] | null
+) {
+  if (primary && primary.length > 0) return primary;
+  if (fallbackA && fallbackA.length > 0) return fallbackA;
+  if (fallbackB && fallbackB.length > 0) return fallbackB;
+  return primary ?? fallbackA ?? fallbackB ?? [];
+}
 
 function TargetRow({
   row,
@@ -88,27 +101,28 @@ function RemoveTargetDialog({
   onOpenChange,
   onConfirm,
   isPending,
+  entityLabel,
 }: {
   target: PendingRemove;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isPending: boolean;
+  entityLabel: string;
 }) {
   // Keep last non-null value to avoid flash during exit animation.
   const lastTarget = useRef(target);
   if (target) lastTarget.current = target;
   const t = lastTarget.current;
-  const meta = t ? BUCKET_META[t.bucket] : BUCKET_META.targets;
 
   return (
     <AlertDialog open={!!target} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{`Remove assigned ${meta.singular}`}</AlertDialogTitle>
+          <AlertDialogTitle>{`Remove assigned ${entityLabel}`}</AlertDialogTitle>
           <AlertDialogDescription>
             Remove{" "}
-            <span className="font-semibold text-foreground">{t?.row.name}</span>{" "}
-            from this survey's assigned {meta.plural.toLowerCase()}? They can be re-added at any time.
+            <span className="font-semibold text-foreground">{t?.name}</span>{" "}
+            from this survey's assigned {entityLabel}s? It can be re-added at any time.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -124,7 +138,7 @@ function RemoveTargetDialog({
                 Removing…
               </>
             ) : (
-              `Remove ${meta.singular.toLowerCase()}`
+              `Remove ${entityLabel}`
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -144,64 +158,97 @@ export function SurveyAssignTargetsDialog({
   surveyId: string | null;
   surveyTitle: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [activeBucket, setActiveBucket] = useState<AssignmentBucket>("targets");
   const [pendingRemove, setPendingRemove] = useState<PendingRemove>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  const surveyDetailQuery = useSurveyDetailQuery(surveyId, {
+    enabled: open && !!surveyId,
+  });
 
   const { data, isLoading, isError, error, refetch } = useSurveyAssignmentTargetsQuery(
     surveyId,
+    {
+      search: debouncedSearch || undefined,
+      facilitatorId: selectedFacilitatorId || undefined,
+    },
     { enabled: open && !!surveyId }
   );
+
+  const facilitatorsQuery = useUsersQuery({
+    page: 1,
+    pageSize: 200,
+    roles: ["ROLE_FACILITATOR"],
+    isActive: true,
+  });
 
   const assignMutation = useAssignSurveyTargetsMutation();
   const unassignMutation = useUnassignSurveyTargetsMutation();
 
   const assignmentData = data?.assignmentData;
-  const bucketData = useMemo(
-    () => ({
-      targets: {
-        assigned: assignmentData?.assignedTargets ?? [],
-        available: assignmentData?.availableTargets ?? [],
-      },
-      clusters: {
-        assigned: assignmentData?.assignedClusters ?? [],
-        available: assignmentData?.availableClusters ?? [],
-      },
-      selfHelpGroups: {
-        assigned: assignmentData?.assignedSelfHelpGroups ?? [],
-        available: assignmentData?.availableSelfHelpGroups ?? [],
-      },
-    }),
+  const assigned = useMemo(
+    () =>
+      resolveAssignmentRows(
+        assignmentData?.assignedTargets,
+        assignmentData?.assignedSelfHelpGroups,
+        assignmentData?.assignedClusters
+      ),
     [assignmentData]
   );
-  const activeMeta = BUCKET_META[activeBucket];
-  const assigned = bucketData[activeBucket].assigned;
-  const available = bucketData[activeBucket].available;
-
-  const filteredAvailable = useMemo(() => {
-    if (!search.trim()) return available;
-    const q = search.toLowerCase();
-    return available.filter(
-      (a) =>
-        a.name.toLowerCase().includes(q) ||
-        (a.description ?? "").toLowerCase().includes(q)
-    );
-  }, [available, search]);
+  const available = useMemo(
+    () =>
+      resolveAssignmentRows(
+        assignmentData?.availableTargets,
+        assignmentData?.availableSelfHelpGroups,
+        assignmentData?.availableClusters
+      ),
+    [assignmentData]
+  );
+  const targetType = surveyDetailQuery.data?.survey?.targetType;
+  const assignmentEntity = getAssignmentEntity(targetType);
+  const facilitatorOptions = useMemo(
+    () =>
+      (facilitatorsQuery.data?.users ?? []).map((user) => {
+        const name = `${user.firstName} ${user.lastName}`.trim();
+        return {
+          value: user.id,
+          label: name ? `${name} (${user.email})` : user.email,
+        };
+      }),
+    [facilitatorsQuery.data?.users]
+  );
 
   /** Reset only when opening (or switching survey), not on close — avoids flashing empty state during exit animation. */
   useEffect(() => {
     if (open && surveyId) {
-      setSearch("");
+      setSearchInput("");
+      setDebouncedSearch("");
+      setSelectedFacilitatorId("");
       setSelectedIds(new Set());
-      setActiveBucket("targets");
     }
   }, [open, surveyId]);
 
   useEffect(() => {
-    setSelectedIds(new Set());
-    setSearch("");
-  }, [activeBucket]);
+    // Keep selections only for rows still available after server-side filtering.
+    const availableIdSet = new Set(available.map((row) => row.id));
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (availableIdSet.has(id)) next.add(id);
+      }
+      return next;
+    });
+  }, [available]);
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -220,13 +267,13 @@ export function SurveyAssignTargetsDialog({
         targetIds: [...selectedIds],
       });
       sileo.success({
-        title: `${activeMeta.tabLabel} assigned`,
+        title: `${assignmentEntity.plural} assigned`,
         description: result.message ?? "Assignment updated.",
       });
       setSelectedIds(new Set());
     } catch (e) {
       sileo.error({
-        title: `Could not assign ${activeMeta.plural.toLowerCase()}`,
+        title: `Could not assign ${assignmentEntity.plural}`,
         description: e instanceof Error ? e.message : "Unexpected error",
       });
     }
@@ -237,16 +284,16 @@ export function SurveyAssignTargetsDialog({
     try {
       const result = await unassignMutation.mutateAsync({
         surveyId,
-        targetIds: [pendingRemove.row.id],
+        targetIds: [pendingRemove.id],
       });
       sileo.success({
-        title: `${BUCKET_META[pendingRemove.bucket].tabLabel} updated`,
+        title: `${assignmentEntity.plural} updated`,
         description: result.message ?? "Assignment removed.",
       });
       setPendingRemove(null);
     } catch (e) {
       sileo.error({
-        title: `Could not remove ${BUCKET_META[pendingRemove.bucket].singular.toLowerCase()}`,
+        title: `Could not remove ${assignmentEntity.singular}`,
         description: e instanceof Error ? e.message : "Unexpected error",
       });
     }
@@ -261,11 +308,11 @@ export function SurveyAssignTargetsDialog({
             <DialogDescription>
               <span className="font-medium text-foreground">{surveyTitle}</span>
               <span className="block mt-1.5">
-                Assign from available targets, clusters, or SHGs.
+                Assign from available {assignmentEntity.plural}.
               </span>
               <span className="block mt-2 text-foreground/90">
-                You are assigning to:{" "}
-                <span className="font-medium text-foreground">{activeMeta.tabLabel}</span>.
+                This survey can be assigned to{" "}
+                <span className="font-medium text-foreground">{assignmentEntity.plural}</span>.
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -288,32 +335,33 @@ export function SurveyAssignTargetsDialog({
               </div>
             ) : (
               <>
-                <div className="rounded-lg border border-border/70 bg-muted/25 p-1">
-                  <div className="grid grid-cols-3 gap-1">
-                  {(Object.keys(BUCKET_META) as AssignmentBucket[]).map((bucket) => {
-                    const meta = BUCKET_META[bucket];
-                    const count = bucketData[bucket].available.length + bucketData[bucket].assigned.length;
-                    const active = bucket === activeBucket;
-                    return (
-                      <Button
-                        key={bucket}
-                        type="button"
-                        size="sm"
-                        variant={active ? "default" : "ghost"}
-                        onClick={() => setActiveBucket(bucket)}
-                        aria-pressed={active}
-                        className={`h-9 justify-between rounded-md px-2.5 transition-colors ${
-                          active
-                            ? ""
-                            : "border border-transparent text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
-                        }`}
-                      >
-                        <span>{meta.tabLabel}</span>
-                        <span className="text-xs opacity-80">{count}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="assign-target-search">Search</Label>
+                    <Input
+                      id="assign-target-search"
+                      placeholder={`Search ${assignmentEntity.plural}...`}
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="assign-target-facilitator">Facilitator</Label>
+                    <SelectField
+                      id="assign-target-facilitator"
+                      value={selectedFacilitatorId}
+                      placeholder={
+                        facilitatorsQuery.isLoading
+                          ? "Loading facilitators..."
+                          : "All facilitators"
+                      }
+                      options={facilitatorOptions}
+                      onValueChange={setSelectedFacilitatorId}
+                      className={inputClass}
+                      disabled={facilitatorsQuery.isLoading}
+                    />
+                  </div>
                 </div>
                 <div>
                   <div className="mb-2 flex items-center justify-between">
@@ -324,7 +372,7 @@ export function SurveyAssignTargetsDialog({
                   </div>
                   {assigned.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-                      {`No ${activeMeta.searchLabel} assigned yet.`}
+                      {`No ${assignmentEntity.plural} assigned yet.`}
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-52 overflow-y-auto pr-0.5">
@@ -332,9 +380,9 @@ export function SurveyAssignTargetsDialog({
                         <TargetRow
                           key={row.id}
                           row={row}
-                          onRemove={(item) => setPendingRemove({ row: item, bucket: activeBucket })}
-                          isRemoving={unassignMutation.isPending && pendingRemove?.row.id === row.id}
-                          removeLabel={activeMeta.singular}
+                          onRemove={(item) => setPendingRemove(item)}
+                          isRemoving={unassignMutation.isPending && pendingRemove?.id === row.id}
+                          removeLabel={assignmentEntity.singular}
                         />
                       ))}
                     </div>
@@ -348,25 +396,13 @@ export function SurveyAssignTargetsDialog({
                     </p>
                     <Badge variant="secondary">{available.length}</Badge>
                   </div>
-                  <Label htmlFor="assign-target-search" className="sr-only">
-                    Search available
-                  </Label>
-                  <Input
-                    id="assign-target-search"
-                    placeholder={`Search available ${activeMeta.searchLabel}…`}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className={inputClass}
-                  />
-                  <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
-                    {filteredAvailable.length === 0 ? (
+                  <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
+                    {available.length === 0 ? (
                       <p className="px-3 py-6 text-sm text-center text-muted-foreground">
-                        {search.trim()
-                          ? "No matches."
-                          : `No additional ${activeMeta.searchLabel} available.`}
+                        {`No additional ${assignmentEntity.plural} available for current filters.`}
                       </p>
                     ) : (
-                      filteredAvailable.map((row) => (
+                      available.map((row) => (
                         <label
                           key={row.id}
                           className="flex items-start gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/40 transition-colors"
@@ -389,7 +425,7 @@ export function SurveyAssignTargetsDialog({
                   </div>
                   {selectedIds.size > 0 ? (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {selectedIds.size} selected from {activeMeta.tabLabel}
+                      {selectedIds.size} selected
                     </p>
                   ) : null}
                 </div>
@@ -417,7 +453,9 @@ export function SurveyAssignTargetsDialog({
                   Assigning…
                 </>
               ) : (
-                `Assign ${activeMeta.tabLabel}${selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}`
+                `Assign ${assignmentEntity.plural}${
+                  selectedIds.size > 0 ? ` (${selectedIds.size})` : ""
+                }`
               )}
             </Button>
           </DialogFooter>
@@ -429,6 +467,7 @@ export function SurveyAssignTargetsDialog({
         onOpenChange={(open) => { if (!open) setPendingRemove(null); }}
         onConfirm={() => void handleConfirmRemove()}
         isPending={unassignMutation.isPending}
+        entityLabel={assignmentEntity.singular}
       />
     </>
   );

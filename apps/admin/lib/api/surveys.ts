@@ -305,12 +305,25 @@ export type SurveyAssignmentTargetsResponse = BaseApiResponse & {
   assignmentData: SurveyAssignmentData;
 };
 
+export type SurveyAssignmentTargetsQuery = {
+  search?: string;
+  facilitatorId?: string;
+};
+
 export async function getSurveyAssignmentTargets(
-  surveyId: string
+  surveyId: string,
+  query: SurveyAssignmentTargetsQuery = {}
 ): Promise<SurveyAssignmentTargetsResponse> {
-  const response = await fetch(`/api/survey/${surveyId}/assignment-targets`, {
-    cache: "no-store",
+  const qs = buildQueryString({
+    search: query.search?.trim() || undefined,
+    "facilitator-id": query.facilitatorId,
   });
+  const response = await fetch(
+    `/api/survey/${surveyId}/assignment-targets${qs ? `?${qs}` : ""}`,
+    {
+    cache: "no-store",
+    }
+  );
   return parseResponse<SurveyAssignmentTargetsResponse>(response);
 }
 

@@ -8,8 +8,18 @@ import { inputClass } from "@/components/base-data/shared";
 import {
   GENDER_OPTIONS,
   MARITAL_OPTIONS,
+  MIN_MEMBER_AGE_YEARS,
   STATUS_OPTIONS,
+  getMaxDobDate,
 } from "@/components/community/members/constants";
+
+function RequiredStar() {
+  return (
+    <span className="ml-0.5 text-base leading-none text-destructive" aria-hidden="true">
+      *
+    </span>
+  );
+}
 
 export type MemberFormFieldsProps = {
   firstName: string;
@@ -20,20 +30,23 @@ export type MemberFormFieldsProps = {
   setContactPhone: (v: string) => void;
   dateOfBirth: string;
   setDateOfBirth: (v: string) => void;
+  dateJoinedShg: string;
+  setDateJoinedShg: (v: string) => void;
   fan: string;
   setFan: (v: string) => void;
   gender: string;
   setGender: (v: string) => void;
   maritalStatus: string;
   setMaritalStatus: (v: string) => void;
-  religionId: string;
-  setReligionId: (v: string) => void;
+  religionId?: string;
+  setReligionId?: (v: string) => void;
   status: string;
   setStatus: (v: string) => void;
   selfHelpGroupId: string;
   setSelfHelpGroupId: (v: string) => void;
-  religionOptions: { value: string; label: string }[];
+  religionOptions?: { value: string; label: string }[];
   shgOptions: { value: string; label: string }[];
+  showReligionField?: boolean;
   nationalIdSection?: ReactNode;
 };
 
@@ -46,6 +59,8 @@ export function MemberFormFields({
   setContactPhone,
   dateOfBirth,
   setDateOfBirth,
+  dateJoinedShg,
+  setDateJoinedShg,
   fan,
   setFan,
   gender,
@@ -60,8 +75,11 @@ export function MemberFormFields({
   setSelfHelpGroupId,
   religionOptions,
   shgOptions,
+  showReligionField = true,
   nationalIdSection,
 }: MemberFormFieldsProps) {
+  const maxDobDate = getMaxDobDate();
+
   return (
     <>
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8">
@@ -69,7 +87,10 @@ export function MemberFormFields({
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
           <div className="flex flex-col gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="member-first-name">First name</Label>
+              <Label htmlFor="member-first-name">
+                First name
+                <RequiredStar />
+              </Label>
               <Input
                 id="member-first-name"
                 placeholder="First name"
@@ -81,7 +102,10 @@ export function MemberFormFields({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-last-name">Last name</Label>
+              <Label htmlFor="member-last-name">
+                Last name
+                <RequiredStar />
+              </Label>
               <Input
                 id="member-last-name"
                 placeholder="Last name"
@@ -105,14 +129,22 @@ export function MemberFormFields({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-dob">Date of birth</Label>
+            <Label htmlFor="member-dob">
+              Date of birth
+              <RequiredStar />
+            </Label>
             <Input
               id="member-dob"
               type="date"
               className={inputClass}
               value={dateOfBirth}
               onChange={(e) => setDateOfBirth(e.target.value)}
+              max={maxDobDate}
+              required
             />
+            <p className="text-xs text-muted-foreground">
+              Member must be at least {MIN_MEMBER_AGE_YEARS} years old.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="member-fan">FAN</Label>
@@ -124,6 +156,16 @@ export function MemberFormFields({
               className={inputClass}
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="member-date-joined-shg">Date joined SHG</Label>
+            <Input
+              id="member-date-joined-shg"
+              type="date"
+              className={inputClass}
+              value={dateJoinedShg}
+              onChange={(e) => setDateJoinedShg(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -131,7 +173,10 @@ export function MemberFormFields({
             Classifications
           </p>
           <div className="space-y-1.5">
-            <Label htmlFor="member-gender">Gender</Label>
+            <Label htmlFor="member-gender">
+              Gender
+              <RequiredStar />
+            </Label>
             <SelectField
               id="member-gender"
               value={gender}
@@ -141,7 +186,10 @@ export function MemberFormFields({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-marital">Marital status</Label>
+            <Label htmlFor="member-marital">
+              Marital status
+              <RequiredStar />
+            </Label>
             <SelectField
               id="member-marital"
               value={maritalStatus}
@@ -150,18 +198,23 @@ export function MemberFormFields({
               onValueChange={setMaritalStatus}
             />
           </div>
+          {showReligionField ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="member-religion">Religion</Label>
+              <SelectField
+                id="member-religion"
+                value={religionId ?? ""}
+                placeholder="Religion"
+                options={religionOptions ?? []}
+                onValueChange={setReligionId ?? (() => {})}
+              />
+            </div>
+          ) : null}
           <div className="space-y-1.5">
-            <Label htmlFor="member-religion">Religion</Label>
-            <SelectField
-              id="member-religion"
-              value={religionId}
-              placeholder="Religion"
-              options={religionOptions}
-              onValueChange={setReligionId}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="member-status">Status</Label>
+            <Label htmlFor="member-status">
+              Status
+              <RequiredStar />
+            </Label>
             <SelectField
               id="member-status"
               value={status}
@@ -171,7 +224,10 @@ export function MemberFormFields({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-shg">Self-help group</Label>
+            <Label htmlFor="member-shg">
+              Self-help group
+              <RequiredStar />
+            </Label>
             <SelectField
               id="member-shg"
               value={selfHelpGroupId}

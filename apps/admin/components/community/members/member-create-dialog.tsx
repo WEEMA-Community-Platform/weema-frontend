@@ -15,6 +15,10 @@ import { Label } from "@/components/ui/label";
 import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
 import { NationalIdDropzone } from "@/components/community/members/national-id-dropzone";
+import {
+  MIN_MEMBER_AGE_YEARS,
+  isAtLeastAge,
+} from "@/components/community/members/constants";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
 
@@ -23,7 +27,6 @@ type CreateMutation = UseMutationResult<BaseApiResponse, Error, FormData, unknow
 type MemberCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  religionOptions: { value: string; label: string }[];
   shgOptions: { value: string; label: string }[];
   createMutation: CreateMutation;
   isSubmitting: boolean;
@@ -37,8 +40,8 @@ function emptyForm() {
     contactPhone: "",
     gender: "",
     dateOfBirth: "",
+    dateJoinedShg: "",
     maritalStatus: "",
-    religionId: "",
     status: "",
     selfHelpGroupId: "",
     fan: "",
@@ -49,7 +52,6 @@ function emptyForm() {
 export function MemberCreateDialog({
   open,
   onOpenChange,
-  religionOptions,
   shgOptions,
   createMutation,
   isSubmitting,
@@ -60,8 +62,8 @@ export function MemberCreateDialog({
   const [contactPhone, setContactPhone] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateJoinedShg, setDateJoinedShg] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
-  const [religionId, setReligionId] = useState("");
   const [status, setStatus] = useState("");
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
@@ -74,8 +76,8 @@ export function MemberCreateDialog({
     setContactPhone(e.contactPhone);
     setGender(e.gender);
     setDateOfBirth(e.dateOfBirth);
+    setDateJoinedShg(e.dateJoinedShg);
     setMaritalStatus(e.maritalStatus);
-    setReligionId(e.religionId);
     setStatus(e.status);
     setSelfHelpGroupId(e.selfHelpGroupId);
     setFan(e.fan);
@@ -118,6 +120,27 @@ export function MemberCreateDialog({
       });
       return;
     }
+    if (!maritalStatus) {
+      sileo.warning({
+        title: "Marital status",
+        description: "Select a marital status.",
+      });
+      return;
+    }
+    if (!dateOfBirth) {
+      sileo.warning({
+        title: "Date of birth",
+        description: "Date of birth is required.",
+      });
+      return;
+    }
+    if (!isAtLeastAge(dateOfBirth, MIN_MEMBER_AGE_YEARS)) {
+      sileo.warning({
+        title: "Invalid age",
+        description: `Member must be at least ${MIN_MEMBER_AGE_YEARS} years old.`,
+      });
+      return;
+    }
     if (!selfHelpGroupId) {
       sileo.warning({
         title: "Self-help group",
@@ -130,9 +153,9 @@ export function MemberCreateDialog({
     fd.append("lastName", lastName.trim());
     if (contactPhone.trim()) fd.append("contactPhone", contactPhone.trim());
     fd.append("gender", gender);
-    if (dateOfBirth) fd.append("dateOfBirth", dateOfBirth);
-    if (maritalStatus) fd.append("maritalStatus", maritalStatus);
-    if (religionId) fd.append("religionId", religionId);
+    fd.append("dateOfBirth", dateOfBirth);
+    if (dateJoinedShg) fd.append("dateJoinedShg", dateJoinedShg);
+    fd.append("maritalStatus", maritalStatus);
     fd.append("status", status);
     fd.append("selfHelpGroupId", selfHelpGroupId);
     if (fan.trim()) fd.append("fan", fan.trim());
@@ -172,20 +195,20 @@ export function MemberCreateDialog({
               setContactPhone={setContactPhone}
               dateOfBirth={dateOfBirth}
               setDateOfBirth={setDateOfBirth}
+              dateJoinedShg={dateJoinedShg}
+              setDateJoinedShg={setDateJoinedShg}
               fan={fan}
               setFan={setFan}
               gender={gender}
               setGender={setGender}
               maritalStatus={maritalStatus}
               setMaritalStatus={setMaritalStatus}
-              religionId={religionId}
-              setReligionId={setReligionId}
               status={status}
               setStatus={setStatus}
               selfHelpGroupId={selfHelpGroupId}
               setSelfHelpGroupId={setSelfHelpGroupId}
-              religionOptions={religionOptions}
               shgOptions={shgOptions}
+              showReligionField={false}
               nationalIdSection={
                 <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-4">
                   <Label className="text-foreground">National ID (optional)</Label>

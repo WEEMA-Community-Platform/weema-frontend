@@ -35,6 +35,21 @@ import {
   type SHGUpdatePayload,
 } from "@/lib/api/community";
 
+function invalidateCommunityQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["federations"] });
+  queryClient.invalidateQueries({ queryKey: ["federation"] });
+  queryClient.invalidateQueries({ queryKey: ["clusters"] });
+  queryClient.invalidateQueries({ queryKey: ["cluster"] });
+  queryClient.invalidateQueries({ queryKey: ["shgs"] });
+  queryClient.invalidateQueries({ queryKey: ["shg"] });
+}
+
+function invalidateSurveyDependencyQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  // Survey target assignment and pending-target tables depend on community entities.
+  queryClient.invalidateQueries({ queryKey: ["survey"] });
+  queryClient.invalidateQueries({ queryKey: ["survey-assignment"] });
+}
+
 // ─── Detail (by-ID) hooks ─────────────────────────────────────────────────────
 
 export function useFederationDetailQuery(id: string | null) {
@@ -75,7 +90,8 @@ export function useCreateFederationMutation() {
   return useMutation({
     mutationFn: (payload: FederationPayload) => createFederation(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -86,7 +102,8 @@ export function useUpdateFederationMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: FederationPayload }) =>
       updateFederation(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -96,8 +113,8 @@ export function useDeleteFederationMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteFederation(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -113,8 +130,8 @@ export function useAddClustersToFederationMutation() {
       clusterIds: string[];
     }) => addClustersToFederation(federationId, clusterIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -130,8 +147,8 @@ export function useRemoveClusterFromFederationMutation() {
       clusterId: string;
     }) => removeClusterFromFederation(federationId, clusterId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -150,7 +167,8 @@ export function useCreateClusterMutation() {
   return useMutation({
     mutationFn: (payload: ClusterPayload) => createCluster(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -161,8 +179,8 @@ export function useUpdateClusterMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: ClusterPayload }) =>
       updateCluster(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -172,9 +190,8 @@ export function useDeleteClusterMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteCluster(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
-      queryClient.invalidateQueries({ queryKey: ["federations"] });
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -193,7 +210,8 @@ export function useCreateSHGMutation() {
   return useMutation({
     mutationFn: (payload: SHGPayload) => createSHG(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -204,8 +222,8 @@ export function useUpdateSHGMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: SHGUpdatePayload }) =>
       updateSHG(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -215,8 +233,8 @@ export function useDeleteSHGMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteSHG(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -227,8 +245,8 @@ export function useAddSHGsToClusterMutation() {
     mutationFn: ({ clusterId, shgIds }: { clusterId: string; shgIds: string[] }) =>
       addSHGsToCluster(clusterId, shgIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -239,8 +257,8 @@ export function useRemoveSHGFromClusterMutation() {
     mutationFn: ({ clusterId, shgId }: { clusterId: string; shgId: string }) =>
       removeSHGFromCluster(clusterId, shgId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clusters"] });
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -250,8 +268,9 @@ export function useLockSHGMutation() {
   return useMutation({
     mutationFn: (id: string) => lockSHG(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["shg", id] });
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -261,8 +280,9 @@ export function useUnlockSHGMutation() {
   return useMutation({
     mutationFn: (id: string) => unlockSHG(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["shg", id] });
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -272,7 +292,8 @@ export function useBulkLockSHGsMutation() {
   return useMutation({
     mutationFn: (ids: string[]) => bulkLockSHGs(ids),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }
@@ -282,7 +303,8 @@ export function useBulkUnlockSHGsMutation() {
   return useMutation({
     mutationFn: (ids: string[]) => bulkUnlockSHGs(ids),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shgs"] });
+      invalidateCommunityQueries(queryClient);
+      invalidateSurveyDependencyQueries(queryClient);
     },
   });
 }

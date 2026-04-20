@@ -57,7 +57,11 @@ export function Providers({ children }: PropsWithChildren) {
           staleTime: 15 * 60 * 1000,
           gcTime: 45 * 60 * 1000,
           refetchOnWindowFocus: false,
-          refetchOnMount: false,
+          /**
+           * Required for cross-section forms: after invalidation, remounting a query
+           * (e.g. opening SHG form after adding woreda) should refetch fresh options.
+           */
+          refetchOnMount: true,
           retry: 1,
         },
         mutations: {

@@ -15,6 +15,7 @@ export type Member = {
   selfHelpGroupId: string;
   selfHelpGroupName: string;
   fan: string | null;
+  dateJoinedShg: string | null;
   locked: boolean;
 };
 
@@ -57,6 +58,7 @@ export type MemberPatchPayload = {
   status?: string;
   selfHelpGroupId?: string;
   fan?: string | null;
+  dateJoinedShg?: string | null;
 };
 
 function buildQueryString(query: Record<string, string | number | undefined>) {

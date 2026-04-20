@@ -17,6 +17,19 @@ import {
   type MemberPatchPayload,
 } from "@/lib/api/members";
 
+function invalidateMemberQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["members"] });
+  queryClient.invalidateQueries({ queryKey: ["member"] });
+}
+
+function invalidateMemberDependencyQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  // SHG cards show member counts; survey targeting can depend on members.
+  queryClient.invalidateQueries({ queryKey: ["shgs"] });
+  queryClient.invalidateQueries({ queryKey: ["shg"] });
+  queryClient.invalidateQueries({ queryKey: ["survey"] });
+  queryClient.invalidateQueries({ queryKey: ["survey-assignment"] });
+}
+
 export function useMembersQuery(query: MemberListQuery = {}) {
   return useQuery({
     queryKey: ["members", query],
@@ -42,7 +55,8 @@ export function useCreateMemberMutation() {
   return useMutation({
     mutationFn: (formData: FormData) => createMember(formData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }
@@ -53,7 +67,8 @@ export function useUpdateMemberMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: MemberPatchPayload }) =>
       updateMember(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }
@@ -63,7 +78,8 @@ export function useDeleteMemberMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteMember(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }
@@ -74,7 +90,7 @@ export function useUploadMemberNationalIdMutation() {
     mutationFn: ({ memberId, file }: { memberId: string; file: File }) =>
       uploadMemberNationalId(memberId, file),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["member", variables.memberId] });
     },
   });
@@ -85,8 +101,9 @@ export function useLockMemberMutation() {
   return useMutation({
     mutationFn: (id: string) => lockMember(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["member", id] });
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }
@@ -96,8 +113,9 @@ export function useUnlockMemberMutation() {
   return useMutation({
     mutationFn: (id: string) => unlockMember(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["member", id] });
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }
@@ -107,7 +125,8 @@ export function useBulkLockMembersMutation() {
   return useMutation({
     mutationFn: (ids: string[]) => bulkLockMembers(ids),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }
@@ -117,7 +136,8 @@ export function useBulkUnlockMembersMutation() {
   return useMutation({
     mutationFn: (ids: string[]) => bulkUnlockMembers(ids),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
+      invalidateMemberQueries(queryClient);
+      invalidateMemberDependencyQueries(queryClient);
     },
   });
 }

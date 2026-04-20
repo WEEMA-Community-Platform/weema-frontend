@@ -18,6 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
+import {
+  MIN_MEMBER_AGE_YEARS,
+  isAtLeastAge,
+} from "@/components/community/members/constants";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
 
@@ -35,6 +39,7 @@ function snapshotFromMember(m: Member) {
     contactPhone: (m.contactPhone ?? "").trim(),
     gender: m.gender,
     dateOfBirth: m.dateOfBirth ?? "",
+    dateJoinedShg: m.dateJoinedShg ?? "",
     maritalStatus: m.maritalStatus ?? "",
     religionId: m.religionId ?? "",
     status: m.status,
@@ -71,6 +76,7 @@ export function MemberEditDialog({
   const [contactPhone, setContactPhone] = useState("");
   const [gender, setGender] = useState("MALE");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateJoinedShg, setDateJoinedShg] = useState("");
   const [maritalStatus, setMaritalStatus] = useState("");
   const [religionId, setReligionId] = useState("");
   const [status, setStatus] = useState<EntityStatus>("ACTIVE");
@@ -87,13 +93,14 @@ export function MemberEditDialog({
       contactPhone: contactPhone.trim(),
       gender,
       dateOfBirth,
+      dateJoinedShg,
       maritalStatus,
       religionId,
       status,
       selfHelpGroupId,
       fan: fan.trim(),
     }),
-    [firstName, lastName, contactPhone, gender, dateOfBirth, maritalStatus, religionId, status, selfHelpGroupId, fan]
+    [firstName, lastName, contactPhone, gender, dateOfBirth, dateJoinedShg, maritalStatus, religionId, status, selfHelpGroupId, fan]
   );
 
   const isEditDirty = useMemo(() => {
@@ -108,6 +115,7 @@ export function MemberEditDialog({
       setContactPhone(member.contactPhone ?? "");
       setGender(member.gender);
       setDateOfBirth(member.dateOfBirth ?? "");
+      setDateJoinedShg(member.dateJoinedShg ?? "");
       setMaritalStatus(member.maritalStatus ?? "");
       setReligionId(member.religionId ?? "");
       setStatus((member.status as EntityStatus) || "ACTIVE");
@@ -142,6 +150,20 @@ export function MemberEditDialog({
       });
       return;
     }
+    if (!dateOfBirth) {
+      sileo.warning({
+        title: "Date of birth",
+        description: "Date of birth is required.",
+      });
+      return;
+    }
+    if (!isAtLeastAge(dateOfBirth, MIN_MEMBER_AGE_YEARS)) {
+      sileo.warning({
+        title: "Invalid age",
+        description: `Member must be at least ${MIN_MEMBER_AGE_YEARS} years old.`,
+      });
+      return;
+    }
     if (!isEditDirty) return;
 
     try {
@@ -153,6 +175,7 @@ export function MemberEditDialog({
           contactPhone: contactPhone.trim() || undefined,
           gender,
           dateOfBirth: dateOfBirth || null,
+          dateJoinedShg: dateJoinedShg || null,
           maritalStatus: maritalStatus || null,
           religionId: religionId || null,
           status,
@@ -202,6 +225,8 @@ export function MemberEditDialog({
               setContactPhone={setContactPhone}
               dateOfBirth={dateOfBirth}
               setDateOfBirth={setDateOfBirth}
+              dateJoinedShg={dateJoinedShg}
+              setDateJoinedShg={setDateJoinedShg}
               fan={fan}
               setFan={setFan}
               gender={gender}

@@ -152,7 +152,6 @@ export function MemberManager() {
         key={`create-${createDialogKey}`}
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
-        religionOptions={religionOptions}
         shgOptions={shgOptions}
         createMutation={createMutation}
         isSubmitting={isSubmittingCreate}

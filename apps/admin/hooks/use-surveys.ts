@@ -39,6 +39,7 @@ import {
   type UpsertSubmissionAnswerPayload,
   type StartSurveySubmissionPayload,
   type UpdateSurveyPayload,
+  type SurveyAssignmentTargetsQuery,
 } from "@/lib/api/surveys";
 import type { CreateSurveyPayload } from "@/lib/survey-builder/normalize";
 
@@ -262,12 +263,13 @@ export function useCloneSurveyMutation() {
 
 export function useSurveyAssignmentTargetsQuery(
   surveyId: string | null,
+  query: SurveyAssignmentTargetsQuery = {},
   options?: { enabled?: boolean }
 ) {
   const enabled = (options?.enabled ?? true) && !!surveyId;
   return useQuery({
-    queryKey: ["survey", surveyId, "assignment-targets"],
-    queryFn: () => getSurveyAssignmentTargets(surveyId!),
+    queryKey: ["survey", surveyId, "assignment-targets", query],
+    queryFn: () => getSurveyAssignmentTargets(surveyId!, query),
     enabled,
   });
 }

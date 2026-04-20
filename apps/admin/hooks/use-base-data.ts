@@ -33,6 +33,13 @@ import {
   updateZone,
 } from "@/lib/api/base-data";
 
+function invalidateHierarchyQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["regions"] });
+  queryClient.invalidateQueries({ queryKey: ["zones"] });
+  queryClient.invalidateQueries({ queryKey: ["woredas"] });
+  queryClient.invalidateQueries({ queryKey: ["kebeles"] });
+}
+
 export function useRegionsQuery(query: PaginatedQuery = {}) {
   return useQuery({
     queryKey: ["regions", query],
@@ -73,7 +80,7 @@ export function useCreateRegionMutation() {
   return useMutation({
     mutationFn: (payload: RegionPayload) => createRegion(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["regions"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -84,8 +91,7 @@ export function useUpdateRegionMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: RegionPayload }) =>
       updateRegion(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["regions"] });
-      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -95,8 +101,7 @@ export function useDeleteRegionMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteRegion(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["regions"] });
-      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -106,7 +111,7 @@ export function useCreateZoneMutation() {
   return useMutation({
     mutationFn: (payload: ZonePayload) => createZone(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -117,7 +122,7 @@ export function useUpdateZoneMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: ZonePayload }) =>
       updateZone(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -127,7 +132,7 @@ export function useDeleteZoneMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteZone(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["zones"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -137,7 +142,7 @@ export function useCreateWoredaMutation() {
   return useMutation({
     mutationFn: (payload: WoredaPayload) => createWoreda(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["woredas"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -148,7 +153,7 @@ export function useUpdateWoredaMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: WoredaPayload }) =>
       updateWoreda(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["woredas"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -158,7 +163,7 @@ export function useDeleteWoredaMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteWoreda(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["woredas"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -199,7 +204,7 @@ export function useCreateKebeleMutation() {
   return useMutation({
     mutationFn: (payload: KebelePayload) => createKebele(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kebeles"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -210,7 +215,7 @@ export function useUpdateKebeleMutation() {
     mutationFn: ({ id, payload }: { id: string; payload: KebelePayload }) =>
       updateKebele(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kebeles"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }
@@ -220,7 +225,7 @@ export function useDeleteKebeleMutation() {
   return useMutation({
     mutationFn: (id: string) => deleteKebele(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kebeles"] });
+      invalidateHierarchyQueries(queryClient);
     },
   });
 }

@@ -97,6 +97,7 @@ export function MemberDetailDialog({
                 <MemberDetailField label="Phone" value={member.contactPhone} />
                 <MemberDetailField label="Gender" value={member.gender} />
                 <MemberDetailField label="Date of birth" value={member.dateOfBirth} />
+                <MemberDetailField label="Date joined SHG" value={member.dateJoinedShg} />
                 <MemberDetailField label="Marital status" value={member.maritalStatus} />
                 <MemberDetailField label="Religion" value={member.religionName} />
                 <MemberDetailField
