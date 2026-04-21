@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { LayersIcon, LinkIcon, UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -32,7 +33,7 @@ import {
   DataToolbar,
   PaginationRow,
   inputClass,
-  listEmptyMessage,
+  useListEmptyMessage,
 } from "@/components/base-data/shared";
 import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 import {
@@ -42,13 +43,25 @@ import {
   FederationFormDialog,
 } from "@/components/community/federation-manager-dialogs";
 
-const STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
-];
-
 
 export function FederationManager() {
+  const tPage = useTranslations("community.federation.page");
+  const tCard = useTranslations("community.federation.card");
+  const tFilters = useTranslations("community.federation.filters");
+  const tToasts = useTranslations("community.federation.toasts");
+  const tActions = useTranslations("common.actions");
+  const tStatus = useTranslations("common.states");
+  const tValidation = useTranslations("common.validation");
+  const tEntity = useTranslations("listEmpty.entity");
+
+  const STATUS_OPTIONS = useMemo(
+    () => [
+      { value: "ACTIVE", label: tStatus("active") },
+      { value: "INACTIVE", label: tStatus("inactive") },
+    ],
+    [tStatus]
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [appliedFilterStatus, setAppliedFilterStatus] = useState("");
@@ -87,44 +100,45 @@ export function FederationManager() {
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim()) { sileo.warning({ title: "Missing name", description: "Federation name is required." }); return; }
-    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
+    if (!name.trim()) { sileo.warning({ title: tToasts("missingNameTitle"), description: tToasts("missingNameMessage") }); return; }
+    if (!status) { sileo.warning({ title: tToasts("missingStatusTitle"), description: tToasts("missingStatusMessage") }); return; }
     const managerId = currentUserData?.user?.id;
     try {
       if (editingFederation) {
         const result = await updateMutation.mutateAsync({ id: editingFederation.id, payload: { name: name.trim(), description: description.trim(), location: location.trim(), status, ...(managerId ? { managerId } : {}) } });
-        sileo.success({ title: "Federation updated", description: result.message });
+        sileo.success({ title: tToasts("updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({ name: name.trim(), description: description.trim(), location: location.trim(), status, ...(managerId ? { managerId } : {}) });
-        sileo.success({ title: "Federation added", description: result.message });
+        sileo.success({ title: tToasts("addedTitle"), description: result.message });
       }
       setPage(1); setIsFormOpen(false); resetForm();
     } catch (error) {
-      sileo.error({ title: "Could not save federation", description: error instanceof Error ? error.message : "Unexpected error" });
+      sileo.error({ title: tToasts("saveErrorTitle"), description: error instanceof Error ? error.message : tValidation("unexpectedError") });
     }
   };
 
   const federations = federationsQuery.data?.federations ?? [];
   const hasSearch = Boolean(searchQuery.trim());
   const hasFilters = Boolean(appliedFilterStatus || appliedFilterLocation.trim());
+  const listEmptyMessage = useListEmptyMessage();
   const emptyMessage = listEmptyMessage({
-    entityPlural: "federations",
+    entityPlural: tEntity("federations"),
     hasSearch,
     hasFilters,
-    emptyCatalogHint: "No federations yet. Add your first federation to get started.",
+    emptyCatalogHint: tPage("emptyHint"),
   });
 
   return (
     <div className="space-y-4">
       <DataToolbar
-        searchPlaceholder="Search federations"
+        searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
-        addLabel="Add federation"
+        addLabel={tPage("addButton")}
         showFilterButton
         onOpenFilters={() => setIsFilterOpen(true)}
-        hasActiveFilters={Boolean(appliedFilterStatus || appliedFilterLocation.trim())}
+        hasActiveFilters={hasFilters}
       />
 
       {federationsQuery.isLoading ? (
@@ -132,10 +146,10 @@ export function FederationManager() {
       ) : federationsQuery.isError ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            {federationsQuery.error instanceof Error ? federationsQuery.error.message : "Failed to load federations."}
+            {federationsQuery.error instanceof Error ? federationsQuery.error.message : tPage("loadError")}
           </p>
           <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => federationsQuery.refetch()}>
-            Retry
+            {tActions("retry")}
           </Button>
         </div>
       ) : federations.length === 0 ? (
@@ -154,15 +168,17 @@ export function FederationManager() {
               onDelete={() => setPendingDelete(f)}
               extraMenuItems={
                 <DropdownMenuItem className="text-[12px]" onClick={() => setAssigningFederation(f)}>
-                  <LinkIcon />Assign clusters
+                  <LinkIcon />{tPage("assignClusters")}
                 </DropdownMenuItem>
               }
             >
-              <CardMetaRow icon={UserIcon} label="Manager">
-                {f.managerName ?? "No manager"}
+              <CardMetaRow icon={UserIcon} label={tCard("manager")}>
+                {f.managerName ?? tCard("noManager")}
               </CardMetaRow>
-              <CardMetaRow icon={LayersIcon} label="Clusters">
-                {f.clusterCount} {f.clusterCount === 1 ? "cluster" : "clusters"}
+              <CardMetaRow icon={LayersIcon} label={tCard("clusters")}>
+                {f.clusterCount === 1
+                  ? tCard("clusterOne", { count: f.clusterCount })
+                  : tCard("clusterOther", { count: f.clusterCount })}
               </CardMetaRow>
             </CommunityCard>
           ))}
@@ -191,18 +207,18 @@ export function FederationManager() {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Filter federations</DialogTitle>
-            <DialogDescription>Filter by status, location, or both. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogTitle>{tFilters("title")}</DialogTitle>
+            <DialogDescription>{tFilters("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 px-5 pb-4">
             <SelectField
               value={draftFilterStatus}
-              placeholder="All statuses"
+              placeholder={tFilters("statusAll")}
               options={STATUS_OPTIONS}
               onValueChange={setDraftFilterStatus}
             />
             <Input
-              placeholder="Location contains"
+              placeholder={tFilters("locationPlaceholder")}
               value={draftFilterLocation}
               onChange={(e) => setDraftFilterLocation(e.target.value)}
               className={inputClass}
@@ -222,7 +238,7 @@ export function FederationManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Clear filters
+              {tActions("clear")}
             </Button>
             <Button
               type="button"
@@ -234,7 +250,7 @@ export function FederationManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Apply filters
+              {tActions("apply")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -274,12 +290,12 @@ export function FederationManager() {
           if (!pendingDelete) return;
           try {
             const result = await deleteMutation.mutateAsync(pendingDelete.id);
-            sileo.success({ title: "Federation deleted", description: result.message });
+            sileo.success({ title: tToasts("deletedTitle"), description: result.message });
             setPendingDelete(null);
           } catch (error) {
             sileo.error({
-              title: "Could not delete federation",
-              description: error instanceof Error ? error.message : "Unexpected error",
+              title: tToasts("deleteErrorTitle"),
+              description: error instanceof Error ? error.message : tValidation("unexpectedError"),
             });
           }
         }}

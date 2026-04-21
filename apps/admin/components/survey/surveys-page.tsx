@@ -13,6 +13,7 @@ import {
   TextIcon,
   RefreshCcwDot,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,6 @@ import {
 import {
   DataToolbar,
   PaginationRow,
-  listEmptyMessage,
 } from "@/components/base-data/shared";
 import {
   SurveyFiltersDialog,
@@ -53,11 +53,12 @@ import {
 const PAGE_SIZE = 10;
 
 function SurveyStatusBadge({ status }: { status?: string }) {
+  const tBadge = useTranslations("survey.list.statusBadge");
   const normalized = (status ?? "").toUpperCase();
   if (normalized === "PUBLISHED") {
     return (
       <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-        Published
+        {tBadge("published")}
       </Badge>
     );
   }
@@ -65,7 +66,7 @@ function SurveyStatusBadge({ status }: { status?: string }) {
   if (normalized === "DRAFT") {
     return (
       <Badge variant="secondary" className="bg-muted text-muted-foreground">
-        Draft
+        {tBadge("draft")}
       </Badge>
     );
   }
@@ -75,6 +76,16 @@ function SurveyStatusBadge({ status }: { status?: string }) {
 
 export function SurveysPage() {
   const router = useRouter();
+  const tList = useTranslations("survey.list");
+  const tCard = useTranslations("survey.list.card");
+  const tActions = useTranslations("common.actions");
+  const tListEmpty = useTranslations("listEmpty");
+  const tListEmptyEntity = useTranslations("listEmpty.entity");
+  const tDelete = useTranslations("survey.list.delete");
+  const tPublish = useTranslations("survey.list.publish");
+  const tListActions = useTranslations("survey.list.actions");
+  const tValidation = useTranslations("common.validation");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -101,6 +112,8 @@ export function SurveysPage() {
   const [assignTargetsOpen, setAssignTargetsOpen] = useState(false);
   /** Defer clearing survey payload until after dialog exit animation (Dialog overlay/content use duration-150). */
   const assignTargetsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const untitledLabel = tList("untitled");
 
   const openAssignTargets = (payload: { id: string; title: string }) => {
     if (assignTargetsCloseTimerRef.current) {
@@ -168,12 +181,19 @@ export function SurveysPage() {
   };
 
   const hasSearch = Boolean(searchQuery.trim());
-  const emptyMessage = listEmptyMessage({
-    entityPlural: "surveys",
-    hasSearch,
-    hasFilters: hasActiveFilters,
-    emptyCatalogHint: "No surveys yet. Add your first survey to get started.",
-  });
+  const entityPlural = tListEmptyEntity("surveys");
+  const emptyMessage = (() => {
+    if (hasSearch && hasActiveFilters) {
+      return tListEmpty("searchAndFilters", { entity: entityPlural });
+    }
+    if (hasSearch) {
+      return tListEmpty("searchOnly", { entity: entityPlural });
+    }
+    if (hasActiveFilters) {
+      return tListEmpty("filtersOnly", { entity: entityPlural });
+    }
+    return tList("emptyCatalogHint");
+  })();
 
   /** After delete, refetch and clamp page so we never sit past the last page or on an empty page. */
   const reconcilePageAfterDelete = async () => {
@@ -190,14 +210,14 @@ export function SurveysPage() {
   return (
     <div className="space-y-4">
       <DataToolbar
-        searchPlaceholder="Search surveys"
+        searchPlaceholder={tList("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(value) => {
           setSearchQuery(value);
           setPage(1);
         }}
         onAdd={() => router.push("/survey/builder")}
-        addLabel="Add Survey"
+        addLabel={tList("addButton")}
         onOpenFilters={() => setIsFilterOpen(true)}
         showFilterButton
         hasActiveFilters={hasActiveFilters}
@@ -210,7 +230,7 @@ export function SurveysPage() {
           <p className="text-sm text-muted-foreground">
             {surveysQuery.error instanceof Error
               ? surveysQuery.error.message
-              : "Failed to load surveys."}
+              : tList("loadError")}
           </p>
           <Button
             type="button"
@@ -219,7 +239,7 @@ export function SurveysPage() {
             className="mt-4"
             onClick={() => surveysQuery.refetch()}
           >
-            Retry
+            {tActions("retry")}
           </Button>
         </div>
       ) : surveys.length === 0 ? (
@@ -230,6 +250,8 @@ export function SurveysPage() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {surveys.map((survey) => {
             const statusUpper = (survey.status ?? "").toUpperCase();
+            const surveyTitle = survey.title || untitledLabel;
+            const questions = survey.totalQuestions ?? 0;
             /** Assignment uses the survey’s target type (MEMBER → SHGs, etc.); it is not tied to publish status. */
             const extraMenuItems = (
               <>
@@ -239,12 +261,12 @@ export function SurveysPage() {
                     onClick={() =>
                       setPendingPublishSurvey({
                         id: survey.id,
-                        title: survey.title || "Untitled survey",
+                        title: surveyTitle,
                       })
                     }
                   >
                     <SendHorizonalIcon className="size-4" />
-                    Publish survey
+                    {tListActions("publish")}
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuItem
@@ -252,13 +274,13 @@ export function SurveysPage() {
                   onClick={() =>
                     setCloneSurveyTarget({
                       id: survey.id,
-                      title: survey.title || "Untitled survey",
+                      title: surveyTitle,
                       description: survey.description ?? "",
                     })
                   }
                 >
                   <CopyIcon className="size-4" />
-                  Clone survey
+                  {tListActions("clone")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
@@ -271,67 +293,71 @@ export function SurveysPage() {
                   }}
                 >
                   <LanguagesIcon className="size-4" />
-                  Translate survey
+                  {tListActions("translate")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
                   onClick={() =>
                     openAssignTargets({
                       id: survey.id,
-                      title: survey.title || "Untitled survey",
+                      title: surveyTitle,
                     })
                   }
                 >
                   <Link2Icon className="size-4" />
-                  Assign targets
+                  {tListActions("assign")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
                   onClick={() =>
                     router.push(
                       `/survey/${survey.id}/submissions?surveyTitle=${encodeURIComponent(
-                        survey.title || "Untitled survey"
+                        surveyTitle
                       )}&targetType=${encodeURIComponent(survey.targetType || "")}`
                     )
                   }
                 >
                   <ClipboardListIcon className="size-4" />
-                  View submission
+                  {tListActions("viewSubmission")}
                 </DropdownMenuItem>
               </>
             );
             return (
             <CommunityCard
               key={survey.id}
-              title={survey.title || "Untitled survey"}
+              title={surveyTitle}
               status={survey.isActive ? "ACTIVE" : "INACTIVE"}
               onView={() => router.push(`/survey/builder?id=${survey.id}`)}
               onEdit={() => router.push(`/survey/builder?id=${survey.id}`)}
               onDelete={() =>
                 setPendingDeleteSurvey({
                   id: survey.id,
-                  title: survey.title || "Untitled survey",
+                  title: surveyTitle,
                 })
               }
               showEditAction={false}
-              viewActionLabel="Open survey"
+              viewActionLabel={tList("openAction")}
               extraMenuItems={extraMenuItems}
             >
-              <CardMetaRow icon={LayersIcon} label="Target">
+              <CardMetaRow icon={LayersIcon} label={tCard("target")}>
                 {survey.targetType || "-"}
               </CardMetaRow>
-              <CardMetaRow icon={LanguagesIcon} label="Language">
-                {survey.language === "am" ? "Amharic" : "English"}
+              <CardMetaRow icon={LanguagesIcon} label={tList("languageLabel")}>
+                {survey.language === "am"
+                  ? tList("languageAmharic")
+                  : tList("languageEnglish")}
               </CardMetaRow>
-              <CardMetaRow icon={TextIcon} label="Questions">
-                {survey.totalQuestions ?? 0} question{survey.totalQuestions === 1 ? "" : "s"}
+              <CardMetaRow icon={TextIcon} label={tCard("questions")}>
+                {questions === 1
+                  ? tCard("questionsOne", { count: questions })
+                  : tCard("questionsOther", { count: questions })}
               </CardMetaRow>
 
-              <CardMetaRow icon={RefreshCcwDot} label="Version">
+              <CardMetaRow icon={RefreshCcwDot} label={tCard("version")}>
                 {survey.version || "-"}
               </CardMetaRow>
-              
-              <CardMetaRow icon={CircleCheckBigIcon} label="Status">
+
+              <CardMetaRow icon={CircleCheckBigIcon} label={tCard("status")}>
                 <SurveyStatusBadge status={survey.status} />
               </CardMetaRow>
             </CommunityCard>
@@ -386,18 +412,19 @@ export function SurveysPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete survey</AlertDialogTitle>
+            <AlertDialogTitle>{tDelete("title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete{" "}
-              <span className="font-semibold text-foreground">
-                {pendingDeleteSurvey?.title}
-              </span>
-              ? This action cannot be undone.
+              {tDelete.rich("confirm", {
+                name: pendingDeleteSurvey?.title ?? "",
+                strong: (chunks) => (
+                  <span className="font-semibold text-foreground">{chunks}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancel
+              {tActions("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
@@ -407,21 +434,25 @@ export function SurveysPage() {
                 try {
                   const result = await deleteMutation.mutateAsync(pendingDeleteSurvey.id);
                   sileo.success({
-                    title: "Survey deleted",
-                    description: result.message || "Survey has been removed.",
+                    title: tDelete("toasts.deletedTitle"),
+                    description: result.message || tDelete("toasts.deletedMessage"),
                   });
                   setPendingDeleteSurvey(null);
                   await reconcilePageAfterDelete();
                 } catch (error) {
                   sileo.error({
-                    title: "Failed to delete survey",
+                    title: tDelete("toasts.errorTitle"),
                     description:
-                      error instanceof Error ? error.message : "Unexpected error",
+                      error instanceof Error
+                        ? error.message
+                        : tValidation("unexpectedError"),
                   });
                 }
               }}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete survey"}
+              {deleteMutation.isPending
+                ? tDelete("submitting")
+                : tDelete("submit")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -435,18 +466,19 @@ export function SurveysPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Publish survey</AlertDialogTitle>
+            <AlertDialogTitle>{tPublish("title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Publish{" "}
-              <span className="font-semibold text-foreground">
-                {pendingPublishSurvey?.title}
-              </span>
-              ? Published surveys should be treated as live and stable.
+              {tPublish.rich("confirm", {
+                name: pendingPublishSurvey?.title ?? "",
+                strong: (chunks) => (
+                  <span className="font-semibold text-foreground">{chunks}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={publishMutation.isPending}>
-              Cancel
+              {tActions("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={publishMutation.isPending}
@@ -457,20 +489,25 @@ export function SurveysPage() {
                     pendingPublishSurvey.id
                   );
                   sileo.success({
-                    title: "Survey published",
-                    description: result.message || "Survey is now published.",
+                    title: tPublish("toasts.publishedTitle"),
+                    description:
+                      result.message || tPublish("toasts.publishedMessage"),
                   });
                   setPendingPublishSurvey(null);
                 } catch (error) {
                   sileo.error({
-                    title: "Failed to publish survey",
+                    title: tPublish("toasts.errorTitle"),
                     description:
-                      error instanceof Error ? error.message : "Unexpected error",
+                      error instanceof Error
+                        ? error.message
+                        : tValidation("unexpectedError"),
                   });
                 }
               }}
             >
-              {publishMutation.isPending ? "Publishing..." : "Publish survey"}
+              {publishMutation.isPending
+                ? tPublish("submitting")
+                : tPublish("submit")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

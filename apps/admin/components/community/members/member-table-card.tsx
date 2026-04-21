@@ -1,8 +1,10 @@
 "use client";
 
 import { EyeIcon, LockIcon, MoreVerticalIcon, PencilIcon, Trash2Icon, UnlockIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
@@ -19,7 +21,8 @@ import {
   TableShell,
   descriptionCellClass,
 } from "@/components/base-data/shared";
-import { LockedBadge, StatusBadge } from "@/components/community/community-card";
+import { StatusBadge } from "@/components/community/community-card";
+import { GENDER_OPTIONS } from "@/components/community/members/constants";
 import type { Member } from "@/lib/api/members";
 import type { EntityStatus } from "@/lib/api/community";
 
@@ -68,16 +71,27 @@ export function MemberTableCard({
   onUnlock,
   emptyMessage,
 }: MemberTableCardProps) {
+  const tTable = useTranslations("community.members.table");
+  const tActions = useTranslations("common.actions");
+  const tMemberActions = useTranslations("community.members.actions");
+  const tEmpty = useTranslations("common.empty");
+  const tGender = useTranslations("community.members.options.gender");
+
+  const genderLabel = (raw: string) => {
+    const found = GENDER_OPTIONS.find((o) => o.value === raw);
+    return found ? tGender(found.value.toLowerCase() as "male" | "female") : raw;
+  };
+
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Members</CardTitle>
+        <CardTitle>{tTable("title")}</CardTitle>
         <DataToolbar
-          searchPlaceholder="Search name, phone, SHG, religion…"
+          searchPlaceholder={tTable("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={onSearchChange}
           onAdd={onAdd}
-          addLabel="Add member"
+          addLabel={tTable("addButton")}
           showFilterButton
           onOpenFilters={onOpenFilters}
           hasActiveFilters={hasActiveFilters}
@@ -85,7 +99,15 @@ export function MemberTableCard({
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Phone", "Self-help group", "Gender", "Status", "Locked", ""]}
+          headers={[
+            tTable("columns.name"),
+            tTable("columns.phone"),
+            tTable("columns.shg"),
+            tTable("columns.gender"),
+            tTable("columns.status"),
+            tTable("columns.locked"),
+            "",
+          ]}
           loading={isLoading}
           loadingColumnCount={7}
           isError={isError}
@@ -98,14 +120,16 @@ export function MemberTableCard({
               <TableCell className="font-medium">
                 {m.firstName} {m.lastName}
               </TableCell>
-              <TableCell className="text-muted-foreground">{m.contactPhone ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {m.contactPhone ?? tEmpty("dash")}
+              </TableCell>
               <TableCell className={descriptionCellClass}>{m.selfHelpGroupName}</TableCell>
-              <TableCell>{m.gender}</TableCell>
+              <TableCell>{genderLabel(m.gender)}</TableCell>
               <TableCell>
                 <StatusBadge status={m.status as EntityStatus} />
               </TableCell>
               <TableCell>
-                <LockedBadge locked={m.locked} />
+                <LocalLockedBadge locked={m.locked} />
               </TableCell>
               <TableCell className="w-10 text-right">
                 <DropdownMenu>
@@ -116,7 +140,7 @@ export function MemberTableCard({
                         variant="ghost"
                         size="icon"
                         className="size-8 text-muted-foreground"
-                        aria-label="Open member actions"
+                        aria-label={tTable("columns.openMenu")}
                       >
                         <MoreVerticalIcon className="size-4" />
                       </Button>
@@ -126,11 +150,11 @@ export function MemberTableCard({
                     <DropdownMenuGroup>
                       <DropdownMenuItem className="text-[12px]" onClick={() => onView(m.id)}>
                         <EyeIcon />
-                        View details
+                        {tActions("viewDetails")}
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-[12px]" onClick={() => onEdit(m)}>
                         <PencilIcon />
-                        Edit
+                        {tActions("edit")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
@@ -141,7 +165,7 @@ export function MemberTableCard({
                           onClick={() => onUnlock(m)}
                         >
                           <UnlockIcon />
-                          Unlock
+                          {tMemberActions("unlock")}
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem
@@ -149,7 +173,7 @@ export function MemberTableCard({
                           onClick={() => onLock(m)}
                         >
                           <LockIcon />
-                          Lock
+                          {tMemberActions("lock")}
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuGroup>
@@ -161,7 +185,7 @@ export function MemberTableCard({
                         onClick={() => onDelete(m)}
                       >
                         <Trash2Icon />
-                        Delete
+                        {tActions("delete")}
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </DropdownMenuContent>
@@ -182,5 +206,23 @@ export function MemberTableCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function LocalLockedBadge({ locked }: { locked: boolean }) {
+  const tLocked = useTranslations("community.members.options.locked");
+  if (locked) {
+    return (
+      <Badge className="gap-1 border-transparent bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400">
+        <LockIcon className="size-3" />
+        {tLocked("locked")}
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="gap-1 border-transparent bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+      <UnlockIcon className="size-3" />
+      {tLocked("unlocked")}
+    </Badge>
   );
 }

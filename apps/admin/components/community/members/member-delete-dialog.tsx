@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import type { Member } from "@/lib/api/members";
@@ -29,37 +30,48 @@ export function MemberDeleteDialog({
   member,
   deleteMutation,
 }: MemberDeleteDialogProps) {
+  const tDelete = useTranslations("community.members.delete");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+
   const handleDelete = async () => {
     if (!member) return;
     try {
       const result = await deleteMutation.mutateAsync(member.id);
-      sileo.success({ title: "Member deleted", description: result.message });
+      sileo.success({
+        title: tDelete("toasts.deletedTitle"),
+        description: result.message,
+      });
       onOpenChange(false);
     } catch (error) {
       sileo.error({
-        title: "Could not delete member",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tDelete("toasts.errorTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
+
+  const memberName = member ? `${member.firstName} ${member.lastName}` : "";
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete member</AlertDialogTitle>
+          <AlertDialogTitle>{tDelete("title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Delete{" "}
-            <span className="font-semibold text-foreground">
-              {member?.firstName} {member?.lastName}
-            </span>
-            ? This action cannot be undone.
+            {tDelete.rich("confirm", {
+              name: memberName,
+              strong: (chunks) => (
+                <span className="font-semibold text-foreground">{chunks}</span>
+              ),
+            })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={() => void handleDelete()}>
-            Delete member
+            {tDelete("action")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

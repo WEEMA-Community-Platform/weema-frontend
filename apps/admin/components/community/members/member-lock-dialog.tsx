@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 import { LockIcon, UnlockIcon } from "lucide-react";
 
@@ -33,28 +34,48 @@ export function MemberLockDialog({
   lockMutation,
   unlockMutation,
 }: MemberLockDialogProps) {
-  // Keep last non-null values so content doesn't flash during the exit animation.
-  const lastMember = useRef(member);
-  const lastAction = useRef(action);
-  if (member) { lastMember.current = member; lastAction.current = action; }
-  const m = lastMember.current;
-  const isLocking = lastAction.current === "lock";
+  const tLock = useTranslations("community.members.lock");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+
+  // Keep last non-null values so content doesn't flash during the exit
+  // animation. We use state (not a ref) so React 19's rules-of-refs are
+  // satisfied; the "adjust state during render" pattern is cheap because
+  // the update only runs when `member` transitions to a new non-null value.
+  const [latched, setLatched] = useState<{ member: Member; action: "lock" | "unlock" } | null>(
+    member ? { member, action } : null
+  );
+  if (member && (latched?.member !== member || latched?.action !== action)) {
+    setLatched({ member, action });
+  }
+  const m = latched?.member ?? null;
+  const isLocking = (latched?.action ?? action) === "lock";
+  const memberName = m ? `${m.firstName} ${m.lastName}` : "";
 
   const handleConfirm = async () => {
     if (!m) return;
     try {
       if (isLocking) {
         const result = await lockMutation.mutateAsync(m.id);
-        sileo.success({ title: "Member locked", description: result.message });
+        sileo.success({
+          title: tLock("toasts.lockedTitle"),
+          description: result.message,
+        });
       } else {
         const result = await unlockMutation.mutateAsync(m.id);
-        sileo.success({ title: "Member unlocked", description: result.message });
+        sileo.success({
+          title: tLock("toasts.unlockedTitle"),
+          description: result.message,
+        });
       }
       onOpenChange(false);
     } catch (error) {
       sileo.error({
-        title: isLocking ? "Could not lock member" : "Could not unlock member",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: isLocking
+          ? tLock("toasts.lockErrorTitle")
+          : tLock("toasts.unlockErrorTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -71,30 +92,21 @@ export function MemberLockDialog({
             ) : (
               <UnlockIcon className="size-4 text-amber-500" />
             )}
-            {isLocking ? "Lock member" : "Unlock member"}
+            {isLocking ? tLock("lockTitle") : tLock("unlockTitle")}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {isLocking ? (
-              <>
-                Lock{" "}
-                <span className="font-semibold text-foreground">
-                  {m?.firstName} {m?.lastName}
-                </span>
-                ? Facilitators will not be able to edit or delete this member until they are unlocked.
-              </>
-            ) : (
-              <>
-                Unlock{" "}
-                <span className="font-semibold text-foreground">
-                  {m?.firstName} {m?.lastName}
-                </span>
-                ? Facilitators will be able to edit or delete this member again.
-              </>
-            )}
+            {tLock.rich(isLocking ? "lockConfirm" : "unlockConfirm", {
+              name: memberName,
+              strong: (chunks) => (
+                <span className="font-semibold text-foreground">{chunks}</span>
+              ),
+            })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            {tActions("cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => void handleConfirm()}
             disabled={isPending}
@@ -105,11 +117,11 @@ export function MemberLockDialog({
             }
           >
             {isPending ? (
-              isLocking ? "Locking..." : "Unlocking..."
+              isLocking ? tLock("locking") : tLock("unlocking")
             ) : (
               <>
                 {isLocking ? <LockIcon className="size-4" /> : <UnlockIcon className="size-4" />}
-                {isLocking ? "Lock member" : "Unlock member"}
+                {isLocking ? tLock("lockAction") : tLock("unlockAction")}
               </>
             )}
           </AlertDialogAction>

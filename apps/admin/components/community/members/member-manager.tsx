@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import {
   useCreateMemberMutation,
@@ -14,7 +15,6 @@ import {
 import { useReligionsQuery } from "@/hooks/use-base-data";
 import { useSHGsQuery } from "@/hooks/use-community";
 import type { Member } from "@/lib/api/members";
-import { listEmptyMessage } from "@/components/base-data/shared";
 import { MemberCreateDialog } from "@/components/community/members/member-create-dialog";
 import { MemberDeleteDialog } from "@/components/community/members/member-delete-dialog";
 import { MemberDetailDialog } from "@/components/community/members/member-detail-dialog";
@@ -117,12 +117,18 @@ export function MemberManager() {
   );
 
   const hasSearch = Boolean(searchQuery.trim());
-  const emptyMessage = listEmptyMessage({
-    entityPlural: "members",
-    hasSearch,
-    hasFilters: hasActiveFilters,
-    emptyCatalogHint: "No members yet. Add a member once self-help groups exist.",
-  });
+  const tListEmpty = useTranslations("listEmpty");
+  const tListEntity = useTranslations("listEmpty.entity");
+  const tTable = useTranslations("community.members.table");
+  const entityPlural = tListEntity("members");
+  const emptyMessage =
+    hasSearch && hasActiveFilters
+      ? tListEmpty("searchAndFilters", { entity: entityPlural })
+      : hasSearch
+        ? tListEmpty("searchOnly", { entity: entityPlural })
+        : hasActiveFilters
+          ? tListEmpty("filtersOnly", { entity: entityPlural })
+          : tTable("emptyHint");
 
   const isSubmittingCreate = createMutation.isPending;
   const isSubmittingEdit = updateMutation.isPending;

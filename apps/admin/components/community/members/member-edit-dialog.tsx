@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { LockIcon, UnlockIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 
@@ -71,6 +72,11 @@ export function MemberEditDialog({
   onRequestLock,
   onRequestUnlock,
 }: MemberEditDialogProps) {
+  const t = useTranslations("community.members");
+  const tEdit = useTranslations("community.members.edit");
+  const tActions = useTranslations("community.members.actions");
+  const tCommon = useTranslations("common.validation");
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -83,6 +89,30 @@ export function MemberEditDialog({
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
   const [editFormSynced, setEditFormSynced] = useState(false);
+  const [syncedMember, setSyncedMember] = useState<Member | null>(member);
+
+  // Re-hydrate the form whenever a new member is selected (or the selection
+  // is cleared). Using "adjust state during render" avoids the cascading
+  // render caused by setState-in-useEffect.
+  if (member !== syncedMember) {
+    setSyncedMember(member);
+    if (member) {
+      setFirstName(member.firstName);
+      setLastName(member.lastName);
+      setContactPhone(member.contactPhone ?? "");
+      setGender(member.gender);
+      setDateOfBirth(member.dateOfBirth ?? "");
+      setDateJoinedShg(member.dateJoinedShg ?? "");
+      setMaritalStatus(member.maritalStatus ?? "");
+      setReligionId(member.religionId ?? "");
+      setStatus((member.status as EntityStatus) || "ACTIVE");
+      setSelfHelpGroupId(member.selfHelpGroupId);
+      setFan(member.fan ?? "");
+      setEditFormSynced(true);
+    } else {
+      setEditFormSynced(false);
+    }
+  }
 
   const open = !!member;
 
@@ -108,25 +138,6 @@ export function MemberEditDialog({
     return JSON.stringify(snapshotFromMember(member)) !== JSON.stringify(formSnapshot);
   }, [member, editFormSynced, formSnapshot]);
 
-  useEffect(() => {
-    if (member) {
-      setFirstName(member.firstName);
-      setLastName(member.lastName);
-      setContactPhone(member.contactPhone ?? "");
-      setGender(member.gender);
-      setDateOfBirth(member.dateOfBirth ?? "");
-      setDateJoinedShg(member.dateJoinedShg ?? "");
-      setMaritalStatus(member.maritalStatus ?? "");
-      setReligionId(member.religionId ?? "");
-      setStatus((member.status as EntityStatus) || "ACTIVE");
-      setSelfHelpGroupId(member.selfHelpGroupId);
-      setFan(member.fan ?? "");
-      setEditFormSynced(true);
-    } else {
-      setEditFormSynced(false);
-    }
-  }, [member]);
-
   const dismiss = () => {
     onClose();
     onDismiss?.();
@@ -145,22 +156,24 @@ export function MemberEditDialog({
     if (!member) return;
     if (!firstName.trim() || !lastName.trim() || !gender) {
       sileo.warning({
-        title: "Required fields",
-        description: "First name, last name, and gender are required.",
+        title: t("validation.nameRequiredTitle"),
+        description: t("validation.nameAndGenderRequiredMessage"),
       });
       return;
     }
     if (!dateOfBirth) {
       sileo.warning({
-        title: "Date of birth",
-        description: "Date of birth is required.",
+        title: t("validation.dobTitle"),
+        description: t("validation.dobMessage"),
       });
       return;
     }
     if (!isAtLeastAge(dateOfBirth, MIN_MEMBER_AGE_YEARS)) {
       sileo.warning({
-        title: "Invalid age",
-        description: `Member must be at least ${MIN_MEMBER_AGE_YEARS} years old.`,
+        title: t("validation.invalidAgeTitle"),
+        description: t("validation.invalidAgeMessage", {
+          years: MIN_MEMBER_AGE_YEARS,
+        }),
       });
       return;
     }
@@ -183,12 +196,16 @@ export function MemberEditDialog({
           fan: fan.trim() || null,
         },
       });
-      sileo.success({ title: "Member updated", description: result.message });
+      sileo.success({
+        title: tEdit("toasts.updatedTitle"),
+        description: result.message,
+      });
       dismissAfterExit();
     } catch (error) {
       sileo.error({
-        title: "Could not update member",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tEdit("toasts.errorTitle"),
+        description:
+          error instanceof Error ? error.message : tCommon("unexpectedError"),
       });
     }
   };
@@ -210,10 +227,8 @@ export function MemberEditDialog({
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,42rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <form onSubmit={submit} className="flex max-h-[85vh] flex-col">
           <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
-            <DialogTitle>Edit member</DialogTitle>
-            <DialogDescription>
-              Update member details. To change national ID, open View and upload a document.
-            </DialogDescription>
+            <DialogTitle>{tEdit("title")}</DialogTitle>
+            <DialogDescription>{tEdit("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 overflow-y-auto px-6 py-5">
             <MemberFormFields
@@ -254,7 +269,7 @@ export function MemberEditDialog({
                   className="gap-1.5 text-amber-600 hover:text-amber-700 border-amber-200 hover:border-amber-300"
                 >
                   <UnlockIcon className="size-4" />
-                  Unlock
+                  {tActions("unlock")}
                 </Button>
               ) : (
                 <Button
@@ -265,14 +280,14 @@ export function MemberEditDialog({
                   className="gap-1.5 text-slate-600 hover:text-slate-700 border-slate-200 hover:border-slate-300"
                 >
                   <LockIcon className="size-4" />
-                  Lock
+                  {tActions("lock")}
                 </Button>
               )}
             </div>
             <SaveButton
               isPending={isSubmitting}
-              idleLabel="Save changes"
-              pendingLabel="Saving…"
+              idleLabel={tEdit("submit")}
+              pendingLabel={tEdit("submitting")}
               disabled={!isEditDirty}
             />
           </DialogFooter>

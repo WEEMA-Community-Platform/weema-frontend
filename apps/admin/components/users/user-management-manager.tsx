@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import {
   useCreateUserMutation,
@@ -8,7 +9,6 @@ import {
   useUsersQuery,
 } from "@/hooks/use-users-admin";
 import type { UserListItem } from "@/lib/api/users-admin";
-import { listEmptyMessage } from "@/components/base-data/shared";
 import { UserCreateDialog } from "@/components/users/user-create-dialog";
 import { UserDetailDialog } from "@/components/users/user-detail-dialog";
 import { UserFiltersDialog, type UserAppliedFilters } from "@/components/users/user-filters-dialog";
@@ -25,6 +25,10 @@ export function UserManagementManager() {
   const [createKey, setCreateKey] = useState(0);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [toggleUser, setToggleUser] = useState<UserListItem | null>(null);
+
+  const tEmpty = useTranslations("listEmpty");
+  const tEntity = useTranslations("listEmpty.entity");
+  const tList = useTranslations("users.list");
 
   const listQuery = useUsersQuery({
     page,
@@ -45,12 +49,15 @@ export function UserManagementManager() {
   );
 
   const hasSearch = Boolean(searchQuery.trim());
-  const emptyMessage = listEmptyMessage({
-    entityPlural: "users",
-    hasSearch,
-    hasFilters: hasActiveFilters,
-    emptyCatalogHint: "No users yet. Create a user to get started.",
-  });
+  const entity = tEntity("users");
+  const emptyMessage =
+    hasSearch && hasActiveFilters
+      ? tEmpty("searchAndFilters", { entity })
+      : hasSearch
+        ? tEmpty("searchOnly", { entity })
+        : hasActiveFilters
+          ? tEmpty("filtersOnly", { entity })
+          : tList("emptyHint");
 
   const list = listQuery.data;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
@@ -80,6 +80,30 @@ export function MemberEditDialog({
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
   const [editFormSynced, setEditFormSynced] = useState(false);
+  const [syncedMember, setSyncedMember] = useState<Member | null>(member);
+
+  // Re-hydrate the form whenever a new member is selected (or the selection
+  // is cleared). Using "adjust state during render" avoids the cascading
+  // render caused by setState-in-useEffect.
+  if (member !== syncedMember) {
+    setSyncedMember(member);
+    if (member) {
+      setFirstName(member.firstName);
+      setLastName(member.lastName);
+      setContactPhone(member.contactPhone ?? "");
+      setGender(member.gender);
+      setDateOfBirth(member.dateOfBirth ?? "");
+      setDateJoinedShg(member.dateJoinedShg ?? "");
+      setMaritalStatus(member.maritalStatus ?? "");
+      setReligionId(member.religionId ?? "");
+      setStatus((member.status as EntityStatus) || "ACTIVE");
+      setSelfHelpGroupId(member.selfHelpGroupId);
+      setFan(member.fan ?? "");
+      setEditFormSynced(true);
+    } else {
+      setEditFormSynced(false);
+    }
+  }
 
   const open = !!member;
 
@@ -116,25 +140,6 @@ export function MemberEditDialog({
     if (!member || !editFormSynced) return false;
     return JSON.stringify(snapshotFromMember(member)) !== JSON.stringify(formSnapshot);
   }, [member, editFormSynced, formSnapshot]);
-
-  useEffect(() => {
-    if (member) {
-      setFirstName(member.firstName);
-      setLastName(member.lastName);
-      setContactPhone(member.contactPhone ?? "");
-      setGender(member.gender);
-      setDateOfBirth(member.dateOfBirth ?? "");
-      setDateJoinedShg(member.dateJoinedShg ?? "");
-      setMaritalStatus(member.maritalStatus ?? "");
-      setReligionId(member.religionId ?? "");
-      setStatus((member.status as EntityStatus) || "ACTIVE");
-      setSelfHelpGroupId(member.selfHelpGroupId);
-      setFan(member.fan ?? "");
-      setEditFormSynced(true);
-    } else {
-      setEditFormSynced(false);
-    }
-  }, [member]);
 
   const dismiss = () => {
     onClose();

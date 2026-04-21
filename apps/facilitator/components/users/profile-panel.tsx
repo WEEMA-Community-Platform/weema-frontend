@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { ChevronDown, Loader2, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
@@ -37,19 +37,22 @@ export function ProfilePanel() {
   const t = useTranslations("account.profile");
   const tToasts = useTranslations("account.profile.toasts");
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState(user?.firstName ?? "");
+  const [lastName, setLastName] = useState(user?.lastName ?? "");
+  const [syncedUser, setSyncedUser] = useState(user);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordOpen, setPasswordOpen] = useState(false);
 
-  useEffect(() => {
+  // Re-hydrate form fields when the current user loads or changes.
+  if (user !== syncedUser) {
+    setSyncedUser(user);
     if (user) {
       setFirstName(user.firstName);
       setLastName(user.lastName);
     }
-  }, [user]);
+  }
 
   const dirty =
     user &&

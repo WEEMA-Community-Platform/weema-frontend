@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormEvent, useState } from "react";
 import { sileo } from "sileo";
 
@@ -43,14 +44,21 @@ import {
   baseDataDialogFieldGroupClass,
   formTextareaClass,
   inputClass,
-  listEmptyMessage,
   tableActionsCellClass,
   tableRowActionsClass,
+  useListEmptyMessage,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function ReligionManager() {
+  const t = useTranslations("basedata.religion");
+  const tCommon = useTranslations("basedata.common");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+  const tListEmpty = useTranslations("listEmpty.entity");
+  const listEmptyMessage = useListEmptyMessage();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
@@ -70,10 +78,10 @@ export function ReligionManager() {
 
   const hasSearch = Boolean(searchQuery.trim());
   const religionsEmptyMessage = listEmptyMessage({
-    entityPlural: "religions",
+    entityPlural: tListEmpty("religions"),
     hasSearch,
     hasFilters: false,
-    emptyCatalogHint: "No religions yet. Add your first religion to get started.",
+    emptyCatalogHint: t("emptyHint"),
   });
 
   const resetForm = () => {
@@ -86,7 +94,10 @@ export function ReligionManager() {
     event.preventDefault();
 
     if (!name.trim()) {
-      sileo.warning({ title: "Missing name", description: "Religion name is required." });
+      sileo.warning({
+        title: t("toasts.missingNameTitle"),
+        description: t("toasts.missingNameMessage"),
+      });
       return;
     }
 
@@ -96,13 +107,13 @@ export function ReligionManager() {
           id: editingReligion.id,
           payload: { name: name.trim(), description: description.trim() },
         });
-        sileo.success({ title: "Religion updated", description: result.message });
+        sileo.success({ title: t("toasts.updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
           description: description.trim(),
         });
-        sileo.success({ title: "Religion added", description: result.message });
+        sileo.success({ title: t("toasts.addedTitle"), description: result.message });
       }
 
       setPage(1);
@@ -110,8 +121,8 @@ export function ReligionManager() {
       resetForm();
     } catch (error) {
       sileo.error({
-        title: "Could not save religion",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("toasts.saveErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -119,9 +130,9 @@ export function ReligionManager() {
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Religions</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <DataToolbar
-          searchPlaceholder="Search religions"
+          searchPlaceholder={t("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={(value) => {
             setSearchQuery(value);
@@ -132,12 +143,12 @@ export function ReligionManager() {
             resetForm();
             setIsFormOpen(true);
           }}
-          addLabel="Add religion"
+          addLabel={t("addButton")}
         />
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Description", "Actions"]}
+          headers={[tCommon("columnName"), tCommon("columnDescription"), tCommon("columnActions")]}
           loading={religionsQuery.isLoading}
           loadingColumnCount={3}
           isError={religionsQuery.isError}
@@ -160,7 +171,7 @@ export function ReligionManager() {
                       setViewingReligion(religion);
                     }}
                   >
-                    View
+                    {tActions("view")}
                   </Button>
                   <Button
                     type="button"
@@ -174,7 +185,7 @@ export function ReligionManager() {
                       setIsFormOpen(true);
                     }}
                   >
-                    Edit
+                    {tActions("edit")}
                   </Button>
                   <Button
                     type="button"
@@ -182,7 +193,7 @@ export function ReligionManager() {
                     variant="destructive"
                     onClick={() => setPendingDeleteReligion(religion)}
                   >
-                    Delete
+                    {tActions("delete")}
                   </Button>
                 </div>
               </TableCell>
@@ -212,12 +223,12 @@ export function ReligionManager() {
         <DialogContent>
           <div className="flex max-h-[85vh] flex-col overflow-hidden">
             <DialogHeader>
-              <DialogTitle>View religion</DialogTitle>
-              <DialogDescription>Read-only details for this religion.</DialogDescription>
+              <DialogTitle>{t("view.title")}</DialogTitle>
+              <DialogDescription>{t("view.description")}</DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="religion-name-view">Religion name</FieldLabel>
+                <FieldLabel htmlFor="religion-name-view">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="religion-name-view"
                   readOnly
@@ -227,19 +238,19 @@ export function ReligionManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="religion-description-view">Description</FieldLabel>
+                <FieldLabel htmlFor="religion-description-view">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="religion-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
                   value={viewingReligion?.description ?? ""}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <Button type="button" variant="outline" className="h-11" onClick={() => setViewingReligion(null)}>
-                Close
+                {tActions("close")}
               </Button>
             </DialogFooter>
           </div>
@@ -250,16 +261,14 @@ export function ReligionManager() {
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
             <DialogHeader>
-              <DialogTitle>{editingReligion ? "Edit religion" : "Add religion"}</DialogTitle>
+              <DialogTitle>{editingReligion ? t("form.titleEdit") : t("form.titleAdd")}</DialogTitle>
               <DialogDescription>
-                {editingReligion
-                  ? "Update religion details, then save your changes."
-                  : "Add a new religion to your base data list."}
+                {editingReligion ? t("form.descriptionEdit") : t("form.descriptionAdd")}
               </DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="religion-name">Religion name</FieldLabel>
+                <FieldLabel htmlFor="religion-name">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="religion-name"
                   value={name}
@@ -269,21 +278,21 @@ export function ReligionManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="religion-description">Description</FieldLabel>
+                <FieldLabel htmlFor="religion-description">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="religion-description"
                   className={formTextareaClass}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}
-                idleLabel={editingReligion ? "Save religion" : "Add religion"}
-                pendingLabel={editingReligion ? "Saving..." : "Adding..."}
+                idleLabel={editingReligion ? t("form.saveEdit") : t("form.saveAdd")}
+                pendingLabel={editingReligion ? tCommon("saving") : tCommon("adding")}
               />
             </DialogFooter>
           </form>
@@ -298,31 +307,35 @@ export function ReligionManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete religion</AlertDialogTitle>
+            <AlertDialogTitle>{t("delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete <span className="font-semibold text-foreground">{pendingDeleteReligion?.name}</span>
-              ? This action cannot be undone.
+              {t.rich("delete.confirm", {
+                name: pendingDeleteReligion?.name ?? "",
+                strong: (chunks) => (
+                  <span className="font-semibold text-foreground">{chunks}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={async () => {
                 if (!pendingDeleteReligion) return;
                 try {
                   const result = await deleteMutation.mutateAsync(pendingDeleteReligion.id);
-                  sileo.success({ title: "Religion deleted", description: result.message });
+                  sileo.success({ title: t("toasts.deletedTitle"), description: result.message });
                   setPendingDeleteReligion(null);
                 } catch (error) {
                   sileo.error({
-                    title: "Could not delete religion",
-                    description: error instanceof Error ? error.message : "Unexpected error",
+                    title: t("toasts.deleteErrorTitle"),
+                    description: error instanceof Error ? error.message : tValidation("unexpectedError"),
                   });
                 }
               }}
             >
-              Delete religion
+              {t("delete.action")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

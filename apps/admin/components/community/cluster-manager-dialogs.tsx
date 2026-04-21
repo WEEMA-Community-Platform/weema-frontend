@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon, Trash2Icon, UsersIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -58,6 +59,10 @@ export function AssignSHGsDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const tAssign = useTranslations("community.cluster.assign");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pendingRemove, setPendingRemove] = useState<{ id: string; name: string } | null>(null);
@@ -107,11 +112,11 @@ export function AssignSHGsDialog({
     setRemovingId(target.id);
     try {
       await removeMutation.mutateAsync({ clusterId: cluster.id, shgId: target.id });
-      sileo.success({ title: "SHG removed from cluster" });
+      sileo.success({ title: tAssign("removedToastTitle") });
     } catch (error) {
       sileo.error({
-        title: "Could not remove SHG",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tAssign("removeErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     } finally {
       setRemovingId(null);
@@ -125,32 +130,41 @@ export function AssignSHGsDialog({
         clusterId: cluster.id,
         shgIds: [...selectedIds],
       });
-      sileo.success({ title: "SHGs assigned", description: result.message });
+      sileo.success({ title: tAssign("assignedToastTitle"), description: result.message });
       handleClose();
     } catch (error) {
       sileo.error({
-        title: "Could not assign SHGs",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tAssign("assignErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
+
+  const selectedCount = selectedIds.size;
+  const assignButtonLabel = addMutation.isPending
+    ? tAssign("assignButtonPending")
+    : selectedCount === 0
+      ? tAssign("assignButtonIdle")
+      : selectedCount === 1
+        ? tAssign("assignButtonWithCountOne", { count: selectedCount })
+        : tAssign("assignButtonWithCountOther", { count: selectedCount });
 
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Assign self-help groups</DialogTitle>
+            <DialogTitle>{tAssign("title")}</DialogTitle>
             <DialogDescription>
-              Manage SHGs for{" "}
-              <span className="font-medium text-foreground">{cluster?.name}</span>. Remove assigned
-              groups here or add groups without a cluster.
+              {tAssign("descriptionPrefix")}
+              <span className="font-medium text-foreground">{cluster?.name}</span>
+              {tAssign("descriptionSuffix")}
             </DialogDescription>
           </DialogHeader>
           <div className="px-5 pb-2 space-y-5">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
-                Assigned to this cluster
+                {tAssign("assignedSection")}
               </p>
               <div className="max-h-40 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
                 {assignedLoading ? (
@@ -161,7 +175,7 @@ export function AssignSHGsDialog({
                   </div>
                 ) : assignedShgs.length === 0 ? (
                   <p className="px-4 py-6 text-sm text-center text-muted-foreground">
-                    No self-help groups assigned yet.
+                    {tAssign("noneAssigned")}
                   </p>
                 ) : (
                   assignedShgs.map((s) => (
@@ -170,7 +184,7 @@ export function AssignSHGsDialog({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{s.name}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {s.kebeleName ?? s.woredaName ?? "No location"}
+                          {s.kebeleName ?? s.woredaName ?? tAssign("noLocation")}
                         </p>
                       </div>
                       <StatusBadge status={s.status} />
@@ -181,7 +195,7 @@ export function AssignSHGsDialog({
                         className="shrink-0 size-9 text-destructive hover:text-destructive border border-transparent hover:border-orange-300 hover:bg-orange-500/8 dark:hover:border-orange-400/50 dark:hover:bg-orange-500/10"
                         disabled={removingId === s.id || removeMutation.isPending}
                         onClick={() => setPendingRemove({ id: s.id, name: s.name })}
-                        aria-label="Remove self-help group from cluster"
+                        aria-label={tAssign("removeAriaLabel")}
                       >
                         {removingId === s.id ? (
                           <Loader2Icon className="size-4 animate-spin text-muted-foreground" aria-hidden />
@@ -197,10 +211,10 @@ export function AssignSHGsDialog({
 
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
-                Add SHGs (no cluster assigned)
+                {tAssign("addSection")}
               </p>
               <Input
-                placeholder="Search self-help groups…"
+                placeholder={tAssign("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className={inputClass}
@@ -214,9 +228,7 @@ export function AssignSHGsDialog({
                   </div>
                 ) : filtered.length === 0 ? (
                   <p className="px-4 py-8 text-sm text-center text-muted-foreground">
-                    {search
-                      ? "No self-help groups match your search."
-                      : "No SHGs available without a cluster."}
+                    {search ? tAssign("noSearchResults") : tAssign("noAvailable")}
                   </p>
                 ) : (
                   filtered.map((s) => (
@@ -233,7 +245,7 @@ export function AssignSHGsDialog({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{s.name}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {s.woredaName ?? "No woreda"}
+                          {s.woredaName ?? tAssign("noWoreda")}
                         </p>
                       </div>
                       <StatusBadge status={s.status} />
@@ -243,27 +255,26 @@ export function AssignSHGsDialog({
               </div>
               {unassignedData && assignable.length < unassignedData.totalElements && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Showing {assignable.length} of {unassignedData.totalElements} unassigned SHGs. Refine
-                  search if needed.
+                  {tAssign("paginationHint", { shown: assignable.length, total: unassignedData.totalElements })}
                 </p>
               )}
-              {selectedIds.size > 0 && (
+              {selectedCount > 0 && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {selectedIds.size} SHG{selectedIds.size !== 1 ? "s" : ""} selected
+                  {selectedCount === 1
+                    ? tAssign("selectedOne", { count: selectedCount })
+                    : tAssign("selectedOther", { count: selectedCount })}
                 </p>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleClose} type="button">Cancel</Button>
+            <Button variant="outline" onClick={handleClose} type="button">{tActions("cancel")}</Button>
             <Button
               onClick={handleAssign}
-              disabled={selectedIds.size === 0 || addMutation.isPending}
+              disabled={selectedCount === 0 || addMutation.isPending}
               type="button"
             >
-              {addMutation.isPending
-                ? "Assigning…"
-                : `Assign${selectedIds.size > 0 ? ` ${selectedIds.size}` : ""} SHG${selectedIds.size !== 1 ? "s" : ""}`}
+              {assignButtonLabel}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -272,17 +283,17 @@ export function AssignSHGsDialog({
       <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove self-help group</AlertDialogTitle>
+            <AlertDialogTitle>{tAssign("removeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove{" "}
-              <span className="font-semibold text-foreground">{pendingRemove?.name}</span> from this
-              cluster? The SHG will remain in the system but will no longer be linked here.
+              {tAssign("removeConfirmPrefix")}
+              <span className="font-semibold text-foreground">{pendingRemove?.name}</span>
+              {tAssign("removeConfirmSuffix")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={confirmRemoveAssigned}>
-              Delete
+              {tActions("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -292,6 +303,10 @@ export function AssignSHGsDialog({
 }
 
 export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
+  const tDetail = useTranslations("community.cluster.detail");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+
   const [activeId, setActiveId] = useState<string | null>(id);
 
   useEffect(() => {
@@ -318,11 +333,11 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
     setRemovingId(target.id);
     try {
       await removeMutation.mutateAsync({ clusterId: activeId, shgId: target.id });
-      sileo.success({ title: "SHG removed from cluster" });
+      sileo.success({ title: tDetail("removeToastTitle") });
     } catch (error) {
       sileo.error({
-        title: "Could not remove SHG",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tDetail("removeErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     } finally {
       setRemovingId(null);
@@ -334,8 +349,8 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
       <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
         <DialogContent className="w-[min(100vw-1.5rem,42rem)] sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{cluster?.name ?? "Cluster details"}</DialogTitle>
-            <DialogDescription>Full details for this cluster.</DialogDescription>
+            <DialogTitle>{cluster?.name ?? tDetail("title")}</DialogTitle>
+            <DialogDescription>{tDetail("description")}</DialogDescription>
           </DialogHeader>
           <div className="px-5 pb-2 space-y-4 max-h-[70vh] overflow-y-auto">
             {isLoading ? (
@@ -345,26 +360,26 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
             ) : isError ? (
               <div className="py-4 text-center">
                 <p className="text-sm text-muted-foreground">
-                  {error instanceof Error ? error.message : "Could not load details."}
+                  {error instanceof Error ? error.message : tDetail("errorFallback")}
                 </p>
                 <button type="button" onClick={() => refetch()} className="mt-3 text-sm font-medium text-primary hover:underline">
-                  Retry
+                  {tActions("retry")}
                 </button>
               </div>
             ) : cluster ? (
               <>
                 <dl className="grid grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_112px_minmax(0,1fr)] gap-x-3 gap-y-2.5">
-                  <DetailField label="Name" value={cluster.name} />
-                  <DetailField label="Woreda" value={cluster.woredaName} />
-                  <DetailField label="Federation" value={cluster.federationName} />
-                  <DetailField label="Status" value={<StatusBadge status={cluster.status} />} />
-                  <DetailField label="Manager" value={cluster.managerName} />
-                  <DetailField label="Description" value={cluster.description} />
+                  <DetailField label={tDetail("fields.name")} value={cluster.name} />
+                  <DetailField label={tDetail("fields.woreda")} value={cluster.woredaName} />
+                  <DetailField label={tDetail("fields.federation")} value={cluster.federationName} />
+                  <DetailField label={tDetail("fields.status")} value={<StatusBadge status={cluster.status} />} />
+                  <DetailField label={tDetail("fields.manager")} value={cluster.managerName} />
+                  <DetailField label={tDetail("fields.description")} value={cluster.description} />
                 </dl>
 
                 <div className="pt-3 border-t border-border">
                   <p className="text-sm font-medium mb-3">
-                    Self-Help Groups
+                    {tDetail("shgsTitle")}
                     <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                       ({shgsLoading ? "…" : shgs.length})
                     </span>
@@ -376,7 +391,7 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
                       ))}
                     </div>
                   ) : shgs.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-1">No self-help groups assigned yet.</p>
+                    <p className="text-sm text-muted-foreground py-1">{tDetail("noShgs")}</p>
                   ) : (
                     <div className="max-h-52 overflow-y-auto space-y-1.5 pr-0.5">
                       {shgs.map((s: SHG) => (
@@ -385,7 +400,7 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{s.name}</p>
                             <p className="text-xs text-muted-foreground truncate">
-                              {s.kebeleName ?? s.woredaName ?? "No location"}
+                              {s.kebeleName ?? s.woredaName ?? tDetail("noLocation")}
                             </p>
                           </div>
                           <StatusBadge status={s.status} />
@@ -396,7 +411,7 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
                             className="shrink-0 size-9 text-destructive hover:text-destructive border border-transparent hover:border-orange-300 hover:bg-orange-500/8 dark:hover:border-orange-400/50 dark:hover:bg-orange-500/10"
                             onClick={() => setPendingRemove({ id: s.id, name: s.name })}
                             disabled={removingId === s.id}
-                            aria-label="Remove self-help group from cluster"
+                            aria-label={tDetail("removeAriaLabel")}
                           >
                             {removingId === s.id ? (
                               <Loader2Icon className="size-4 animate-spin text-muted-foreground" aria-hidden />
@@ -418,15 +433,17 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
       <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove self-help group</AlertDialogTitle>
+            <AlertDialogTitle>{tDetail("removeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Remove <span className="font-semibold text-foreground">{pendingRemove?.name}</span> from this cluster? The SHG will remain in the system but will no longer be linked here.
+              {tDetail("removeConfirmPrefix")}
+              <span className="font-semibold text-foreground">{pendingRemove?.name}</span>
+              {tDetail("removeConfirmSuffix")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={confirmRemove}>
-              Delete
+              {tActions("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -468,26 +485,26 @@ export function ClusterFormDialog({
   onSubmit: (event: React.FormEvent) => void;
   isSubmitting: boolean;
 }) {
+  const tForm = useTranslations("community.cluster.form");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,50rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
         <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={onSubmit}>
           <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
-            <DialogTitle>{editingCluster ? "Edit cluster" : "Add cluster"}</DialogTitle>
+            <DialogTitle>{editingCluster ? tForm("titleEdit") : tForm("titleAdd")}</DialogTitle>
             <DialogDescription>
-              {editingCluster
-                ? "Update cluster details. Federation membership is managed from the federation’s Assign clusters flow."
-                : "Add a new cluster to the community structure. Link it to a federation from that federation’s Assign clusters action."}
+              {editingCluster ? tForm("descriptionEdit") : tForm("descriptionAdd")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 overflow-y-auto px-6 py-5">
             <div className="space-y-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tForm("sectionDetails")}</p>
               <div className="space-y-1.5">
-                <Label htmlFor="cluster-name">Name</Label>
+                <Label htmlFor="cluster-name">{tForm("nameLabel")}</Label>
                 <Input
                   id="cluster-name"
-                  placeholder="Cluster name"
+                  placeholder={tForm("namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className={inputClass}
@@ -496,49 +513,49 @@ export function ClusterFormDialog({
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="cluster-woreda">Woreda</Label>
+                  <Label htmlFor="cluster-woreda">{tForm("woredaLabel")}</Label>
                   <SelectField
                     id="cluster-woreda"
                     value={woredaId}
                     onValueChange={setWoredaId}
                     options={woredaOptions}
-                    placeholder="Select woreda"
+                    placeholder={tForm("woredaPlaceholder")}
                     className="h-11"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="cluster-status">Status</Label>
+                  <Label htmlFor="cluster-status">{tForm("statusLabel")}</Label>
                   <SelectField
                     id="cluster-status"
                     value={status}
                     onValueChange={(v) => setStatus(v as EntityStatus | "")}
                     options={statusOptions}
-                    placeholder="Select status"
+                    placeholder={tForm("statusPlaceholder")}
                     className="h-11"
                   />
                 </div>
               </div>
               {editingCluster ? (
                 <div className="space-y-1.5">
-                  <Label>Federation</Label>
+                  <Label>{tForm("federationLabel")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    Assign or remove this cluster from a federation using{" "}
-                    <span className="font-medium text-foreground">Assign clusters</span> on the
-                    federation card, not here.
+                    {tForm("federationHintPrefix")}
+                    <span className="font-medium text-foreground">{tForm("federationHintEmphasis")}</span>
+                    {tForm("federationHintSuffix")}
                   </p>
                   <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
                     {editingCluster.federationName ?? (
-                      <span className="text-muted-foreground">Not assigned to a federation</span>
+                      <span className="text-muted-foreground">{tForm("federationUnassigned")}</span>
                     )}
                   </div>
                 </div>
               ) : null}
               <div className="space-y-1.5">
-                <Label htmlFor="cluster-description">Description</Label>
+                <Label htmlFor="cluster-description">{tForm("descriptionLabel")}</Label>
                 <textarea
                   id="cluster-description"
                   className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                  placeholder="Optional notes about this cluster"
+                  placeholder={tForm("descriptionPlaceholder")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -548,8 +565,8 @@ export function ClusterFormDialog({
           <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
             <SaveButton
               isPending={isSubmitting}
-              idleLabel={editingCluster ? "Save cluster" : "Add cluster"}
-              pendingLabel={editingCluster ? "Saving…" : "Adding…"}
+              idleLabel={editingCluster ? tForm("saveEditLabel") : tForm("saveAddLabel")}
+              pendingLabel={editingCluster ? tForm("saveEditPending") : tForm("saveAddPending")}
             />
           </DialogFooter>
         </form>
@@ -567,19 +584,24 @@ export function ClusterDeleteDialog({
   onOpenChange: (open: boolean) => void;
   onConfirmDelete: () => Promise<void>;
 }) {
+  const tDelete = useTranslations("community.cluster.delete");
+  const tActions = useTranslations("common.actions");
+
   return (
     <AlertDialog open={!!pendingDelete} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete cluster</AlertDialogTitle>
+          <AlertDialogTitle>{tDelete("title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Delete <span className="font-semibold text-foreground">{pendingDelete?.name}</span>? This action cannot be undone.
+            {tDelete("confirmPrefix")}
+            <span className="font-semibold text-foreground">{pendingDelete?.name}</span>
+            {tDelete("confirmSuffix")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={() => void onConfirmDelete()}>
-            Delete cluster
+            {tDelete("action")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

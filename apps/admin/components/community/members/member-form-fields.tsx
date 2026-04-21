@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/base-data/select-field";
@@ -78,22 +79,41 @@ export function MemberFormFields({
   showReligionField = true,
   nationalIdSection,
 }: MemberFormFieldsProps) {
+  const t = useTranslations("community.members");
+  const tGender = useTranslations("community.members.options.gender");
+  const tMarital = useTranslations("community.members.options.marital");
+  const tStatus = useTranslations("community.members.options.status");
   const maxDobDate = getMaxDobDate();
+
+  const genderOptions = GENDER_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tGender(o.value.toLowerCase() as "male" | "female"),
+  }));
+  const maritalOptions = MARITAL_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tMarital(o.value.toLowerCase() as "single" | "married" | "divorced"),
+  }));
+  const statusOptions = STATUS_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tStatus(o.value.toLowerCase() as "active" | "inactive"),
+  }));
 
   return (
     <>
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start lg:gap-8">
         <div className="space-y-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t("sections.details")}
+          </p>
           <div className="flex flex-col gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="member-first-name">
-                First name
+                {t("fields.firstName")}
                 <RequiredStar />
               </Label>
               <Input
                 id="member-first-name"
-                placeholder="First name"
+                placeholder={t("placeholders.firstName")}
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className={inputClass}
@@ -103,12 +123,12 @@ export function MemberFormFields({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="member-last-name">
-                Last name
+                {t("fields.lastName")}
                 <RequiredStar />
               </Label>
               <Input
                 id="member-last-name"
-                placeholder="Last name"
+                placeholder={t("placeholders.lastName")}
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className={inputClass}
@@ -118,10 +138,10 @@ export function MemberFormFields({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-phone">Contact phone</Label>
+            <Label htmlFor="member-phone">{t("fields.contactPhone")}</Label>
             <Input
               id="member-phone"
-              placeholder="Contact phone"
+              placeholder={t("placeholders.contactPhone")}
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
               className={inputClass}
@@ -130,7 +150,7 @@ export function MemberFormFields({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="member-dob">
-              Date of birth
+              {t("fields.dateOfBirth")}
               <RequiredStar />
             </Label>
             <Input
@@ -143,21 +163,21 @@ export function MemberFormFields({
               required
             />
             <p className="text-xs text-muted-foreground">
-              Member must be at least {MIN_MEMBER_AGE_YEARS} years old.
+              {t("minAgeHint", { years: MIN_MEMBER_AGE_YEARS })}
             </p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-fan">FAN</Label>
+            <Label htmlFor="member-fan">{t("fields.fan")}</Label>
             <Input
               id="member-fan"
-              placeholder="FAN"
+              placeholder={t("placeholders.fan")}
               value={fan}
               onChange={(e) => setFan(e.target.value)}
               className={inputClass}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-date-joined-shg">Date joined SHG</Label>
+            <Label htmlFor="member-date-joined-shg">{t("fields.dateJoinedShg")}</Label>
             <Input
               id="member-date-joined-shg"
               type="date"
@@ -170,41 +190,41 @@ export function MemberFormFields({
 
         <div className="space-y-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Classifications
+            {t("sections.classifications")}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="member-gender">
-              Gender
+              {t("fields.gender")}
               <RequiredStar />
             </Label>
             <SelectField
               id="member-gender"
               value={gender}
-              placeholder="Gender"
-              options={[...GENDER_OPTIONS]}
+              placeholder={t("placeholders.gender")}
+              options={genderOptions}
               onValueChange={setGender}
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="member-marital">
-              Marital status
+              {t("fields.maritalStatus")}
               <RequiredStar />
             </Label>
             <SelectField
               id="member-marital"
               value={maritalStatus}
-              placeholder="Marital status"
-              options={[...MARITAL_OPTIONS]}
+              placeholder={t("placeholders.maritalStatus")}
+              options={maritalOptions}
               onValueChange={setMaritalStatus}
             />
           </div>
           {showReligionField ? (
             <div className="space-y-1.5">
-              <Label htmlFor="member-religion">Religion</Label>
+              <Label htmlFor="member-religion">{t("fields.religion")}</Label>
               <SelectField
                 id="member-religion"
                 value={religionId ?? ""}
-                placeholder="Religion"
+                placeholder={t("placeholders.religion")}
                 options={religionOptions ?? []}
                 onValueChange={setReligionId ?? (() => {})}
               />
@@ -212,26 +232,26 @@ export function MemberFormFields({
           ) : null}
           <div className="space-y-1.5">
             <Label htmlFor="member-status">
-              Status
+              {t("fields.status")}
               <RequiredStar />
             </Label>
             <SelectField
               id="member-status"
               value={status}
-              placeholder="Status"
-              options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              placeholder={t("placeholders.status")}
+              options={statusOptions}
               onValueChange={setStatus}
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="member-shg">
-              Self-help group
+              {t("fields.shg")}
               <RequiredStar />
             </Label>
             <SelectField
               id="member-shg"
               value={selfHelpGroupId}
-              placeholder="Self-help group"
+              placeholder={t("placeholders.shg")}
               options={shgOptions}
               onValueChange={setSelfHelpGroupId}
             />

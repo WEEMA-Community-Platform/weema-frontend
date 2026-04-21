@@ -1,10 +1,17 @@
 "use client";
 
 import { LockIcon, UnlockIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyStateRow, TableShell, tableActionsCellClass, tableRowActionsClass } from "@/components/base-data/shared";
+import {
+  EmptyStateRow,
+  TableShell,
+  tableActionsCellClass,
+  tableRowActionsClass,
+} from "@/components/base-data/shared";
 import { LockedBadge } from "@/components/community/community-card";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { SurveySubmissionRecord } from "@/lib/api/surveys";
@@ -23,29 +30,30 @@ export function formatSubmissionDateTime(value: string | null | undefined) {
 }
 
 export function SubmissionStatusBadge({ status }: { status?: string | null }) {
+  const t = useTranslations("survey.submissions.status");
   const normalized = (status ?? "NOT_STARTED").toUpperCase();
   if (normalized === "SUBMITTED") {
     return (
       <Badge className="border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
-        Submitted
+        {t("submitted")}
       </Badge>
     );
   }
   if (normalized === "NOT_STARTED" || normalized === "NOT STARTED") {
     return (
       <Badge className="border-transparent bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300">
-        Not started
+        {t("notStarted")}
       </Badge>
     );
   }
   if (normalized === "IN_PROGRESS" || normalized === "IN PROGRESS") {
     return (
       <Badge className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-        In progress
+        {t("inProgress")}
       </Badge>
     );
   }
-  const label = status ? status.replaceAll("_", " ") : "Pending";
+  const label = status ? status.replaceAll("_", " ") : t("pending");
   return <Badge variant="outline">{label}</Badge>;
 }
 
@@ -81,6 +89,7 @@ export function MemberSubmissionsTableCard({
   onLockSubmission,
   onUnlockSubmission,
 }: MemberSubmissionsTableCardProps) {
+  const t = useTranslations("survey.submissions.memberTable");
   const titleTargetLabel = targetLabelPlural[0]
     ? targetLabelPlural[0].toUpperCase() + targetLabelPlural.slice(1)
     : targetLabelPlural;
@@ -92,13 +101,25 @@ export function MemberSubmissionsTableCard({
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-primary/10 px-4 pb-4 pt-4">
         <CardTitle>
-          {`${titleTargetLabel} submissions${selectedAssignmentName ? ` - ${selectedAssignmentName}` : ""}`}
+          {selectedAssignmentName
+            ? t("titleWithAssignment", {
+                target: titleTargetLabel,
+                assignment: selectedAssignmentName,
+              })
+            : t("title", { target: titleTargetLabel })}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0 pb-4 pt-0">
         <TableShell
           variant="embedded"
-          headers={[rowTargetLabel, "Status", "Progress", "Submitted", "Locked", "Actions"]}
+          headers={[
+            rowTargetLabel,
+            t("columnStatus"),
+            t("columnProgress"),
+            t("columnSubmitted"),
+            t("columnLocked"),
+            t("columnActions"),
+          ]}
           loading={loading}
           loadingColumnCount={6}
           isError={isError}
@@ -109,8 +130,8 @@ export function MemberSubmissionsTableCard({
               colSpan={6}
               message={
                 selectedAssignmentName
-                  ? `No ${targetLabelPlural} submissions found for this self-help group.`
-                  : `No ${targetLabelPlural} submissions found for this survey.`
+                  ? t("emptyWithAssignment", { targets: targetLabelPlural })
+                  : t("empty", { targets: targetLabelPlural })
               }
             />
           }
@@ -126,15 +147,13 @@ export function MemberSubmissionsTableCard({
             const hasSubmissionId = Boolean(submission.id);
             const hasTargetId = Boolean(submission.targetId || submission.memberId);
             const fillMode = isNotStartedStatus(submission.submissionStatus);
-            const actionLabel = isNotStartedStatus(submission.submissionStatus)
-              ? "Fill survey"
-              : "View answers";
+            const actionLabel = fillMode ? t("fill") : t("viewAnswers");
             const displayName = submission.targetName || submission.memberName;
             return (
               <TableRow key={rowKey}>
                 <TableCell>
                   <p className="truncate text-sm font-medium">
-                    {displayName || `Unknown ${targetLabelSingular}`}
+                    {displayName || t("unknown", { target: targetLabelSingular })}
                   </p>
                 </TableCell>
                 <TableCell className="text-sm">
@@ -143,7 +162,10 @@ export function MemberSubmissionsTableCard({
                 <TableCell>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">
-                      {submission.answeredQuestions ?? 0}/{submission.totalQuestions ?? 0} answered
+                      {t("answeredCount", {
+                        answered: submission.answeredQuestions ?? 0,
+                        total: submission.totalQuestions ?? 0,
+                      })}
                     </p>
                     <div className="h-1.5 w-full rounded-full bg-muted">
                       <div
@@ -181,7 +203,7 @@ export function MemberSubmissionsTableCard({
                         onClick={() => onUnlockSubmission(submission)}
                       >
                         <UnlockIcon className="size-3" />
-                        Unlock
+                        {t("unlock")}
                       </Button>
                     ) : (
                       <Button
@@ -193,7 +215,7 @@ export function MemberSubmissionsTableCard({
                         onClick={() => onLockSubmission(submission)}
                       >
                         <LockIcon className="size-3" />
-                        Lock
+                        {t("lock")}
                       </Button>
                     )}
                   </div>

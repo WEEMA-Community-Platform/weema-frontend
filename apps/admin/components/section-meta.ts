@@ -1,73 +1,87 @@
-export const SECTION_META: Record<
-  string,
-  { group: string; label: string; description: string }
-> = {
+export type SectionMetaKey = {
+  groupKey: string;
+  labelKey: string;
+  descriptionKey: string;
+};
+
+export const SECTION_META_KEYS: Record<string, SectionMetaKey> = {
   region: {
-    group: "Base Data",
-    label: "Regions",
-    description: "Manage administrative regions.",
+    groupKey: "sections.region.group",
+    labelKey: "sections.region.label",
+    descriptionKey: "sections.region.description",
   },
   zone: {
-    group: "Base Data",
-    label: "Zones",
-    description: "Manage zones within regions.",
+    groupKey: "sections.zone.group",
+    labelKey: "sections.zone.label",
+    descriptionKey: "sections.zone.description",
   },
   woreda: {
-    group: "Base Data",
-    label: "Woredas",
-    description: "Manage woredas within zones.",
+    groupKey: "sections.woreda.group",
+    labelKey: "sections.woreda.label",
+    descriptionKey: "sections.woreda.description",
   },
   kebele: {
-    group: "Base Data",
-    label: "Kebeles",
-    description: "Manage kebeles within woredas.",
+    groupKey: "sections.kebele.group",
+    labelKey: "sections.kebele.label",
+    descriptionKey: "sections.kebele.description",
   },
   religion: {
-    group: "Base Data",
-    label: "Religions",
-    description: "Manage reference religion data.",
+    groupKey: "sections.religion.group",
+    labelKey: "sections.religion.label",
+    descriptionKey: "sections.religion.description",
   },
   federation: {
-    group: "Community Structure",
-    label: "Federations",
-    description: "Manage federations that group clusters together.",
+    groupKey: "sections.federation.group",
+    labelKey: "sections.federation.label",
+    descriptionKey: "sections.federation.description",
   },
   cluster: {
-    group: "Community Structure",
-    label: "Clusters",
-    description: "Manage clusters linked to woredas and federations.",
+    groupKey: "sections.cluster.group",
+    labelKey: "sections.cluster.label",
+    descriptionKey: "sections.cluster.description",
   },
   shg: {
-    group: "Community Structure",
-    label: "Self-Help Groups",
-    description: "Manage self-help groups and their cluster assignments.",
+    groupKey: "sections.shg.group",
+    labelKey: "sections.shg.label",
+    descriptionKey: "sections.shg.description",
   },
   member: {
-    group: "Community Structure",
-    label: "Members",
-    description: "Register and manage members within self-help groups.",
+    groupKey: "sections.member.group",
+    labelKey: "sections.member.label",
+    descriptionKey: "sections.member.description",
   },
   profile: {
-    group: "Account",
-    label: "My profile",
-    description: "Update your name and review your account details.",
+    groupKey: "sections.profile.group",
+    labelKey: "sections.profile.label",
+    descriptionKey: "sections.profile.description",
   },
   users: {
-    group: "User Management",
-    label: "Users",
-    description: "Create users and manage activation (super admin).",
+    groupKey: "sections.users.group",
+    labelKey: "sections.users.label",
+    descriptionKey: "sections.users.description",
   },
 };
 
-export const PATH_META: Record<string, { group: string; label: string; description: string }> = {
+export const PATH_META_KEYS: Record<string, SectionMetaKey> = {
   "/survey": {
-    group: "Survey",
-    label: "Surveys",
-    description: "Browse, create, and manage surveys.",
+    groupKey: "sections.survey.group",
+    labelKey: "sections.survey.label",
+    descriptionKey: "sections.survey.description",
   },
   "/survey/submissions": {
-    group: "Survey",
-    label: "Survey submissions",
-    description: "Review submitted answers and submission progress by survey.",
+    groupKey: "sections.surveySubmissions.group",
+    labelKey: "sections.surveySubmissions.label",
+    descriptionKey: "sections.surveySubmissions.description",
   },
 };
+
+// Back-compat shim for non-client contexts / existing imports.
+// Prefer SECTION_META_KEYS / PATH_META_KEYS with useTranslations.
+export const SECTION_META = SECTION_META_KEYS as unknown as Record<
+  string,
+  { group: string; label: string; description: string }
+>;
+export const PATH_META = PATH_META_KEYS as unknown as Record<
+  string,
+  { group: string; label: string; description: string }
+>;

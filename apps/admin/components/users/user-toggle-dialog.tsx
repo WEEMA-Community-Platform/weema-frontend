@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import type { UserListItem } from "@/lib/api/users-admin";
@@ -33,42 +34,58 @@ export function UserToggleDialog({
 }: UserToggleDialogProps) {
   const active = user?.active ?? true;
   const name = user ? `${user.firstName} ${user.lastName}` : "";
+  const t = useTranslations("users.toggle");
+  const tToasts = useTranslations("users.toggle.toasts");
+  const tCommon = useTranslations("common.validation");
 
   const handleConfirm = async () => {
     if (!user) return;
     try {
       const result = await toggleMutation.mutateAsync(user.id);
       sileo.success({
-        title: active ? "User deactivated" : "User activated",
-        description: result.message || "Updated.",
+        title: active ? tToasts("deactivatedTitle") : tToasts("activatedTitle"),
+        description: result.message || tToasts("updatedMessage"),
       });
       onOpenChange(false);
     } catch (error) {
       sileo.error({
-        title: "Could not update user",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tToasts("errorTitle"),
+        description: error instanceof Error ? error.message : tCommon("unexpectedError"),
       });
     }
   };
+
+  const highlight = (chunks: React.ReactNode) => (
+    <span className="font-semibold text-foreground">{chunks}</span>
+  );
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{active ? "Deactivate user" : "Activate user"}</AlertDialogTitle>
+          <AlertDialogTitle>
+            {active ? t("deactivateTitle") : t("activateTitle")}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            {active ? "Deactivate" : "Activate"}{" "}
-            <span className="font-semibold text-foreground">{name}</span>?
+            {active
+              ? t.rich("deactivateConfirm", { name, highlight })
+              : t.rich("activateConfirm", { name, highlight })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={toggleMutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={toggleMutation.isPending}>
+            {t("cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             variant={active ? "destructive" : "default"}
             disabled={toggleMutation.isPending}
             onClick={() => void handleConfirm()}
           >
-            {toggleMutation.isPending ? "Updating…" : active ? "Deactivate" : "Activate"}
+            {toggleMutation.isPending
+              ? t("updating")
+              : active
+                ? t("deactivate")
+                : t("activate")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

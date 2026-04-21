@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, Plus, SlidersHorizontal } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, Loader2, Plus, SlidersHorizontal } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Children, ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,36 @@ export const tableRowActionsClass =
 export const tableActionsCellClass = "align-top text-left";
 
 /** Empty list copy when the API returns no rows — reflects search vs filters vs empty catalog. */
+export function useListEmptyMessage() {
+  const t = useTranslations("listEmpty");
+  return function listEmptyMessage(opts: {
+    entityPlural: string;
+    hasSearch: boolean;
+    hasFilters: boolean;
+    emptyCatalogHint: string;
+  }): string {
+    const { entityPlural, hasSearch, hasFilters, emptyCatalogHint } = opts;
+    if (hasSearch && hasFilters) {
+      return t("searchAndFilters", { entity: entityPlural });
+    }
+    if (hasSearch) {
+      return t("searchOnly", { entity: entityPlural });
+    }
+    if (hasFilters) {
+      return t("filtersOnly", { entity: entityPlural });
+    }
+    return emptyCatalogHint;
+  };
+}
+
+/**
+ * Back-compat helper retained for any remaining callers: returns English copy.
+ * Prefer `useListEmptyMessage` in client components for localization.
+ */
 export function listEmptyMessage(opts: {
   entityPlural: string;
   hasSearch: boolean;
   hasFilters: boolean;
-  /** Shown when there is no active search or filters (e.g. “Add your first …”). */
   emptyCatalogHint: string;
 }): string {
   const { entityPlural, hasSearch, hasFilters, emptyCatalogHint } = opts;
@@ -67,12 +93,13 @@ export function DataToolbar({
   searchPlaceholder: string;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  onAdd: () => void;
-  addLabel: string;
+  onAdd?: () => void;
+  addLabel?: string;
   onOpenFilters?: () => void;
   showFilterButton?: boolean;
   hasActiveFilters?: boolean;
 }) {
+  const tTable = useTranslations("community.members.table");
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Input
@@ -89,17 +116,25 @@ export function DataToolbar({
           onClick={onOpenFilters}
         >
           <SlidersHorizontal className="size-4" />
-          {hasActiveFilters ? "Filters applied" : "Filters"}
+          {tTable("filters")}
+          {hasActiveFilters && (
+            <span
+              className="ml-0.5 size-1.5 rounded-full bg-primary"
+              aria-label={tTable("filtersActiveLabel")}
+            />
+          )}
         </Button>
       )}
-      <Button
-        type="button"
-        className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
-        onClick={onAdd}
-      >
-        <Plus className="size-4" />
-        {addLabel}
-      </Button>
+      {onAdd && (
+        <Button
+          type="button"
+          className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={onAdd}
+        >
+          <Plus className="size-4" />
+          {addLabel}
+        </Button>
+      )}
     </div>
   );
 }
@@ -166,13 +201,17 @@ function QueryErrorRow({
   message?: string;
   onRetry?: () => void;
 }) {
+  const tEmpty = useTranslations("common.empty");
+  const tActions = useTranslations("common.actions");
   return (
     <tr className="border-t border-primary/5">
       <td colSpan={colSpan} className="px-3 py-8 text-center">
-        <p className="text-sm text-muted-foreground">{message ?? "Failed to load data."}</p>
+        <p className="text-sm text-muted-foreground">
+          {message ?? tEmpty("failedToLoad")}
+        </p>
         {onRetry && (
           <Button type="button" size="sm" variant="outline" className="mt-3" onClick={onRetry}>
-            Retry
+            {tActions("retry")}
           </Button>
         )}
       </td>
@@ -225,14 +264,28 @@ export function PaginationRow({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const tPage = useTranslations("common.pagination");
+  const tActions = useTranslations("common.actions");
+  const resultLabel =
+    totalElements === 1 ? tPage("resultOne") : tPage("resultOther");
   return (
     <div className="mt-3 flex items-center justify-between border-t border-primary/10 pt-3 text-xs text-muted-foreground">
       <p>
-        Page {currentPage} of {totalPages} ({totalElements} total)
+        {tPage("page")} {currentPage} {tPage("of")} {totalPages}
+        <span className="mx-1.5 opacity-40">·</span>
+        {totalElements} {resultLabel}
       </p>
-      <div className="flex gap-2">
-        <Button type="button" size="sm" variant="outline" disabled={currentPage <= 1} onClick={onPrev}>
-          Previous
+      <div className="flex gap-1.5">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={currentPage <= 1}
+          onClick={onPrev}
+          className="gap-1 pl-2.5"
+        >
+          <ChevronLeftIcon className="size-3.5" />
+          {tActions("previous")}
         </Button>
         <Button
           type="button"
@@ -240,8 +293,10 @@ export function PaginationRow({
           variant="outline"
           disabled={currentPage >= totalPages}
           onClick={onNext}
+          className="gap-1 pr-2.5"
         >
-          Next
+          {tActions("next")}
+          <ChevronRightIcon className="size-3.5" />
         </Button>
       </div>
     </div>

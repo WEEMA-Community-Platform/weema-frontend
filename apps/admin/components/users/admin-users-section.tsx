@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrentUser } from "@/hooks/use-user";
 import { SUPER_ADMIN_ROLE } from "@/components/users/constants";
@@ -8,13 +10,14 @@ import { UserManagementManager } from "@/components/users/user-management-manage
 export function AdminUsersSection() {
   const { data, isLoading } = useCurrentUser();
   const role = data?.user?.role;
+  const t = useTranslations("users.section");
 
   if (isLoading) {
     return (
       <Card className="border-primary/10">
         <CardHeader>
-          <CardTitle>User management</CardTitle>
-          <CardDescription>Loading…</CardDescription>
+          <CardTitle>{t("title")}</CardTitle>
+          <CardDescription>{t("loading")}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -24,10 +27,8 @@ export function AdminUsersSection() {
     return (
       <Card className="border-primary/10">
         <CardHeader>
-          <CardTitle>User management</CardTitle>
-          <CardDescription>
-            Only super administrators can list users, create accounts, and change activation.
-          </CardDescription>
+          <CardTitle>{t("title")}</CardTitle>
+          <CardDescription>{t("restriction")}</CardDescription>
         </CardHeader>
       </Card>
     );

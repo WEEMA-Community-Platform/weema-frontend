@@ -1,38 +1,45 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ShowCondition, SurveyQuestion } from "@/lib/survey-builder/types";
 
-function operatorLabel(operator: ShowCondition["operator"]) {
-  switch (operator) {
-    case "EQUALS":
-      return "equals";
-    case "NOT_EQUALS":
-      return "does not equal";
-    case "GREATER_THAN":
-      return "is greater than";
-    case "LESS_THAN":
-      return "is less than";
-    case "CONTAINS":
-      return "contains";
-    default:
-      return operator;
-  }
+function useOperatorLabel() {
+  const t = useTranslations("survey.preview.operators");
+  return (operator: ShowCondition["operator"]) => {
+    switch (operator) {
+      case "EQUALS":
+        return t("equals");
+      case "NOT_EQUALS":
+        return t("notEquals");
+      case "GREATER_THAN":
+        return t("greaterThan");
+      case "LESS_THAN":
+        return t("lessThan");
+      case "CONTAINS":
+        return t("contains");
+      default:
+        return operator;
+    }
+  };
 }
 
-function renderOptions(question: SurveyQuestion) {
+function RenderOptions({ question }: { question: SurveyQuestion }) {
+  const t = useTranslations("survey.preview");
+
   if (question.questionType === "BOOLEAN") {
     return (
       <div className="space-y-2 rounded-md border border-primary/10 p-3 text-sm">
-        <p className="text-xs font-medium text-muted-foreground">Answer preview</p>
+        <p className="text-xs font-medium text-muted-foreground">{t("answerPreview")}</p>
         <div className="flex flex-col gap-2">
           <label className="flex items-center gap-2">
             <input type="radio" name={`boolean-preview-${question.clientId}`} disabled />
-            <span>True</span>
+            <span>{t("true")}</span>
           </label>
           <label className="flex items-center gap-2">
             <input type="radio" name={`boolean-preview-${question.clientId}`} disabled />
-            <span>False</span>
+            <span>{t("false")}</span>
           </label>
         </div>
       </div>
@@ -46,7 +53,7 @@ function renderOptions(question: SurveyQuestion) {
           <div key={option.clientId} className="flex items-start gap-2 text-sm">
             <span className="mt-0.5 text-muted-foreground">{index + 1}.</span>
             <span className="min-w-0 wrap-break-word whitespace-normal">
-              {option.text || "Untitled option"}
+              {option.text || t("untitledOption")}
             </span>
           </div>
         ))}
@@ -59,14 +66,16 @@ function renderOptions(question: SurveyQuestion) {
       return (
         <div className="space-y-2 text-sm">
           <p>
-            Repeatable table: min {question.questionConfig.minRows}, max{" "}
-            {question.questionConfig.maxRows}
+            {t("repeatableTable", {
+              min: question.questionConfig.minRows,
+              max: question.questionConfig.maxRows,
+            })}
           </p>
           <div className="space-y-1">
             {question.questionConfig.columns.map((column) => (
               <div key={column.clientId} className="rounded border border-primary/10 px-2 py-1">
                 <span className="wrap-break-word whitespace-normal">
-                  {column.label || "Untitled column"} ({column.columnType})
+                  {column.label || t("untitledColumn")} ({column.columnType})
                 </span>
               </div>
             ))}
@@ -78,10 +87,18 @@ function renderOptions(question: SurveyQuestion) {
     return (
       <div className="space-y-2 text-sm">
         <p>
-          Grid ({question.questionConfig.selectionType === "MULTIPLE" ? "multi select" : "single select"})
+          {t("grid", {
+            type:
+              question.questionConfig.selectionType === "MULTIPLE"
+                ? t("multiSelect")
+                : t("singleSelect"),
+          })}
         </p>
         <p className="text-muted-foreground">
-          {question.questionConfig.rows.length} rows x {question.questionConfig.columns.length} columns
+          {t("gridDimensions", {
+            rows: question.questionConfig.rows.length,
+            cols: question.questionConfig.columns.length,
+          })}
         </p>
       </div>
     );
@@ -89,49 +106,55 @@ function renderOptions(question: SurveyQuestion) {
 
   return (
     <div className="rounded border border-dashed border-primary/20 px-3 py-2 text-sm text-muted-foreground">
-      Response field preview for {question.questionType.toLowerCase().replaceAll("_", " ")}.
+      {t("responseFieldFor", {
+        type: question.questionType.toLowerCase().replaceAll("_", " "),
+      })}
     </div>
   );
 }
 
 export function SurveyPreviewPanel({ question }: { question: SurveyQuestion | null }) {
+  const t = useTranslations("survey.preview");
+  const operatorLabel = useOperatorLabel();
+
   return (
     <Card className="h-full border-primary/15">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Live preview</CardTitle>
+        <CardTitle className="text-base">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {!question ? (
-          <p className="text-sm text-muted-foreground">
-            Select a question from the left sidebar to see a live preview.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("empty")}</p>
         ) : (
           <div className="space-y-4">
             <div>
               <p className="text-sm font-medium wrap-break-word whitespace-normal">
-                {question.questionText || "Untitled question"}
+                {question.questionText || t("untitledQuestion")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {question.required ? "Required" : "Optional"} · {question.questionType}
+                {question.required ? t("required") : t("optional")} · {question.questionType}
               </p>
             </div>
             {question.showConditions.length > 0 ? (
               <div className="rounded-md border border-primary/10 bg-primary/5 p-2 text-xs">
-                <p className="mb-1 font-medium">Follow-up visibility</p>
+                <p className="mb-1 font-medium">{t("followUpVisibility")}</p>
                 <ul className="space-y-1">
                   {question.showConditions.map((condition, index) => (
                     <li
                       key={`${question.clientId}-preview-condition-${index}`}
                       className="wrap-break-word whitespace-normal"
                     >
-                      Rule {index + 1}: parent question {operatorLabel(condition.operator)}{" "}
-                      {condition.expectedValue || "selected value"}
+                      {t("rule", {
+                        index: index + 1,
+                        operator: operatorLabel(condition.operator),
+                        value: condition.expectedValue || t("selectedValue"),
+                      })}
                     </li>
                   ))}
                 </ul>
               </div>
             ) : null}
-            {renderOptions(question)}
+            <RenderOptions question={question} />
           </div>
         )}
       </CardContent>

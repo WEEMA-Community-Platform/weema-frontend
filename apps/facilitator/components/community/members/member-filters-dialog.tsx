@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -73,12 +73,13 @@ export function MemberFiltersDialog({
   const tMarital = useTranslations("community.members.options.marital");
 
   const [draft, setDraft] = useState<MemberAppliedFilters>(applied);
+  const [wasOpen, setWasOpen] = useState(open);
 
-  useEffect(() => {
-    if (open) {
-      setDraft(applied);
-    }
-  }, [open, applied]);
+  // Reset draft when the dialog transitions from closed to open.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setDraft(applied);
+  }
 
   const clearAndApply = () => {
     setDraft({ ...emptyFilters });

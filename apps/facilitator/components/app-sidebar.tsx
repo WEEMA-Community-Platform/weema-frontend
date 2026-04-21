@@ -28,20 +28,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navMain = useMemo(
     () => [
       {
+        key: "community",
         title: t("community"),
         url: "/?section=shg",
         icon: <NetworkIcon />,
-        isActive: true,
+        defaultOpen: true,
         items: [
-          { title: t("shg"), url: "/?section=shg" },
-          { title: t("members"), url: "/?section=member" },
+          { key: "shg", title: t("shg"), url: "/?section=shg" },
+          { key: "member", title: t("members"), url: "/?section=member" },
         ],
       },
       {
+        key: "survey",
         title: t("survey"),
         url: "/survey",
         icon: <ClipboardListIcon />,
-        isActive: false,
       },
     ],
     [t]

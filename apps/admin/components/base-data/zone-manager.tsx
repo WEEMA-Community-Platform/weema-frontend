@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormEvent, useMemo, useState } from "react";
 import { sileo } from "sileo";
 
@@ -46,9 +47,9 @@ import {
   baseDataDialogFieldGroupClass,
   formTextareaClass,
   inputClass,
-  listEmptyMessage,
   tableActionsCellClass,
   tableRowActionsClass,
+  useListEmptyMessage,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
@@ -70,6 +71,14 @@ function zoneSpecialWoredaRaw(zone: Zone): unknown {
 }
 
 export function ZoneManager() {
+  const t = useTranslations("basedata.zone");
+  const tCommon = useTranslations("basedata.common");
+  const tActions = useTranslations("common.actions");
+  const tEmpty = useTranslations("common.empty");
+  const tValidation = useTranslations("common.validation");
+  const tListEmpty = useTranslations("listEmpty.entity");
+  const listEmptyMessage = useListEmptyMessage();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [appliedFilterRegionId, setAppliedFilterRegionId] = useState("");
@@ -118,10 +127,10 @@ export function ZoneManager() {
   const hasSearch = Boolean(searchQuery.trim());
   const hasFilters = Boolean(appliedFilterRegionId);
   const zonesEmptyMessage = listEmptyMessage({
-    entityPlural: "zones",
+    entityPlural: tListEmpty("zones"),
     hasSearch,
     hasFilters,
-    emptyCatalogHint: "No zones yet. Add your first zone to get started.",
+    emptyCatalogHint: t("emptyHint"),
   });
 
   const submitForm = async (event: FormEvent<HTMLFormElement>) => {
@@ -129,8 +138,8 @@ export function ZoneManager() {
 
     if (!name.trim() || !regionId) {
       sileo.warning({
-        title: "Missing fields",
-        description: "Zone name and region are required.",
+        title: t("toasts.missingFieldsTitle"),
+        description: t("toasts.missingFieldsMessage"),
       });
       return;
     }
@@ -146,7 +155,7 @@ export function ZoneManager() {
             isSpecialWoreda,
           },
         });
-        sileo.success({ title: "Zone updated", description: result.message });
+        sileo.success({ title: t("toasts.updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
@@ -154,7 +163,7 @@ export function ZoneManager() {
           regionId,
           isSpecialWoreda,
         });
-        sileo.success({ title: "Zone added", description: result.message });
+        sileo.success({ title: t("toasts.addedTitle"), description: result.message });
       }
 
       setPage(1);
@@ -162,8 +171,8 @@ export function ZoneManager() {
       resetForm();
     } catch (error) {
       sileo.error({
-        title: "Could not save zone",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("toasts.saveErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -171,9 +180,9 @@ export function ZoneManager() {
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Zones</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <DataToolbar
-          searchPlaceholder="Search zones"
+          searchPlaceholder={t("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={(value) => {
             setSearchQuery(value);
@@ -184,7 +193,7 @@ export function ZoneManager() {
             resetForm();
             setIsFormOpen(true);
           }}
-          addLabel="Add zone"
+          addLabel={t("addButton")}
           showFilterButton
           onOpenFilters={() => setIsFilterOpen(true)}
           hasActiveFilters={hasFilters}
@@ -192,7 +201,13 @@ export function ZoneManager() {
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Region", "Special Woreda", "Description", "Actions"]}
+          headers={[
+            tCommon("columnName"),
+            t("regionColumn"),
+            t("specialWoredaColumn"),
+            tCommon("columnDescription"),
+            tCommon("columnActions"),
+          ]}
           loading={zonesQuery.isLoading}
           loadingColumnCount={5}
           isError={zonesQuery.isError}
@@ -207,11 +222,8 @@ export function ZoneManager() {
               <TableCell className="align-top">
                 {(() => {
                   const raw = zoneSpecialWoredaRaw(zone);
-                  return raw === null || raw === undefined
-                    ? "---"
-                    : coerceSpecialWoreda(raw)
-                      ? "Yes"
-                      : "No";
+                  if (raw === null || raw === undefined) return tEmpty("dash");
+                  return coerceSpecialWoreda(raw) ? tCommon("yes") : tCommon("no");
                 })()}
               </TableCell>
               <DescriptionTableCell description={zone.description} />
@@ -226,7 +238,7 @@ export function ZoneManager() {
                       setViewingZone(zone);
                     }}
                   >
-                    View
+                    {tActions("view")}
                   </Button>
                   <Button
                     type="button"
@@ -242,10 +254,10 @@ export function ZoneManager() {
                       setIsFormOpen(true);
                     }}
                   >
-                    Edit
+                    {tActions("edit")}
                   </Button>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteZone(zone)}>
-                    Delete
+                    {tActions("delete")}
                   </Button>
                 </div>
               </TableCell>
@@ -273,16 +285,16 @@ export function ZoneManager() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Filter zones</DialogTitle>
-            <DialogDescription>Narrow the list by region. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogTitle>{t("filters.title")}</DialogTitle>
+            <DialogDescription>{t("filters.description")}</DialogDescription>
           </DialogHeader>
           <FieldGroup className={baseDataDialogFieldGroupClass}>
             <Field>
-              <FieldLabel htmlFor="zone-filter-region">Region</FieldLabel>
+              <FieldLabel htmlFor="zone-filter-region">{t("regionLabel")}</FieldLabel>
               <SelectField
                 id="zone-filter-region"
                 value={draftFilterRegionId}
-                placeholder="All regions"
+                placeholder={t("filters.regionAll")}
                 options={regionOptions}
                 onValueChange={setDraftFilterRegionId}
                 className={inputClass}
@@ -301,7 +313,7 @@ export function ZoneManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Clear filters
+              {tCommon("clearFilters")}
             </Button>
             <Button
               type="button"
@@ -312,7 +324,7 @@ export function ZoneManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Apply filters
+              {tCommon("applyFilters")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -327,12 +339,12 @@ export function ZoneManager() {
         <DialogContent>
           <div className="flex max-h-[85vh] flex-col overflow-hidden">
             <DialogHeader>
-              <DialogTitle>View zone</DialogTitle>
-              <DialogDescription>Read-only details for this zone.</DialogDescription>
+              <DialogTitle>{t("view.title")}</DialogTitle>
+              <DialogDescription>{t("view.description")}</DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="zone-name-view">Zone name</FieldLabel>
+                <FieldLabel htmlFor="zone-name-view">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="zone-name-view"
                   readOnly
@@ -342,11 +354,11 @@ export function ZoneManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="zone-region-view">Region</FieldLabel>
+                <FieldLabel htmlFor="zone-region-view">{t("regionLabel")}</FieldLabel>
                 <SelectField
                   id="zone-region-view"
                   value={viewingZone?.regionId ?? ""}
-                  placeholder="Select region"
+                  placeholder={t("regionPlaceholder")}
                   options={regionOptions}
                   onValueChange={() => {}}
                   className={viewReadOnlyInputClass}
@@ -356,10 +368,10 @@ export function ZoneManager() {
               <div className="pointer-events-none flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/10 px-3 py-3 opacity-80">
                 <div className="space-y-0.5">
                   <FieldLabel htmlFor="zone-special-woreda-view" className="cursor-default">
-                    Is this a special woreda?
+                    {t("specialWoredaLabel")}
                   </FieldLabel>
                   <p className="text-xs text-muted-foreground">
-                    Enable only for zones that count as a special woreda in the program.
+                    {t("specialWoredaHint")}
                   </p>
                 </div>
                 <div
@@ -387,19 +399,19 @@ export function ZoneManager() {
                 </div>
               </div>
               <Field>
-                <FieldLabel htmlFor="zone-description-view">Description</FieldLabel>
+                <FieldLabel htmlFor="zone-description-view">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="zone-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
                   value={viewingZone?.description ?? ""}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <Button type="button" variant="outline" className="h-11" onClick={() => setViewingZone(null)}>
-                Close
+                {tActions("close")}
               </Button>
             </DialogFooter>
           </div>
@@ -410,16 +422,14 @@ export function ZoneManager() {
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
             <DialogHeader>
-              <DialogTitle>{editingZone ? "Edit zone" : "Add zone"}</DialogTitle>
+              <DialogTitle>{editingZone ? t("form.titleEdit") : t("form.titleAdd")}</DialogTitle>
               <DialogDescription>
-                {editingZone
-                  ? "Update zone details, then save your changes."
-                  : "Add a new zone to your base data list."}
+                {editingZone ? t("form.descriptionEdit") : t("form.descriptionAdd")}
               </DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="zone-name">Zone name</FieldLabel>
+                <FieldLabel htmlFor="zone-name">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="zone-name"
                   value={name}
@@ -429,11 +439,11 @@ export function ZoneManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="zone-region">Region</FieldLabel>
+                <FieldLabel htmlFor="zone-region">{t("regionLabel")}</FieldLabel>
                 <SelectField
                   id="zone-region"
                   value={regionId}
-                  placeholder="Select region"
+                  placeholder={t("regionPlaceholder")}
                   options={regionOptions}
                   onValueChange={setRegionId}
                   className={inputClass}
@@ -446,10 +456,10 @@ export function ZoneManager() {
                     id="zone-special-woreda-label"
                     className="block cursor-pointer text-sm leading-none font-medium"
                   >
-                    Is this a special woreda?
+                    {t("specialWoredaLabel")}
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Enable only for zones that count as a special woreda in the program.
+                    {t("specialWoredaHint")}
                   </p>
                 </div>
                 <label
@@ -477,21 +487,21 @@ export function ZoneManager() {
                 </label>
               </div>
               <Field>
-                <FieldLabel htmlFor="zone-description">Description</FieldLabel>
+                <FieldLabel htmlFor="zone-description">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="zone-description"
                   className={formTextareaClass}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}
-                idleLabel={editingZone ? "Save zone" : "Add zone"}
-                pendingLabel={editingZone ? "Saving..." : "Adding..."}
+                idleLabel={editingZone ? t("form.saveEdit") : t("form.saveAdd")}
+                pendingLabel={editingZone ? tCommon("saving") : tCommon("adding")}
               />
             </DialogFooter>
           </form>
@@ -506,31 +516,35 @@ export function ZoneManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete zone</AlertDialogTitle>
+            <AlertDialogTitle>{t("delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete <span className="font-semibold text-foreground">{pendingDeleteZone?.name}</span>
-              ? This action cannot be undone.
+              {t.rich("delete.confirm", {
+                name: pendingDeleteZone?.name ?? "",
+                strong: (chunks) => (
+                  <span className="font-semibold text-foreground">{chunks}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={async () => {
                 if (!pendingDeleteZone) return;
                 try {
                   const result = await deleteMutation.mutateAsync(pendingDeleteZone.id);
-                  sileo.success({ title: "Zone deleted", description: result.message });
+                  sileo.success({ title: t("toasts.deletedTitle"), description: result.message });
                   setPendingDeleteZone(null);
                 } catch (error) {
                   sileo.error({
-                    title: "Could not delete zone",
-                    description: error instanceof Error ? error.message : "Unexpected error",
+                    title: t("toasts.deleteErrorTitle"),
+                    description: error instanceof Error ? error.message : tValidation("unexpectedError"),
                   });
                 }
               }}
             >
-              Delete zone
+              {t("delete.action")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

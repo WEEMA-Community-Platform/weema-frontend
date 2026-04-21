@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormEvent, useMemo, useState } from "react";
 import { sileo } from "sileo";
 
@@ -46,14 +47,21 @@ import {
   baseDataDialogFieldGroupClass,
   formTextareaClass,
   inputClass,
-  listEmptyMessage,
   tableActionsCellClass,
   tableRowActionsClass,
+  useListEmptyMessage,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function KebeleManager() {
+  const t = useTranslations("basedata.kebele");
+  const tCommon = useTranslations("basedata.common");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+  const tListEmpty = useTranslations("listEmpty.entity");
+  const listEmptyMessage = useListEmptyMessage();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
@@ -112,7 +120,10 @@ export function KebeleManager() {
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim() || !selectedWoredaId) {
-      sileo.warning({ title: "Missing fields", description: "Kebele name and woreda are required." });
+      sileo.warning({
+        title: t("toasts.missingFieldsTitle"),
+        description: t("toasts.missingFieldsMessage"),
+      });
       return;
     }
 
@@ -126,22 +137,22 @@ export function KebeleManager() {
             woredaId: selectedWoredaId,
           },
         });
-        sileo.success({ title: "Kebele updated", description: result.message });
+        sileo.success({ title: t("toasts.updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
           description: description.trim(),
           woredaId: selectedWoredaId,
         });
-        sileo.success({ title: "Kebele added", description: result.message });
+        sileo.success({ title: t("toasts.addedTitle"), description: result.message });
       }
       setPage(1);
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
       sileo.error({
-        title: "Could not save kebele",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("toasts.saveErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -149,18 +160,18 @@ export function KebeleManager() {
   const hasSearch = Boolean(searchQuery.trim());
   const hasFilters = Boolean(appliedFilterZoneId || appliedFilterWoredaId);
   const kebelesEmptyMessage = listEmptyMessage({
-    entityPlural: "kebeles",
+    entityPlural: tListEmpty("kebeles"),
     hasSearch,
     hasFilters,
-    emptyCatalogHint: "No kebeles yet. Add your first kebele to get started.",
+    emptyCatalogHint: t("emptyHint"),
   });
 
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Kebeles</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <DataToolbar
-          searchPlaceholder="Search kebeles"
+          searchPlaceholder={t("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={(value) => {
             setSearchQuery(value);
@@ -171,7 +182,7 @@ export function KebeleManager() {
             resetForm();
             setIsFormOpen(true);
           }}
-          addLabel="Add kebele"
+          addLabel={t("addButton")}
           showFilterButton
           onOpenFilters={() => setIsFilterOpen(true)}
           hasActiveFilters={hasFilters}
@@ -179,7 +190,12 @@ export function KebeleManager() {
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Woreda", "Description", "Actions"]}
+          headers={[
+            tCommon("columnName"),
+            t("woredaColumn"),
+            tCommon("columnDescription"),
+            tCommon("columnActions"),
+          ]}
           loading={kebelesQuery.isLoading}
           loadingColumnCount={4}
           isError={kebelesQuery.isError}
@@ -203,7 +219,7 @@ export function KebeleManager() {
                       setViewingKebele(kebele);
                     }}
                   >
-                    View
+                    {tActions("view")}
                   </Button>
                   <Button
                     type="button"
@@ -218,10 +234,10 @@ export function KebeleManager() {
                       setIsFormOpen(true);
                     }}
                   >
-                    Edit
+                    {tActions("edit")}
                   </Button>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteKebele(kebele)}>
-                    Delete
+                    {tActions("delete")}
                   </Button>
                 </div>
               </TableCell>
@@ -249,12 +265,12 @@ export function KebeleManager() {
         <DialogContent>
           <div className="flex max-h-[85vh] flex-col overflow-hidden">
             <DialogHeader>
-              <DialogTitle>View kebele</DialogTitle>
-              <DialogDescription>Read-only details for this kebele.</DialogDescription>
+              <DialogTitle>{t("view.title")}</DialogTitle>
+              <DialogDescription>{t("view.description")}</DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="kebele-name-view">Kebele name</FieldLabel>
+                <FieldLabel htmlFor="kebele-name-view">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="kebele-name-view"
                   readOnly
@@ -264,11 +280,11 @@ export function KebeleManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="kebele-woreda-view">Woreda</FieldLabel>
+                <FieldLabel htmlFor="kebele-woreda-view">{t("woredaLabel")}</FieldLabel>
                 <SelectField
                   id="kebele-woreda-view"
                   value={viewingKebele?.woredaId ?? ""}
-                  placeholder="Select woreda"
+                  placeholder={t("woredaPlaceholder")}
                   options={woredaCreateOptions}
                   onValueChange={() => {}}
                   className={viewReadOnlyInputClass}
@@ -276,19 +292,19 @@ export function KebeleManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="kebele-description-view">Description</FieldLabel>
+                <FieldLabel htmlFor="kebele-description-view">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="kebele-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
                   value={viewingKebele?.description ?? ""}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <Button type="button" variant="outline" className="h-11" onClick={() => setViewingKebele(null)}>
-                Close
+                {tActions("close")}
               </Button>
             </DialogFooter>
           </div>
@@ -299,16 +315,14 @@ export function KebeleManager() {
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
             <DialogHeader>
-              <DialogTitle>{editingKebele ? "Edit kebele" : "Add kebele"}</DialogTitle>
+              <DialogTitle>{editingKebele ? t("form.titleEdit") : t("form.titleAdd")}</DialogTitle>
               <DialogDescription>
-                {editingKebele
-                  ? "Update kebele details, then save your changes."
-                  : "Add a new kebele to your base data list."}
+                {editingKebele ? t("form.descriptionEdit") : t("form.descriptionAdd")}
               </DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="kebele-name">Kebele name</FieldLabel>
+                <FieldLabel htmlFor="kebele-name">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="kebele-name"
                   value={name}
@@ -318,32 +332,32 @@ export function KebeleManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="kebele-woreda">Woreda</FieldLabel>
+                <FieldLabel htmlFor="kebele-woreda">{t("woredaLabel")}</FieldLabel>
                 <SelectField
                   id="kebele-woreda"
                   value={selectedWoredaId}
-                  placeholder="Select woreda"
+                  placeholder={t("woredaPlaceholder")}
                   options={woredaCreateOptions}
                   onValueChange={setSelectedWoredaId}
                   className={inputClass}
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="kebele-description">Description</FieldLabel>
+                <FieldLabel htmlFor="kebele-description">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="kebele-description"
                   className={formTextareaClass}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}
-                idleLabel={editingKebele ? "Save kebele" : "Add kebele"}
-                pendingLabel={editingKebele ? "Saving..." : "Adding..."}
+                idleLabel={editingKebele ? t("form.saveEdit") : t("form.saveAdd")}
+                pendingLabel={editingKebele ? tCommon("saving") : tCommon("adding")}
               />
             </DialogFooter>
           </form>
@@ -362,16 +376,16 @@ export function KebeleManager() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Filter kebeles</DialogTitle>
-            <DialogDescription>Narrow the kebele list. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogTitle>{t("filters.title")}</DialogTitle>
+            <DialogDescription>{t("filters.description")}</DialogDescription>
           </DialogHeader>
           <FieldGroup className={baseDataDialogFieldGroupClass}>
             <Field>
-              <FieldLabel htmlFor="kebele-filter-zone">Zone</FieldLabel>
+              <FieldLabel htmlFor="kebele-filter-zone">{t("filters.zoneLabel")}</FieldLabel>
               <SelectField
                 id="kebele-filter-zone"
                 value={draftFilterZoneId}
-                placeholder="All zones"
+                placeholder={t("filters.zoneAll")}
                 options={zoneOptions}
                 onValueChange={(value) => {
                   setDraftFilterZoneId(value);
@@ -381,11 +395,11 @@ export function KebeleManager() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="kebele-filter-woreda">Woreda</FieldLabel>
+              <FieldLabel htmlFor="kebele-filter-woreda">{t("filters.woredaLabel")}</FieldLabel>
               <SelectField
                 id="kebele-filter-woreda"
                 value={draftFilterWoredaId}
-                placeholder="All woredas"
+                placeholder={t("filters.woredaAll")}
                 options={woredaFilterOptions}
                 onValueChange={setDraftFilterWoredaId}
                 className={inputClass}
@@ -406,7 +420,7 @@ export function KebeleManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Clear filters
+              {tCommon("clearFilters")}
             </Button>
             <Button
               type="button"
@@ -418,7 +432,7 @@ export function KebeleManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Apply filters
+              {tCommon("applyFilters")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -432,30 +446,35 @@ export function KebeleManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete kebele</AlertDialogTitle>
+            <AlertDialogTitle>{t("delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete <span className="font-semibold text-foreground">{pendingDeleteKebele?.name}</span>? This action cannot be undone.
+              {t.rich("delete.confirm", {
+                name: pendingDeleteKebele?.name ?? "",
+                strong: (chunks) => (
+                  <span className="font-semibold text-foreground">{chunks}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={async () => {
                 if (!pendingDeleteKebele) return;
                 try {
                   const result = await deleteMutation.mutateAsync(pendingDeleteKebele.id);
-                  sileo.success({ title: "Kebele deleted", description: result.message });
+                  sileo.success({ title: t("toasts.deletedTitle"), description: result.message });
                   setPendingDeleteKebele(null);
                 } catch (error) {
                   sileo.error({
-                    title: "Could not delete kebele",
-                    description: error instanceof Error ? error.message : "Unexpected error",
+                    title: t("toasts.deleteErrorTitle"),
+                    description: error instanceof Error ? error.message : tValidation("unexpectedError"),
                   });
                 }
               }}
             >
-              Delete kebele
+              {t("delete.action")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

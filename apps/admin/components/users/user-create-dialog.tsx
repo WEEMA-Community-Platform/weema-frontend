@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/base-data/select-field";
 import { SaveButton, inputClass } from "@/components/base-data/shared";
-import { USER_ROLE_OPTIONS } from "@/components/users/constants";
+import { useUserRoleOptions } from "@/components/users/constants";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
 import type { CreateUserPayload } from "@/lib/api/users-admin";
@@ -44,6 +45,11 @@ export function UserCreateDialog({
   };
   const isValidEthiopianLocalPhone = (localNumber: string) => /^[97]\d{8}$/.test(localNumber);
 
+  const t = useTranslations("users.create");
+  const tToasts = useTranslations("users.create.toasts");
+  const tCommon = useTranslations("common.validation");
+  const roleOptions = useUserRoleOptions();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -71,8 +77,8 @@ export function UserCreateDialog({
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !role) {
       sileo.warning({
-        title: "Required fields",
-        description: "First name, last name, email, and role are required.",
+        title: tToasts("requiredTitle"),
+        description: tToasts("requiredMessage"),
       });
       return;
     }
@@ -81,15 +87,15 @@ export function UserCreateDialog({
 
     if (isFacilitator && !localPhoneNumber) {
       sileo.warning({
-        title: "Phone number required",
-        description: "Facilitator accounts require a phone number.",
+        title: tToasts("phoneRequiredTitle"),
+        description: tToasts("phoneRequiredMessage"),
       });
       return;
     }
     if (localPhoneNumber && !isValidEthiopianLocalPhone(localPhoneNumber)) {
       sileo.warning({
-        title: "Invalid phone number",
-        description: "Use a valid Ethiopian mobile number starting with 9 or 7.",
+        title: tToasts("phoneInvalidTitle"),
+        description: tToasts("phoneInvalidMessage"),
       });
       return;
     }
@@ -102,13 +108,16 @@ export function UserCreateDialog({
         role,
         phoneNumber: localPhoneNumber ? `+251${localPhoneNumber}` : undefined,
       });
-      sileo.success({ title: "User created", description: result.message || "Success." });
+      sileo.success({
+        title: tToasts("createdTitle"),
+        description: result.message || tToasts("createdMessage"),
+      });
       setPage(1);
       dismiss();
     } catch (err) {
       sileo.error({
-        title: "Could not create user",
-        description: err instanceof Error ? err.message : "Unexpected error",
+        title: tToasts("errorTitle"),
+        description: err instanceof Error ? err.message : tCommon("unexpectedError"),
       });
     }
   };
@@ -118,15 +127,13 @@ export function UserCreateDialog({
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,42rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <form onSubmit={submit} className="flex max-h-[85vh] flex-col">
           <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-5">
-            <DialogTitle>Add user</DialogTitle>
-            <DialogDescription>
-              Create a new account. Only super administrators can add users.
-            </DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 overflow-y-auto px-6 py-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="create-user-first">First name</Label>
+                <Label htmlFor="create-user-first">{t("firstName")}</Label>
                 <Input
                   id="create-user-first"
                   value={firstName}
@@ -137,7 +144,7 @@ export function UserCreateDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="create-user-last">Last name</Label>
+                <Label htmlFor="create-user-last">{t("lastName")}</Label>
                 <Input
                   id="create-user-last"
                   value={lastName}
@@ -149,7 +156,7 @@ export function UserCreateDialog({
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-user-email">Email</Label>
+              <Label htmlFor="create-user-email">{t("email")}</Label>
               <Input
                 id="create-user-email"
                 type="email"
@@ -162,7 +169,8 @@ export function UserCreateDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="create-user-phone">
-                Phone number {role === FACILITATOR_ROLE ? "(required for facilitator)" : "(optional)"}
+                {t("phoneLabel")}{" "}
+                {role === FACILITATOR_ROLE ? t("phoneRequiredSuffix") : t("phoneOptionalSuffix")}
               </Label>
               <div className="flex items-stretch">
                 <span className="inline-flex h-11 items-center gap-1.5 rounded-l-lg border border-r-0 border-input bg-muted/30 px-3 text-sm text-muted-foreground">
@@ -179,18 +187,18 @@ export function UserCreateDialog({
                   onChange={(e) => setPhoneNumber(normalizeLocalPhone(e.target.value))}
                   className={`${inputClass} rounded-l-none`}
                   autoComplete="tel"
-                  placeholder="9XXXXXXXX"
+                  placeholder={t("phonePlaceholder")}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Enter 9 digits, starting with 9 or 7.</p>
+              <p className="text-xs text-muted-foreground">{t("phoneHint")}</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-user-role">Role</Label>
+              <Label htmlFor="create-user-role">{t("role")}</Label>
               <SelectField
                 id="create-user-role"
                 value={role}
-                placeholder="Select role"
-                options={USER_ROLE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                placeholder={t("rolePlaceholder")}
+                options={roleOptions.map((o) => ({ value: o.value, label: o.label }))}
                 onValueChange={setRole}
               />
             </div>
@@ -198,8 +206,8 @@ export function UserCreateDialog({
           <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
             <SaveButton
               isPending={createMutation.isPending}
-              idleLabel="Create user"
-              pendingLabel="Creating…"
+              idleLabel={t("submit")}
+              pendingLabel={t("submitting")}
             />
           </DialogFooter>
         </form>

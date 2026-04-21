@@ -2,6 +2,7 @@
 
 import { useLogoutMutation } from "@weema/auth/react-query"
 import { LogOutIcon, ChevronsUpDownIcon, UserCircle2Icon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
 import { sileo } from "sileo"
 
@@ -32,6 +33,8 @@ export function NavUser({
     avatar: string
   }
 }) {
+  const t = useTranslations("nav.user")
+  const tCommon = useTranslations("common.validation")
   const { isMobile } = useSidebar()
   const router = useRouter()
   const logoutMutation = useLogoutMutation({ baseUrl: "/api/auth" })
@@ -47,15 +50,15 @@ export function NavUser({
     try {
       const result = await logoutMutation.mutateAsync()
       sileo.success({
-        title: "Logged out",
-        description: result.message || "You have been signed out.",
+        title: t("loggedOut"),
+        description: result.message || t("loggedOutMessage"),
       })
       router.push("/login")
       router.refresh()
     } catch (error) {
       sileo.error({
-        title: "Logout failed",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("logoutFailed"),
+        description: error instanceof Error ? error.message : tCommon("unexpectedError"),
       })
     }
   }
@@ -112,7 +115,7 @@ export function NavUser({
             <DropdownMenuGroup className="gap-0.5">
               <DropdownMenuItem onClick={() => router.push("/?section=profile")}>
                 <UserCircle2Icon className="size-4 opacity-80" />
-                Profile
+                {t("profile")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
@@ -120,7 +123,7 @@ export function NavUser({
                 onClick={handleLogout}
               >
                 <LogOutIcon className="size-4 opacity-90" />
-                {logoutMutation.isPending ? "Logging out..." : "Log out"}
+                {logoutMutation.isPending ? t("loggingOut") : t("logout")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

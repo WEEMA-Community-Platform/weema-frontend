@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
@@ -60,10 +60,14 @@ export function SHGDetailDialog({
   const tDetail = useTranslations("community.shg.detail");
   const tActions = useTranslations("common.actions");
   const [activeId, setActiveId] = useState<string | null>(id);
+  const [syncedId, setSyncedId] = useState<string | null>(id);
 
-  useEffect(() => {
-    if (open && id) setActiveId(id);
-  }, [open, id]);
+  // Latch `id` into `activeId` whenever a new SHG is selected while open.
+  // Keeping the last value avoids flicker during the dialog's exit animation.
+  if (open && id && id !== syncedId) {
+    setSyncedId(id);
+    setActiveId(id);
+  }
 
   const { data, isLoading, isError, error, refetch } =
     useSHGDetailQuery(activeId);

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -13,7 +15,7 @@ import {
   tableRowActionsClass,
 } from "@/components/base-data/shared";
 import type { UserListItem } from "@/lib/api/users-admin";
-import { formatRoleLabel } from "@/components/users/constants";
+import { useRoleLabel } from "@/components/users/constants";
 
 type UserTableCardProps = {
   searchQuery: string;
@@ -54,16 +56,22 @@ export function UserTableCard({
   onToggleActivation,
   emptyMessage,
 }: UserTableCardProps) {
+  const t = useTranslations("users.list");
+  const tCols = useTranslations("users.list.columns");
+  const tCell = useTranslations("users.list.cell");
+  const tRow = useTranslations("users.list.rowActions");
+  const roleLabel = useRoleLabel();
+
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Users</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <DataToolbar
-          searchPlaceholder="Search by name or email…"
+          searchPlaceholder={t("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={onSearchChange}
           onAdd={onAdd}
-          addLabel="Add user"
+          addLabel={t("addButton")}
           showFilterButton
           onOpenFilters={onOpenFilters}
           hasActiveFilters={hasActiveFilters}
@@ -71,7 +79,15 @@ export function UserTableCard({
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Email", "Role", "Phone", "Active", "First login", "Actions"]}
+          headers={[
+            tCols("name"),
+            tCols("email"),
+            tCols("role"),
+            tCols("phone"),
+            tCols("active"),
+            tCols("firstLogin"),
+            tCols("actions"),
+          ]}
           loading={isLoading}
           loadingColumnCount={7}
           isError={isError}
@@ -85,14 +101,14 @@ export function UserTableCard({
                 {u.firstName} {u.lastName}
               </TableCell>
               <TableCell className="text-muted-foreground">{u.email}</TableCell>
-              <TableCell className="capitalize">{formatRoleLabel(u.role)}</TableCell>
+              <TableCell className="capitalize">{roleLabel(u.role)}</TableCell>
               <TableCell className={descriptionCellClass}>{u.phoneNumber ?? "—"}</TableCell>
-              <TableCell>{u.active ? "Yes" : "No"}</TableCell>
-              <TableCell>{u.firstTimeLogin ? "Yes" : "No"}</TableCell>
+              <TableCell>{u.active ? tCell("yes") : tCell("no")}</TableCell>
+              <TableCell>{u.firstTimeLogin ? tCell("yes") : tCell("no")}</TableCell>
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
                   <Button type="button" size="sm" variant="outline" onClick={() => onView(u.id)}>
-                    View
+                    {tRow("view")}
                   </Button>
                   <Button
                     type="button"
@@ -100,7 +116,7 @@ export function UserTableCard({
                     variant={u.active ? "outline" : "default"}
                     onClick={() => onToggleActivation(u)}
                   >
-                    {u.active ? "Deactivate" : "Activate"}
+                    {u.active ? tRow("deactivate") : tRow("activate")}
                   </Button>
                 </div>
               </TableCell>

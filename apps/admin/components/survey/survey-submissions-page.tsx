@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -35,14 +36,19 @@ import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
 type PendingSubmissionLock = { submission: SurveySubmissionRecord; action: "lock" | "unlock" };
 
-function labelsForTargetType(targetType: string | undefined) {
-  const normalized = (targetType ?? "").toUpperCase();
-  if (normalized === "CLUSTER" || normalized === "SELF_HELP_GROUP") {
-    return { singular: "SHG", plural: "SHGs" };
-  }
-  if (normalized === "FEDERATION") return { singular: "cluster", plural: "clusters" };
-  if (normalized === "MEMBER") return { singular: "member", plural: "members" };
-  return { singular: "target", plural: "targets" };
+function useLabelsForTargetType() {
+  const t = useTranslations("survey.submissions.targetLabels");
+  return (targetType: string | undefined) => {
+    const normalized = (targetType ?? "").toUpperCase();
+    if (normalized === "CLUSTER" || normalized === "SELF_HELP_GROUP") {
+      return { singular: t("shgSingular"), plural: t("shgPlural") };
+    }
+    if (normalized === "FEDERATION")
+      return { singular: t("clusterSingular"), plural: t("clusterPlural") };
+    if (normalized === "MEMBER")
+      return { singular: t("memberSingular"), plural: t("memberPlural") };
+    return { singular: t("genericSingular"), plural: t("genericPlural") };
+  };
 }
 
 function SubmissionLockDialog({
@@ -62,16 +68,20 @@ function SubmissionLockDialog({
   onUpdated: () => Promise<void>;
   onClose: () => void;
 }) {
+  const tLock = useTranslations("survey.submissions.lock");
+  const tToasts = useTranslations("survey.submissions.lock.toasts");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
   // Retain last non-null values so content doesn't flash during the exit animation.
-  const lastPending = useRef(pending);
-  if (pending) lastPending.current = pending;
-  const p = lastPending.current;
+  const [latchedPending, setLatchedPending] = useState<PendingSubmissionLock | null>(pending);
+  if (pending && pending !== latchedPending) setLatchedPending(pending);
+  const p = latchedPending;
   const isLocking = p?.action === "lock";
   const isPending = lockMutation.isPending || unlockMutation.isPending;
   const targetName =
     p?.submission.targetName ||
     p?.submission.memberName ||
-    `this ${targetLabelSingular}`;
+    tLock("thisTarget", { target: targetLabelSingular });
 
   const handleConfirm = async () => {
     if (!p?.submission.id) return;
@@ -79,22 +89,25 @@ function SubmissionLockDialog({
       if (isLocking) {
         await lockMutation.mutateAsync(p.submission.id);
         sileo.success({
-          title: "Submission locked",
-          description: `${targetName}'s submission has been locked.`,
+          title: tToasts("lockedTitle"),
+          description: tToasts("lockedMessage", { name: targetName }),
         });
       } else {
         await unlockMutation.mutateAsync(p.submission.id);
         sileo.success({
-          title: "Submission unlocked",
-          description: `${targetName}'s submission has been unlocked.`,
+          title: tToasts("unlockedTitle"),
+          description: tToasts("unlockedMessage", { name: targetName }),
         });
       }
       await onUpdated();
       onClose();
     } catch (error) {
       sileo.error({
-        title: isLocking ? "Failed to lock submission" : "Failed to unlock submission",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: isLocking
+          ? tToasts("lockErrorTitle")
+          : tToasts("unlockErrorTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -109,30 +122,28 @@ function SubmissionLockDialog({
             ) : (
               <UnlockIcon className="size-4 text-amber-500" />
             )}
-            {isLocking ? "Lock submission" : "Unlock submission"}
+            {isLocking ? tLock("lockTitle") : tLock("unlockTitle")}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {isLocking ? (
-              <>
-                Lock{" "}
-                <span className="font-semibold text-foreground">
-                  {targetName}
-                </span>
-                {"'s submission? Facilitators will not be able to edit or delete it."}
-              </>
-            ) : (
-              <>
-                Unlock{" "}
-                <span className="font-semibold text-foreground">
-                  {targetName}
-                </span>
-                {"'s submission? Facilitators will be able to edit or delete it again."}
-              </>
-            )}
+            {isLocking
+              ? tLock.rich("lockDescription", {
+                  name: targetName,
+                  strong: (chunks) => (
+                    <span className="font-semibold text-foreground">{chunks}</span>
+                  ),
+                })
+              : tLock.rich("unlockDescription", {
+                  name: targetName,
+                  strong: (chunks) => (
+                    <span className="font-semibold text-foreground">{chunks}</span>
+                  ),
+                })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            {tActions("cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => void handleConfirm()}
             disabled={isPending}
@@ -143,11 +154,11 @@ function SubmissionLockDialog({
             }
           >
             {isPending ? (
-              isLocking ? "Locking..." : "Unlocking..."
+              isLocking ? tLock("locking") : tLock("unlocking")
             ) : (
               <>
                 {isLocking ? <LockIcon className="size-4" /> : <UnlockIcon className="size-4" />}
-                {isLocking ? "Lock submission" : "Unlock submission"}
+                {isLocking ? tLock("lockSubmit") : tLock("unlockSubmit")}
               </>
             )}
           </AlertDialogAction>
@@ -167,6 +178,10 @@ export function SurveySubmissionsPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const tPage = useTranslations("survey.submissions");
+  const tToasts = useTranslations("survey.submissions.lock.toasts");
+  const tValidation = useTranslations("common.validation");
+  const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
   const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
 
@@ -236,8 +251,8 @@ export function SurveySubmissionsPage({
     const targetId = submission.targetId || submission.memberId;
     if (!targetId) {
       sileo.error({
-        title: "Unable to start submission",
-        description: "Missing target ID for this row.",
+        title: tToasts("unableToStartTitle"),
+        description: tToasts("unableToStartMessage"),
       });
       return;
     }
@@ -251,8 +266,9 @@ export function SurveySubmissionsPage({
       });
     } catch (error) {
       sileo.error({
-        title: "Failed to start submission",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: tToasts("startFailedTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -271,7 +287,7 @@ export function SurveySubmissionsPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button type="button" variant="ghost" render={<Link href="/survey" />}>
           <ArrowLeftIcon className="size-4" />
-          Back to surveys
+          {tPage("backToSurveys")}
         </Button>
       </div>
 
@@ -301,7 +317,7 @@ export function SurveySubmissionsPage({
             errorMessage={
               submissionsQuery.error instanceof Error
                 ? submissionsQuery.error.message
-                : "Failed to load pending targets."
+                : tPage("loadError")
             }
             onRetry={() => submissionsQuery.refetch()}
             onPrimaryAction={(submission) => void handlePrimaryAction(submission)}

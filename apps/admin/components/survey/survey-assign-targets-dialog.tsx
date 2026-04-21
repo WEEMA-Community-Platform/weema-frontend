@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2Icon, Trash2Icon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -40,13 +41,16 @@ import { SelectField } from "@/components/base-data/select-field";
 
 type PendingRemove = SurveyAssignmentTargetRow | null;
 
-function getAssignmentEntity(targetType?: string) {
-  const normalized = (targetType ?? "").toUpperCase();
-  if (normalized === "CLUSTER") {
-    return { singular: "cluster", plural: "clusters" };
-  }
-  // MEMBER and SELF_HELP_GROUP/SHG surveys are assigned to SHGs.
-  return { singular: "SHG", plural: "SHGs" };
+function useAssignmentEntity() {
+  const t = useTranslations("survey.assign.entities");
+  return (targetType?: string) => {
+    const normalized = (targetType ?? "").toUpperCase();
+    if (normalized === "CLUSTER") {
+      return { singular: t("clusterSingular"), plural: t("clusterPlural") };
+    }
+    // MEMBER and SELF_HELP_GROUP/SHG surveys are assigned to SHGs.
+    return { singular: t("shgSingular"), plural: t("shgPlural") };
+  };
 }
 
 function resolveAssignmentRows(
@@ -65,11 +69,13 @@ function TargetRow({
   onRemove,
   isRemoving,
   removeLabel,
+  ariaLabel,
 }: {
   row: SurveyAssignmentTargetRow;
   onRemove: (row: SurveyAssignmentTargetRow) => void;
   isRemoving: boolean;
   removeLabel: string;
+  ariaLabel: string;
 }) {
   return (
     <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
@@ -84,13 +90,14 @@ function TargetRow({
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={`Remove ${removeLabel} ${row.name}`}
+        aria-label={ariaLabel}
         disabled={isRemoving}
         onClick={() => onRemove(row)}
         className="size-7 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
       >
         <Trash2Icon className="size-3.5" />
       </Button>
+      <span className="sr-only">{removeLabel}</span>
     </div>
   );
 }
@@ -102,31 +109,43 @@ function RemoveTargetDialog({
   onConfirm,
   isPending,
   entityLabel,
+  entityLabelPlural,
 }: {
   target: PendingRemove;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isPending: boolean;
   entityLabel: string;
+  entityLabelPlural: string;
 }) {
+  const tRemove = useTranslations("survey.assign.remove");
+  const tActions = useTranslations("common.actions");
   // Keep last non-null value to avoid flash during exit animation.
-  const lastTarget = useRef(target);
-  if (target) lastTarget.current = target;
-  const t = lastTarget.current;
+  const [latchedTarget, setLatchedTarget] = useState<PendingRemove>(target);
+  if (target && target !== latchedTarget) setLatchedTarget(target);
+  const t = latchedTarget;
 
   return (
     <AlertDialog open={!!target} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{`Remove assigned ${entityLabel}`}</AlertDialogTitle>
+          <AlertDialogTitle>
+            {tRemove("title", { label: entityLabel })}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Remove{" "}
-            <span className="font-semibold text-foreground">{t?.name}</span>{" "}
-            from this survey's assigned {entityLabel}s? It can be re-added at any time.
+            {tRemove.rich("confirm", {
+              name: t?.name ?? "",
+              labelPlural: entityLabelPlural,
+              strong: (chunks) => (
+                <span className="font-semibold text-foreground">{chunks}</span>
+              ),
+            })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            {tActions("cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={isPending}
@@ -135,10 +154,10 @@ function RemoveTargetDialog({
             {isPending ? (
               <>
                 <Loader2Icon className="size-4 animate-spin" />
-                Removing…
+                {tRemove("submitting")}
               </>
             ) : (
-              `Remove ${entityLabel}`
+              tRemove("submit", { label: entityLabel })
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -158,11 +177,32 @@ export function SurveyAssignTargetsDialog({
   surveyId: string | null;
   surveyTitle: string;
 }) {
+  const tAssign = useTranslations("survey.assign");
+  const tRemove = useTranslations("survey.assign.remove");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+  const assignmentEntityFor = useAssignmentEntity();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pendingRemove, setPendingRemove] = useState<PendingRemove>(null);
+  const [sessionKey, setSessionKey] = useState<string | null>(
+    open && surveyId ? surveyId : null
+  );
+
+  // Reset transient state only when the dialog transitions to open for a
+  // (new) survey. This avoids clearing during exit animations.
+  const nextSessionKey = open && surveyId ? surveyId : null;
+  if (nextSessionKey !== sessionKey) {
+    setSessionKey(nextSessionKey);
+    if (nextSessionKey) {
+      setSearchInput("");
+      setDebouncedSearch("");
+      setSelectedFacilitatorId("");
+      setSelectedIds(new Set());
+    }
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -214,7 +254,7 @@ export function SurveyAssignTargetsDialog({
     [assignmentData]
   );
   const targetType = surveyDetailQuery.data?.survey?.targetType;
-  const assignmentEntity = getAssignmentEntity(targetType);
+  const assignmentEntity = assignmentEntityFor(targetType);
   const facilitatorOptions = useMemo(
     () =>
       (facilitatorsQuery.data?.users ?? []).map((user) => {
@@ -227,28 +267,23 @@ export function SurveyAssignTargetsDialog({
     [facilitatorsQuery.data?.users]
   );
 
-  /** Reset only when opening (or switching survey), not on close — avoids flashing empty state during exit animation. */
-  useEffect(() => {
-    if (open && surveyId) {
-      setSearchInput("");
-      setDebouncedSearch("");
-      setSelectedFacilitatorId("");
-      setSelectedIds(new Set());
-    }
-  }, [open, surveyId]);
-
-  useEffect(() => {
-    // Keep selections only for rows still available after server-side filtering.
-    const availableIdSet = new Set(available.map((row) => row.id));
-    setSelectedIds((prev) => {
-      if (prev.size === 0) return prev;
+  // Keep selections only for rows still available after server-side filtering.
+  // Computed via "adjust state during render" so it doesn't trigger an extra
+  // render like setState-in-useEffect does.
+  const [availableSync, setAvailableSync] = useState(available);
+  if (available !== availableSync) {
+    setAvailableSync(available);
+    if (selectedIds.size > 0) {
+      const availableIdSet = new Set(available.map((row) => row.id));
+      let changed = false;
       const next = new Set<string>();
-      for (const id of prev) {
+      for (const id of selectedIds) {
         if (availableIdSet.has(id)) next.add(id);
+        else changed = true;
       }
-      return next;
-    });
-  }, [available]);
+      if (changed) setSelectedIds(next);
+    }
+  }
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -267,14 +302,16 @@ export function SurveyAssignTargetsDialog({
         targetIds: [...selectedIds],
       });
       sileo.success({
-        title: `${assignmentEntity.plural} assigned`,
-        description: result.message ?? "Assignment updated.",
+        title: tAssign("toasts.assignedTitle", { plural: assignmentEntity.plural }),
+        description: result.message ?? tAssign("toasts.assignedMessage"),
       });
       setSelectedIds(new Set());
     } catch (e) {
       sileo.error({
-        title: `Could not assign ${assignmentEntity.plural}`,
-        description: e instanceof Error ? e.message : "Unexpected error",
+        title: tAssign("toasts.assignErrorTitle", {
+          plural: assignmentEntity.plural,
+        }),
+        description: e instanceof Error ? e.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -287,14 +324,16 @@ export function SurveyAssignTargetsDialog({
         targetIds: [pendingRemove.id],
       });
       sileo.success({
-        title: `${assignmentEntity.plural} updated`,
-        description: result.message ?? "Assignment removed.",
+        title: tAssign("toasts.removedTitle", { plural: assignmentEntity.plural }),
+        description: result.message ?? tAssign("toasts.removedMessage"),
       });
       setPendingRemove(null);
     } catch (e) {
       sileo.error({
-        title: `Could not remove ${assignmentEntity.singular}`,
-        description: e instanceof Error ? e.message : "Unexpected error",
+        title: tAssign("toasts.removeErrorTitle", {
+          label: assignmentEntity.singular,
+        }),
+        description: e instanceof Error ? e.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -304,15 +343,19 @@ export function SurveyAssignTargetsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
-            <DialogTitle>Assign survey entities</DialogTitle>
+            <DialogTitle>{tAssign("title")}</DialogTitle>
             <DialogDescription>
               <span className="font-medium text-foreground">{surveyTitle}</span>
               <span className="block mt-1.5">
-                Assign from available {assignmentEntity.plural}.
+                {tAssign("assignableDescription", { plural: assignmentEntity.plural })}
               </span>
               <span className="block mt-2 text-foreground/90">
-                This survey can be assigned to{" "}
-                <span className="font-medium text-foreground">{assignmentEntity.plural}</span>.
+                {tAssign.rich("assignableHint", {
+                  plural: assignmentEntity.plural,
+                  strong: (chunks) => (
+                    <span className="font-medium text-foreground">{chunks}</span>
+                  ),
+                })}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -327,34 +370,38 @@ export function SurveyAssignTargetsDialog({
             ) : isError ? (
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-3 text-sm">
                 <p className="text-muted-foreground">
-                  {error instanceof Error ? error.message : "Could not load assignment targets."}
+                  {error instanceof Error ? error.message : tAssign("loadError")}
                 </p>
                 <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
-                  Retry
+                  {tActions("retry")}
                 </Button>
               </div>
             ) : (
               <>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="assign-target-search">Search</Label>
+                    <Label htmlFor="assign-target-search">{tAssign("searchLabel")}</Label>
                     <Input
                       id="assign-target-search"
-                      placeholder={`Search ${assignmentEntity.plural}...`}
+                      placeholder={tAssign("searchPlaceholder", {
+                        plural: assignmentEntity.plural,
+                      })}
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
                       className={inputClass}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="assign-target-facilitator">Facilitator</Label>
+                    <Label htmlFor="assign-target-facilitator">
+                      {tAssign("facilitatorLabel")}
+                    </Label>
                     <SelectField
                       id="assign-target-facilitator"
                       value={selectedFacilitatorId}
                       placeholder={
                         facilitatorsQuery.isLoading
-                          ? "Loading facilitators..."
-                          : "All facilitators"
+                          ? tAssign("facilitatorLoadingPlaceholder")
+                          : tAssign("facilitatorAllPlaceholder")
                       }
                       options={facilitatorOptions}
                       onValueChange={setSelectedFacilitatorId}
@@ -366,13 +413,13 @@ export function SurveyAssignTargetsDialog({
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Assigned
+                      {tAssign("assignedHeading")}
                     </p>
                     <Badge variant="secondary">{assigned.length}</Badge>
                   </div>
                   {assigned.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-                      {`No ${assignmentEntity.plural} assigned yet.`}
+                      {tAssign("emptyAssigned", { plural: assignmentEntity.plural })}
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-52 overflow-y-auto pr-0.5">
@@ -383,6 +430,10 @@ export function SurveyAssignTargetsDialog({
                           onRemove={(item) => setPendingRemove(item)}
                           isRemoving={unassignMutation.isPending && pendingRemove?.id === row.id}
                           removeLabel={assignmentEntity.singular}
+                          ariaLabel={tRemove("ariaLabel", {
+                            label: assignmentEntity.singular,
+                            name: row.name,
+                          })}
                         />
                       ))}
                     </div>
@@ -392,14 +443,16 @@ export function SurveyAssignTargetsDialog({
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Add from available
+                      {tAssign("availableHeading")}
                     </p>
                     <Badge variant="secondary">{available.length}</Badge>
                   </div>
                   <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
                     {available.length === 0 ? (
                       <p className="px-3 py-6 text-sm text-center text-muted-foreground">
-                        {`No additional ${assignmentEntity.plural} available for current filters.`}
+                        {tAssign("emptyAvailable", {
+                          plural: assignmentEntity.plural,
+                        })}
                       </p>
                     ) : (
                       available.map((row) => (
@@ -425,7 +478,7 @@ export function SurveyAssignTargetsDialog({
                   </div>
                   {selectedIds.size > 0 ? (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {selectedIds.size} selected
+                      {tAssign("selectedCount", { count: selectedIds.size })}
                     </p>
                   ) : null}
                 </div>
@@ -435,7 +488,7 @@ export function SurveyAssignTargetsDialog({
 
           <DialogFooter className="px-6 py-4 border-t border-border shrink-0 gap-2 sm:gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Close
+              {tActions("close")}
             </Button>
             <Button
               type="button"
@@ -450,12 +503,15 @@ export function SurveyAssignTargetsDialog({
               {assignMutation.isPending ? (
                 <>
                   <Loader2Icon className="size-4 animate-spin" />
-                  Assigning…
+                  {tAssign("applying")}
                 </>
+              ) : selectedIds.size > 0 ? (
+                tAssign("applyWithCount", {
+                  plural: assignmentEntity.plural,
+                  count: selectedIds.size,
+                })
               ) : (
-                `Assign ${assignmentEntity.plural}${
-                  selectedIds.size > 0 ? ` (${selectedIds.size})` : ""
-                }`
+                tAssign("apply", { plural: assignmentEntity.plural })
               )}
             </Button>
           </DialogFooter>
@@ -468,6 +524,7 @@ export function SurveyAssignTargetsDialog({
         onConfirm={() => void handleConfirmRemove()}
         isPending={unassignMutation.isPending}
         entityLabel={assignmentEntity.singular}
+        entityLabelPlural={assignmentEntity.plural}
       />
     </>
   );

@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { LayersIcon, LinkIcon, NetworkIcon, UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -34,7 +35,7 @@ import {
   DataToolbar,
   PaginationRow,
   inputClass,
-  listEmptyMessage,
+  useListEmptyMessage,
 } from "@/components/base-data/shared";
 import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 import {
@@ -44,13 +45,25 @@ import {
   ClusterFormDialog,
 } from "@/components/community/cluster-manager-dialogs";
 
-const STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
-];
-
 
 export function ClusterManager() {
+  const tPage = useTranslations("community.cluster.page");
+  const tCard = useTranslations("community.cluster.card");
+  const tFilters = useTranslations("community.cluster.filters");
+  const tToasts = useTranslations("community.cluster.toasts");
+  const tActions = useTranslations("common.actions");
+  const tStatus = useTranslations("common.states");
+  const tValidation = useTranslations("common.validation");
+  const tEntity = useTranslations("listEmpty.entity");
+
+  const STATUS_OPTIONS = useMemo(
+    () => [
+      { value: "ACTIVE", label: tStatus("active") },
+      { value: "INACTIVE", label: tStatus("inactive") },
+    ],
+    [tStatus]
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [appliedFilterStatus, setAppliedFilterStatus] = useState("");
@@ -123,9 +136,9 @@ export function ClusterManager() {
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim()) { sileo.warning({ title: "Missing name", description: "Cluster name is required." }); return; }
-    if (!woredaId) { sileo.warning({ title: "Missing woreda", description: "Please select a woreda for this cluster." }); return; }
-    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
+    if (!name.trim()) { sileo.warning({ title: tToasts("missingNameTitle"), description: tToasts("missingNameMessage") }); return; }
+    if (!woredaId) { sileo.warning({ title: tToasts("missingWoredaTitle"), description: tToasts("missingWoredaMessage") }); return; }
+    if (!status) { sileo.warning({ title: tToasts("missingStatusTitle"), description: tToasts("missingStatusMessage") }); return; }
     const managerId = currentUserData?.user?.id;
     try {
       if (editingCluster) {
@@ -139,7 +152,7 @@ export function ClusterManager() {
             ...(managerId ? { managerId } : {}),
           },
         });
-        sileo.success({ title: "Cluster updated", description: result.message });
+        sileo.success({ title: tToasts("updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
@@ -148,11 +161,11 @@ export function ClusterManager() {
           woredaId,
           ...(managerId ? { managerId } : {}),
         });
-        sileo.success({ title: "Cluster added", description: result.message });
+        sileo.success({ title: tToasts("addedTitle"), description: result.message });
       }
       setPage(1); setIsFormOpen(false); resetForm();
     } catch (error) {
-      sileo.error({ title: "Could not save cluster", description: error instanceof Error ? error.message : "Unexpected error" });
+      sileo.error({ title: tToasts("saveErrorTitle"), description: error instanceof Error ? error.message : tValidation("unexpectedError") });
     }
   };
 
@@ -164,21 +177,22 @@ export function ClusterManager() {
       appliedFilterFederationId ||
       appliedFilterLocation.trim()
   );
+  const listEmptyMessage = useListEmptyMessage();
   const emptyMessage = listEmptyMessage({
-    entityPlural: "clusters",
+    entityPlural: tEntity("clusters"),
     hasSearch,
     hasFilters,
-    emptyCatalogHint: "No clusters yet. Add your first cluster to get started.",
+    emptyCatalogHint: tPage("emptyHint"),
   });
 
   return (
     <div className="space-y-4">
       <DataToolbar
-        searchPlaceholder="Search clusters"
+        searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
-        addLabel="Add cluster"
+        addLabel={tPage("addButton")}
         showFilterButton
         onOpenFilters={() => setIsFilterOpen(true)}
         hasActiveFilters={hasFilters}
@@ -189,10 +203,10 @@ export function ClusterManager() {
       ) : clustersQuery.isError ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            {clustersQuery.error instanceof Error ? clustersQuery.error.message : "Failed to load clusters."}
+            {clustersQuery.error instanceof Error ? clustersQuery.error.message : tPage("loadError")}
           </p>
           <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => clustersQuery.refetch()}>
-            Retry
+            {tActions("retry")}
           </Button>
         </div>
       ) : clusters.length === 0 ? (
@@ -211,18 +225,20 @@ export function ClusterManager() {
               onDelete={() => setPendingDelete(c)}
               extraMenuItems={
                 <DropdownMenuItem className="text-[12px]" onClick={() => setAssigningCluster(c)}>
-                  <LinkIcon />Assign SHGs
+                  <LinkIcon />{tCard("assignShgs")}
                 </DropdownMenuItem>
               }
             >
-              <CardMetaRow icon={NetworkIcon} label="Federation">
-                {c.federationName ?? "No federation"}
+              <CardMetaRow icon={NetworkIcon} label={tCard("federation")}>
+                {c.federationName ?? tCard("noFederation")}
               </CardMetaRow>
-              <CardMetaRow icon={UserIcon} label="Manager">
-                {c.managerName ?? "No manager"}
+              <CardMetaRow icon={UserIcon} label={tCard("manager")}>
+                {c.managerName ?? tCard("noManager")}
               </CardMetaRow>
-              <CardMetaRow icon={LayersIcon} label="SHGs">
-                {c.selfHelpGroupCount} {c.selfHelpGroupCount === 1 ? "SHG" : "SHGs"}
+              <CardMetaRow icon={LayersIcon} label={tCard("shgs")}>
+                {c.selfHelpGroupCount === 1
+                  ? tCard("shgOne", { count: c.selfHelpGroupCount })
+                  : tCard("shgOther", { count: c.selfHelpGroupCount })}
               </CardMetaRow>
             </CommunityCard>
           ))}
@@ -253,30 +269,30 @@ export function ClusterManager() {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Filter clusters</DialogTitle>
-            <DialogDescription>Filter by status, woreda, federation, or location. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogTitle>{tFilters("title")}</DialogTitle>
+            <DialogDescription>{tFilters("description")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 px-5 pb-4">
             <SelectField
               value={draftFilterStatus}
-              placeholder="All statuses"
+              placeholder={tFilters("statusAll")}
               options={STATUS_OPTIONS}
               onValueChange={setDraftFilterStatus}
             />
             <SelectField
               value={draftFilterWoredaId}
-              placeholder="All woredas"
+              placeholder={tFilters("woredaAll")}
               options={woredaFilterOptions}
               onValueChange={setDraftFilterWoredaId}
             />
             <SelectField
               value={draftFilterFederationId}
-              placeholder="All federations"
+              placeholder={tFilters("federationAll")}
               options={federationFilterOptions}
               onValueChange={setDraftFilterFederationId}
             />
             <Input
-              placeholder="Location contains"
+              placeholder={tFilters("locationPlaceholder")}
               value={draftFilterLocation}
               onChange={(e) => setDraftFilterLocation(e.target.value)}
               className={inputClass}
@@ -300,7 +316,7 @@ export function ClusterManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Clear filters
+              {tActions("clear")}
             </Button>
             <Button
               type="button"
@@ -314,7 +330,7 @@ export function ClusterManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Apply filters
+              {tActions("apply")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -355,12 +371,12 @@ export function ClusterManager() {
           if (!pendingDelete) return;
           try {
             const result = await deleteMutation.mutateAsync(pendingDelete.id);
-            sileo.success({ title: "Cluster deleted", description: result.message });
+            sileo.success({ title: tToasts("deletedTitle"), description: result.message });
             setPendingDelete(null);
           } catch (error) {
             sileo.error({
-              title: "Could not delete cluster",
-              description: error instanceof Error ? error.message : "Unexpected error",
+              title: tToasts("deleteErrorTitle"),
+              description: error instanceof Error ? error.message : tValidation("unexpectedError"),
             });
           }
         }}

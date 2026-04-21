@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { LanguageSwitcherButton } from "@/components/language-switcher"
 import {
   PATH_META_KEYS,
   SECTION_META_KEYS,
@@ -74,6 +75,9 @@ export function AppHeader() {
             ) : null}
           </BreadcrumbList>
         </Breadcrumb>
+      </div>
+      <div className="flex items-center gap-2 px-4">
+        <LanguageSwitcherButton />
       </div>
     </header>
   )

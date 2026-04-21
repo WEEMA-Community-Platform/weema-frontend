@@ -1,6 +1,7 @@
 "use client";
 
 import { EyeIcon, LockIcon, MoreVerticalIcon, PencilIcon, Trash2Icon, UnlockIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import type { EntityStatus } from "@/lib/api/community";
 import { Badge } from "@/components/ui/badge";
@@ -17,26 +18,28 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function LockedBadge({ locked }: { locked: boolean }) {
+  const tCard = useTranslations("community.card");
   if (locked) {
     return (
       <Badge className="gap-1 border-transparent bg-slate-100 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400">
         <LockIcon className="size-3" />
-        Locked
+        {tCard("locked")}
       </Badge>
     );
   }
   return (
     <Badge className="gap-1 border-transparent bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
       <UnlockIcon className="size-3" />
-      Unlocked
+      {tCard("unlocked")}
     </Badge>
   );
 }
 
 export function StatusBadge({ status }: { status: EntityStatus }) {
+  const tStatus = useTranslations("common.states");
   return (
     <Badge variant={status === "ACTIVE" ? "default" : "secondary"} className="text-[11px] font-medium px-2 py-0.5 shrink-0">
-      {status === "ACTIVE" ? "Active" : "Inactive"}
+      {status === "ACTIVE" ? tStatus("active") : tStatus("inactive")}
     </Badge>
   );
 }
@@ -63,8 +66,8 @@ export function CommunityCard({
   extraMenuItems,
   showViewAction = true,
   showEditAction = true,
-  viewActionLabel = "View details",
-  editActionLabel = "Edit",
+  viewActionLabel,
+  editActionLabel,
 }: {
   title: string;
   status: EntityStatus;
@@ -78,6 +81,10 @@ export function CommunityCard({
   viewActionLabel?: string;
   editActionLabel?: string;
 }) {
+  const tActions = useTranslations("common.actions");
+  const tCard = useTranslations("community.card");
+  const resolvedViewLabel = viewActionLabel ?? tActions("viewDetails");
+  const resolvedEditLabel = editActionLabel ?? tActions("edit");
   const hasPrimaryActions = showViewAction || showEditAction;
   return (
     <Card className=" py-0 overflow-hidden transition-colors hover:ring-primary/50">
@@ -89,7 +96,7 @@ export function CommunityCard({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button type="button" variant="ghost" size="icon" className="-mr-1 shrink-0 text-muted-foreground size-9 min-w-9 min-h-9" aria-label="Open actions menu">
+              <Button type="button" variant="ghost" size="icon" className="-mr-1 shrink-0 text-muted-foreground size-9 min-w-9 min-h-9" aria-label={tCard("openActionsMenu")}>
                 <MoreVerticalIcon className="size-4" />
               </Button>
             }
@@ -98,10 +105,10 @@ export function CommunityCard({
             {hasPrimaryActions ? (
               <DropdownMenuGroup >
                 {showViewAction ? (
-                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><EyeIcon />{viewActionLabel}</DropdownMenuItem>
+                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><EyeIcon />{resolvedViewLabel}</DropdownMenuItem>
                 ) : null}
                 {showEditAction ? (
-                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{editActionLabel}</DropdownMenuItem>
+                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{resolvedEditLabel}</DropdownMenuItem>
                 ) : null}
               </DropdownMenuGroup>
             ) : null}
@@ -113,7 +120,7 @@ export function CommunityCard({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />Delete</DropdownMenuItem>
+              <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />{tActions("delete")}</DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

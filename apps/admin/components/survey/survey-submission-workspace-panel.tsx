@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshCcwDotIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,13 +30,18 @@ export function SubmissionWorkspacePanel({
   loading,
   isError,
   errorMessage,
-  targetLabelSingular = "member",
+  targetLabelSingular,
   selectedSubmission,
   questionTemplates,
   onRetry,
   onBackToTable,
   onSubmissionUpdated,
 }: SubmissionWorkspacePanelProps) {
+  const t = useTranslations("survey.submissions.workspace");
+  const tTargetLabels = useTranslations("survey.submissions.targetLabels");
+  const tActions = useTranslations("common.actions");
+  const resolvedTargetLabel = targetLabelSingular ?? tTargetLabels("memberSingular");
+
   if (!selectedSubmissionId) return null;
 
   if (loading) {
@@ -45,7 +51,7 @@ export function SubmissionWorkspacePanel({
           <CardTitle>
             <div className="flex items-center gap-2 text-base text-muted-foreground">
               <RefreshCcwDotIcon className="size-4 animate-spin" />
-              Loading submission details...
+              {t("loading")}
             </div>
           </CardTitle>
         </CardHeader>
@@ -61,13 +67,15 @@ export function SubmissionWorkspacePanel({
   if (isError) {
     return (
       <div className="space-y-3 rounded-lg border border-primary/10 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">{errorMessage || "Failed to load submission details."}</p>
+        <p className="text-sm text-muted-foreground">
+          {errorMessage || t("loadError")}
+        </p>
         <div className="flex items-center justify-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-            Retry
+            {tActions("retry")}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={onBackToTable}>
-            Back to submissions table
+            {t("backToTable")}
           </Button>
         </div>
       </div>
@@ -77,9 +85,9 @@ export function SubmissionWorkspacePanel({
   if (!selectedSubmission) {
     return (
       <div className="space-y-3 rounded-lg border border-primary/10 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">Submission not found.</p>
+        <p className="text-sm text-muted-foreground">{t("notFound")}</p>
         <Button type="button" variant="outline" size="sm" onClick={onBackToTable}>
-          Back to submissions table
+          {t("backToTable")}
         </Button>
       </div>
     );
@@ -89,7 +97,7 @@ export function SubmissionWorkspacePanel({
     <SurveySubmissionAnswerWorkspace
       key={selectedSubmission.id}
       submission={selectedSubmission}
-      targetLabelSingular={targetLabelSingular}
+      targetLabelSingular={resolvedTargetLabel}
       questionTemplates={questionTemplates}
       onBackToTable={onBackToTable}
       onSubmissionUpdated={onSubmissionUpdated}

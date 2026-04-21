@@ -22,7 +22,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { LanguageSwitcherSubMenu } from "@/components/language-switcher"
 
 export function NavUser({
   user,
@@ -120,7 +119,6 @@ export function NavUser({
                 <UserCircle2Icon className="size-4 opacity-80" />
                 {t("profile")}
               </DropdownMenuItem>
-              <LanguageSwitcherSubMenu />
               <DropdownMenuItem
                 variant="destructive"
                 disabled={logoutMutation.isPending}

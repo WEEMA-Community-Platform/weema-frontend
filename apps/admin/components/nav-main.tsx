@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { usePathname, useSearchParams } from "next/navigation"
 import {
   Collapsible,
@@ -21,82 +22,137 @@ import {
 } from "@/components/ui/sidebar"
 import { ChevronRightIcon } from "lucide-react"
 
-type NavItem = {
+export type NavSubItem = {
+  key: string
+  title: string
+  url: string
+}
+
+export type NavItem = {
+  key: string
   title: string
   url: string
   icon?: React.ReactNode
-  isActive?: boolean
-  items?: { title: string; url: string }[]
+  defaultOpen?: boolean
+  items?: NavSubItem[]
+}
+
+const OPEN_GROUPS_STORAGE_KEY = "weema-admin:nav-open-groups"
+
+function readStoredOpenGroups(): Record<string, boolean> {
+  if (typeof window === "undefined") return {}
+  try {
+    const raw = window.sessionStorage.getItem(OPEN_GROUPS_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === "object" ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeStoredOpenGroups(next: Record<string, boolean>) {
+  if (typeof window === "undefined") return
+  try {
+    window.sessionStorage.setItem(OPEN_GROUPS_STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    // Silently ignore storage failures (e.g., disabled sessionStorage).
+  }
 }
 
 export function NavMain({ items }: { items: NavItem[] }) {
+  const t = useTranslations("nav")
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const activeSection = searchParams.get("section")
   const { state } = useSidebar()
 
-  const isLinkActive = (url: string) => {
-    if (url.startsWith("/?section=")) {
-      return pathname === "/" && !!activeSection && url.includes(`section=${activeSection}`)
-    }
-
-    return pathname === url || pathname.startsWith(`${url}/`)
-  }
-
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      items.map((item) => [
-        item.title,
-        item.title === "Base Data"
-          ? true
-          : item.items?.some((sub) => {
-              return isLinkActive(sub.url)
-            }) ?? item.isActive ?? false,
-      ])
-    )
+  const isLinkActive = useCallback(
+    (url: string) => {
+      if (url.startsWith("/?section=")) {
+        return (
+          pathname === "/" &&
+          !!activeSection &&
+          url.includes(`section=${activeSection}`)
+        )
+      }
+      return pathname === url || pathname.startsWith(`${url}/`)
+    },
+    [pathname, activeSection]
   )
 
-  const toggleGroup = (title: string) => {
-    setOpenGroups((prev) => ({ ...prev, [title]: !prev[title] }))
-  }
+  // User's explicit open/close preferences, persisted across navigations
+  // and language switches via sessionStorage. Keyed by stable group keys
+  // so translations never invalidate the state.
+  const [userToggles, setUserToggles] = useState<Record<string, boolean>>(
+    readStoredOpenGroups
+  )
+
+  // Effective open state: any group containing the active link is always
+  // open; otherwise fall back to the user's stored preference, finally
+  // defaultOpen.
+  const openGroups = useMemo(() => {
+    const result: Record<string, boolean> = {}
+    for (const item of items) {
+      if (!item.items?.length) continue
+      const hasActiveChild = item.items.some((sub) => isLinkActive(sub.url))
+      if (hasActiveChild) {
+        result[item.key] = true
+      } else if (item.key in userToggles) {
+        result[item.key] = userToggles[item.key]
+      } else {
+        result[item.key] = item.defaultOpen ?? false
+      }
+    }
+    return result
+  }, [items, userToggles, isLinkActive])
+
+  const toggleGroup = useCallback(
+    (key: string) => {
+      setUserToggles((prev) => {
+        const currentlyOpen = openGroups[key] ?? false
+        const next = { ...prev, [key]: !currentlyOpen }
+        writeStoredOpenGroups(next)
+        return next
+      })
+    },
+    [openGroups]
+  )
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+      <SidebarGroupLabel>{t("groupLabel")}</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) =>
-          state === "collapsed" ? (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                tooltip={item.title}
-                isActive={isLinkActive(item.url)}
-                render={<Link href={item.url} />}
-              >
-                {item.icon}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : !item.items?.length ? (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                tooltip={item.title}
-                isActive={isLinkActive(item.url)}
-                render={<Link href={item.url} />}
-              >
-                {item.icon}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ) : (
+        {items.map((item) => {
+          const itemActive =
+            isLinkActive(item.url) ||
+            !!item.items?.some((sub) => isLinkActive(sub.url))
+
+          if (state === "collapsed" || !item.items?.length) {
+            return (
+              <SidebarMenuItem key={item.key}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={itemActive}
+                  render={<Link href={item.url} />}
+                >
+                  {item.icon}
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          }
+
+          return (
             <Collapsible
-              key={item.title}
-              open={openGroups[item.title] ?? false}
-              onOpenChange={() => toggleGroup(item.title)}
+              key={item.key}
+              open={openGroups[item.key] ?? false}
+              onOpenChange={() => toggleGroup(item.key)}
               className="group/collapsible"
               render={<SidebarMenuItem />}
             >
               <CollapsibleTrigger
-                render={<SidebarMenuButton tooltip={item.title} />}
+                render={<SidebarMenuButton tooltip={item.title} isActive={itemActive} />}
               >
                 {item.icon}
                 <span>{item.title}</span>
@@ -104,8 +160,8 @@ export function NavMain({ items }: { items: NavItem[] }) {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
+                  {item.items.map((subItem) => (
+                    <SidebarMenuSubItem key={subItem.key}>
                       <SidebarMenuSubButton
                         isActive={isLinkActive(subItem.url)}
                         render={<Link href={subItem.url} />}
@@ -118,7 +174,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
               </CollapsibleContent>
             </Collapsible>
           )
-        )}
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )

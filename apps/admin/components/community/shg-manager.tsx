@@ -2,6 +2,7 @@
 
 import { type ClipboardEvent, FormEvent, useMemo, useState } from "react";
 import { LayersIcon, LockIcon, MapPinIcon, UnlockIcon, UsersIcon, UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import {
@@ -40,7 +41,7 @@ import {
   DataToolbar,
   PaginationRow,
   inputClass,
-  listEmptyMessage,
+  useListEmptyMessage,
 } from "@/components/base-data/shared";
 import { SelectField, filterQueryParam } from "@/components/base-data/select-field";
 import {
@@ -50,18 +51,35 @@ import {
   SHGLockDialog,
 } from "@/components/community/shg-manager-dialogs";
 
-const STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
-];
-
-const LOCKED_OPTIONS = [
-  { value: "true", label: "Locked" },
-  { value: "false", label: "Unlocked" },
-];
-
 
 export function SHGManager() {
+  const tPage = useTranslations("community.shg.page");
+  const tCard = useTranslations("community.shg.card");
+  const tForm = useTranslations("community.shg.form");
+  const tMenu = useTranslations("community.shg.menu");
+  const tLockOptions = useTranslations("community.shg.lockOptions");
+  const tToasts = useTranslations("community.shg.toasts");
+  const tActions = useTranslations("common.actions");
+  const tStatus = useTranslations("common.states");
+  const tValidation = useTranslations("common.validation");
+  const tEntity = useTranslations("listEmpty.entity");
+
+  const STATUS_OPTIONS = useMemo(
+    () => [
+      { value: "ACTIVE", label: tStatus("active") },
+      { value: "INACTIVE", label: tStatus("inactive") },
+    ],
+    [tStatus]
+  );
+
+  const LOCKED_OPTIONS = useMemo(
+    () => [
+      { value: "true", label: tLockOptions("locked") },
+      { value: "false", label: tLockOptions("unlocked") },
+    ],
+    [tLockOptions]
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
@@ -140,14 +158,20 @@ export function SHGManager() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
 
-  const woredaOptions = [
-    { value: "none", label: "No woreda" },
-    ...(woredaData?.woredas ?? []).map((w: { id: string; name: string }) => ({ value: w.id, label: w.name })),
-  ];
-  const kebeleOptions = [
-    { value: "none", label: "No kebele" },
-    ...(kebeleData?.kebeles ?? []).map((k: { id: string; name: string }) => ({ value: k.id, label: k.name })),
-  ];
+  const woredaOptions = useMemo(
+    () => [
+      { value: "none", label: tForm("options.noWoreda") },
+      ...(woredaData?.woredas ?? []).map((w: { id: string; name: string }) => ({ value: w.id, label: w.name })),
+    ],
+    [woredaData?.woredas, tForm]
+  );
+  const kebeleOptions = useMemo(
+    () => [
+      { value: "none", label: tForm("options.noKebele") },
+      ...(kebeleData?.kebeles ?? []).map((k: { id: string; name: string }) => ({ value: k.id, label: k.name })),
+    ],
+    [kebeleData?.kebeles, tForm]
+  );
 
   const woredaFilterOptions = useMemo(
     () =>
@@ -166,23 +190,23 @@ export function SHGManager() {
   );
   const clusterFormOptions = useMemo(
     () => [
-      { value: "none", label: "No cluster (unassigned)" },
+      { value: "none", label: tForm("noCluster") },
       ...(clustersData?.clusters ?? []).map((c) => ({ value: c.id, label: c.name })),
     ],
-    [clustersData?.clusters]
+    [clustersData?.clusters, tForm]
   );
   const facilitatorOptions = useMemo(
     () => [
-      { value: "none", label: "No facilitator (unassigned)" },
+      { value: "none", label: tForm("noFacilitator") },
       ...(facilitatorsQuery.data?.users ?? []).map((user) => {
-        const name = `${user.firstName} ${user.lastName}`.trim();
+        const fullName = `${user.firstName} ${user.lastName}`.trim();
         return {
           value: user.id,
-          label: name ? `${name} (${user.email})` : user.email,
+          label: fullName ? `${fullName} (${user.email})` : user.email,
         };
       }),
     ],
-    [facilitatorsQuery.data?.users]
+    [facilitatorsQuery.data?.users, tForm]
   );
   const resetForm = () => {
     setName("");
@@ -246,8 +270,8 @@ export function SHGManager() {
     const ok = applyMapsUrl(trimmed);
     if (!ok && /https?:|maps\.|apple\.|goo\.|google\.com\/maps/i.test(trimmed)) {
       sileo.warning({
-        title: "Could not read coordinates",
-        description: "Try another link or enter latitude and longitude below.",
+        title: tToasts("badMapLinkTitle"),
+        description: tToasts("badMapLinkMessage"),
       });
     }
   };
@@ -284,8 +308,8 @@ export function SHGManager() {
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name.trim()) { sileo.warning({ title: "Missing name", description: "SHG name is required." }); return; }
-    if (!status) { sileo.warning({ title: "Missing status", description: "Please select a status." }); return; }
+    if (!name.trim()) { sileo.warning({ title: tToasts("missingNameTitle"), description: tToasts("missingNameMessage") }); return; }
+    if (!status) { sileo.warning({ title: tToasts("missingStatusTitle"), description: tToasts("missingStatusMessage") }); return; }
     const resolvedWoredaId = woredaId && woredaId !== "none" ? woredaId : undefined;
     const resolvedKebeleId = kebeleId && kebeleId !== "none" ? kebeleId : undefined;
     const resolvedClusterId = clusterId && clusterId !== "none" ? clusterId : undefined;
@@ -309,7 +333,7 @@ export function SHGManager() {
             longitude: lng,
           },
         });
-        sileo.success({ title: "SHG updated", description: result.message });
+        sileo.success({ title: tToasts("updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
@@ -321,11 +345,11 @@ export function SHGManager() {
           latitude: lat,
           longitude: lng,
         });
-        sileo.success({ title: "SHG added", description: result.message });
+        sileo.success({ title: tToasts("addedTitle"), description: result.message });
       }
       setPage(1); setIsFormOpen(false); resetForm();
     } catch (error) {
-      sileo.error({ title: "Could not save SHG", description: error instanceof Error ? error.message : "Unexpected error" });
+      sileo.error({ title: tToasts("saveErrorTitle"), description: error instanceof Error ? error.message : tValidation("unexpectedError") });
     }
   };
 
@@ -339,21 +363,22 @@ export function SHGManager() {
       appliedFilterLocation.trim() ||
       appliedFilterIsLocked
   );
+  const listEmptyMessage = useListEmptyMessage();
   const emptyMessage = listEmptyMessage({
-    entityPlural: "self-help groups",
+    entityPlural: tEntity("selfHelpGroups"),
     hasSearch,
     hasFilters,
-    emptyCatalogHint: "No self-help groups yet. Add your first SHG to get started.",
+    emptyCatalogHint: tPage("emptyHint"),
   });
 
   return (
     <div className="space-y-4">
       <DataToolbar
-        searchPlaceholder="Search self-help groups"
+        searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
         onAdd={openCreate}
-        addLabel="Add SHG"
+        addLabel={tPage("addButton")}
         showFilterButton
         onOpenFilters={() => setIsFilterOpen(true)}
         hasActiveFilters={hasFilters}
@@ -364,10 +389,10 @@ export function SHGManager() {
       ) : shgsQuery.isError ? (
         <div className="rounded-xl border border-primary/10 bg-card px-6 py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            {shgsQuery.error instanceof Error ? shgsQuery.error.message : "Failed to load self-help groups."}
+            {shgsQuery.error instanceof Error ? shgsQuery.error.message : tPage("loadError")}
           </p>
           <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => shgsQuery.refetch()}>
-            Retry
+            {tActions("retry")}
           </Button>
         </div>
       ) : shgs.length === 0 ? (
@@ -378,6 +403,7 @@ export function SHGManager() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {shgs.map((s: SHG) => {
             const hasGps = s.latitude != null && s.longitude != null;
+            const memberCount = s.memberCount ?? 0;
             return (
               <CommunityCard
                 key={s.id}
@@ -393,7 +419,7 @@ export function SHGManager() {
                       onClick={() => setPendingLock({ shg: s, action: "unlock" })}
                     >
                       <UnlockIcon className="size-3.5" />
-                      Unlock
+                      {tMenu("unlock")}
                     </DropdownMenuItem>
                   ) : (
                     <DropdownMenuItem
@@ -401,22 +427,24 @@ export function SHGManager() {
                       onClick={() => setPendingLock({ shg: s, action: "lock" })}
                     >
                       <LockIcon className="size-3.5" />
-                      Lock
+                      {tMenu("lock")}
                     </DropdownMenuItem>
                   )
                 }
               >
-                <CardMetaRow icon={LayersIcon} label="Cluster">
-                  {s.clusterName ?? "No cluster"}
+                <CardMetaRow icon={LayersIcon} label={tCard("cluster")}>
+                  {s.clusterName ?? tCard("noCluster")}
                 </CardMetaRow>
-                <CardMetaRow icon={UserIcon} label="Facilitator">
-                  {s.facilitatorName ?? "No facilitator"}
+                <CardMetaRow icon={UserIcon} label={tCard("facilitator")}>
+                  {s.facilitatorName ?? tCard("noFacilitator")}
                 </CardMetaRow>
-                <CardMetaRow icon={UsersIcon} label="Members">
-                  {s.memberCount ?? 0} {s.memberCount === 1 ? "member" : "members"}
+                <CardMetaRow icon={UsersIcon} label={tCard("members")}>
+                  {memberCount === 1
+                    ? tCard("memberOne", { count: memberCount })
+                    : tCard("memberOther", { count: memberCount })}
                 </CardMetaRow>
-                <CardMetaRow icon={MapPinIcon} label="GPS">
-                  {hasGps ? `${s.latitude}, ${s.longitude}` : "No coordinates"}
+                <CardMetaRow icon={MapPinIcon} label={tCard("gps")}>
+                  {hasGps ? `${s.latitude}, ${s.longitude}` : tCard("noCoordinates")}
                 </CardMetaRow>
                 <div className="mt-1">
                   <LockedBadge locked={s.locked} />
@@ -453,25 +481,25 @@ export function SHGManager() {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Filter self-help groups</DialogTitle>
-            <DialogDescription>Filter by status, geography, cluster, lock state, or location. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogTitle>{tPage("filterTitle")}</DialogTitle>
+            <DialogDescription>{tPage("filterDescription")}</DialogDescription>
           </DialogHeader>
           <div className="max-h-[min(70vh,520px)] space-y-3 overflow-y-auto px-5 pb-4">
             <SelectField
               value={draftFilterStatus}
-              placeholder="All statuses"
+              placeholder={tPage("filterStatusAll")}
               options={STATUS_OPTIONS}
               onValueChange={setDraftFilterStatus}
             />
             <SelectField
               value={draftFilterIsLocked}
-              placeholder="All lock statuses"
+              placeholder={tPage("filterLockedAll")}
               options={LOCKED_OPTIONS}
               onValueChange={setDraftFilterIsLocked}
             />
             <SelectField
               value={draftFilterWoredaId}
-              placeholder="All woredas"
+              placeholder={tPage("filterWoredaAll")}
               options={woredaFilterOptions}
               onValueChange={(v) => {
                 setDraftFilterWoredaId(v);
@@ -480,18 +508,18 @@ export function SHGManager() {
             />
             <SelectField
               value={draftFilterKebeleId}
-              placeholder="All kebeles"
+              placeholder={tPage("filterKebeleAll")}
               options={kebeleFilterOptions}
               onValueChange={setDraftFilterKebeleId}
             />
             <SelectField
               value={draftFilterClusterId}
-              placeholder="All clusters"
+              placeholder={tPage("filterClusterAll")}
               options={clusterFilterOptions}
               onValueChange={setDraftFilterClusterId}
             />
             <Input
-              placeholder="Location contains"
+              placeholder={tPage("filterLocationPlaceholder")}
               value={draftFilterLocation}
               onChange={(e) => setDraftFilterLocation(e.target.value)}
               className={inputClass}
@@ -519,7 +547,7 @@ export function SHGManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Clear filters
+              {tActions("clear")}
             </Button>
             <Button
               type="button"
@@ -535,7 +563,7 @@ export function SHGManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Apply filters
+              {tActions("apply")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -591,12 +619,12 @@ export function SHGManager() {
           if (!pendingDelete) return;
           try {
             const result = await deleteMutation.mutateAsync(pendingDelete.id);
-            sileo.success({ title: "SHG deleted", description: result.message });
+            sileo.success({ title: tToasts("deletedTitle"), description: result.message });
             setPendingDelete(null);
           } catch (error) {
             sileo.error({
-              title: "Could not delete SHG",
-              description: error instanceof Error ? error.message : "Unexpected error",
+              title: tToasts("deleteErrorTitle"),
+              description: error instanceof Error ? error.message : tValidation("unexpectedError"),
             });
           }
         }}

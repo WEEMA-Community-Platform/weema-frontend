@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,67 +34,75 @@ type SurveySettingsFormProps = {
 };
 
 export function SurveySettingsForm(props: SurveySettingsFormProps) {
+  const t = useTranslations("survey.settings");
+  const tTargetType = useTranslations("survey.settings.targetType");
+  const tLanguage = useTranslations("survey.settings.language");
+
   return (
     <FieldGroup className="gap-4">
       <Field>
-        <FieldLabel>Survey title</FieldLabel>
+        <FieldLabel>{t("titleLabel")}</FieldLabel>
         <Input
           value={props.title}
           onChange={(event) => props.onTitleChange(event.target.value)}
-          placeholder="Enter survey title"
+          placeholder={t("titlePlaceholder")}
           className={inputClass}
         />
       </Field>
       <Field>
-        <FieldLabel>Description</FieldLabel>
+        <FieldLabel>{t("descriptionLabel")}</FieldLabel>
         <textarea
           value={props.description}
           onChange={(event) => props.onDescriptionChange(event.target.value)}
-          placeholder="Describe survey purpose and audience"
+          placeholder={t("descriptionPlaceholder")}
           className={formTextareaClass}
         />
       </Field>
       <Field>
-        <FieldLabel>Target type</FieldLabel>
+        <FieldLabel>{t("targetTypeLabel")}</FieldLabel>
         <Select
           value={props.targetType}
           onValueChange={props.onTargetTypeChange}
           disabled={props.lockTargetType}
         >
           <SelectTrigger className={inputClass}>
-            <SelectValue placeholder="Select target type" />
+            <SelectValue placeholder={t("targetTypePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {TARGET_TYPES.map((targetType) => (
               <SelectItem key={targetType.value} value={targetType.value}>
-                {targetType.label}
+                {tTargetType(
+                  targetType.value as
+                    | "MEMBER"
+                    | "SELF_HELP_GROUP"
+                    | "CLUSTER"
+                    | "FEDERATION"
+                )}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </Field>
       <Field>
-        <FieldLabel>Language</FieldLabel>
+        <FieldLabel>{t("languageLabel")}</FieldLabel>
         <Select
           value={props.language}
           onValueChange={(value) => props.onLanguageChange(value as "en" | "am")}
           disabled={props.lockLanguage}
         >
           <SelectTrigger className={inputClass}>
-            <SelectValue placeholder="Select language" />
+            <SelectValue placeholder={t("languagePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {SURVEY_LANGUAGES.map((language) => (
               <SelectItem key={language.value} value={language.value}>
-                {language.label}
+                {tLanguage(language.value)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {props.isTranslationMode ? (
-          <p className="text-xs text-muted-foreground">
-            Translation mode keeps survey structure fixed. Only text content is editable.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("translationHint")}</p>
         ) : null}
       </Field>
       {props.showSaveAction ? (
@@ -102,7 +112,7 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
             onClick={props.onSave}
             disabled={props.isSaveDisabled || props.isSaving}
           >
-            {props.isSaving ? "Saving settings..." : "Save settings"}
+            {props.isSaving ? t("saving") : t("save")}
           </Button>
         </div>
       ) : null}

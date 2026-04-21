@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,87 +68,108 @@ export function MemberFiltersDialog({
   shgOptions,
   religionOptions,
 }: MemberFiltersDialogProps) {
-  const [draft, setDraft] = useState<MemberAppliedFilters>(applied);
+  const tFilters = useTranslations("community.members.filters");
+  const tStatus = useTranslations("community.members.options.status");
+  const tLocked = useTranslations("community.members.options.locked");
+  const tGender = useTranslations("community.members.options.gender");
+  const tMarital = useTranslations("community.members.options.marital");
 
-  useEffect(() => {
-    if (open) {
-      setDraft(applied);
-    }
-  }, [open, applied]);
+  const [draft, setDraft] = useState<MemberAppliedFilters>(applied);
+  const [wasOpen, setWasOpen] = useState(open);
+
+  // Reset draft when the dialog transitions from closed to open.
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setDraft(applied);
+  }
 
   const clearAndApply = () => {
     setDraft({ ...emptyFilters });
     onApply(emptyFilters);
   };
 
+  const statusOptions = STATUS_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tStatus(o.value.toLowerCase() as "active" | "inactive"),
+  }));
+  const lockedOptions = LOCKED_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tLocked(o.value === "true" ? "locked" : "unlocked"),
+  }));
+  const genderOptions = GENDER_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tGender(o.value.toLowerCase() as "male" | "female"),
+  }));
+  const maritalOptions = MARITAL_OPTIONS.map((o) => ({
+    value: o.value,
+    label: tMarital(o.value.toLowerCase() as "single" | "married" | "divorced"),
+  }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-[min(100vw-1.5rem,42rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader className="space-y-1">
-          <DialogTitle>Filter members</DialogTitle>
-          <DialogDescription>
-            Narrow the list by status, demographics, self-help group, religion, or age range. Changes apply when you click
-            Apply filters.
-          </DialogDescription>
+          <DialogTitle>{tFilters("title")}</DialogTitle>
+          <DialogDescription>{tFilters("description")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-5 px-5 pb-2">
           <div className="grid min-w-0 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-status">Status</Label>
+              <Label htmlFor="member-filter-status">{tFilters("status")}</Label>
               <SelectField
                 id="member-filter-status"
                 value={draft.status}
-                placeholder="All statuses"
-                options={STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                placeholder={tFilters("statusAll")}
+                options={statusOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, status: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-locked">Lock status</Label>
+              <Label htmlFor="member-filter-locked">{tFilters("lockStatus")}</Label>
               <SelectField
                 id="member-filter-locked"
                 value={draft.isLocked}
-                placeholder="All lock statuses"
-                options={LOCKED_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                placeholder={tFilters("lockStatusAll")}
+                options={lockedOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, isLocked: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-gender">Gender</Label>
+              <Label htmlFor="member-filter-gender">{tFilters("gender")}</Label>
               <SelectField
                 id="member-filter-gender"
                 value={draft.gender}
-                placeholder="All genders"
-                options={[...GENDER_OPTIONS]}
+                placeholder={tFilters("genderAll")}
+                options={genderOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, gender: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-marital">Marital status</Label>
+              <Label htmlFor="member-filter-marital">{tFilters("marital")}</Label>
               <SelectField
                 id="member-filter-marital"
                 value={draft.marital}
-                placeholder="All marital statuses"
-                options={[...MARITAL_OPTIONS]}
+                placeholder={tFilters("maritalAll")}
+                options={maritalOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, marital: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-shg">Self-help group</Label>
+              <Label htmlFor="member-filter-shg">{tFilters("shg")}</Label>
               <SelectField
                 id="member-filter-shg"
                 value={draft.shgId}
-                placeholder="All self-help groups"
+                placeholder={tFilters("shgAll")}
                 options={shgOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, shgId: v }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-filter-religion">Religion</Label>
+              <Label htmlFor="member-filter-religion">{tFilters("religion")}</Label>
               <SelectField
                 id="member-filter-religion"
                 value={draft.religionId}
-                placeholder="All religions"
+                placeholder={tFilters("religionAll")}
                 options={religionOptions}
                 onValueChange={(v) => setDraft((d) => ({ ...d, religionId: v }))}
               />
@@ -155,11 +177,13 @@ export function MemberFiltersDialog({
           </div>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-medium text-muted-foreground">Date of birth</legend>
+            <legend className="text-xs font-medium text-muted-foreground">
+              {tFilters("dobLegend")}
+            </legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor="member-filter-dob-from" className="text-xs text-muted-foreground">
-                  From
+                  {tFilters("from")}
                 </label>
                 <Input
                   id="member-filter-dob-from"
@@ -171,7 +195,7 @@ export function MemberFiltersDialog({
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="member-filter-dob-to" className="text-xs text-muted-foreground">
-                  To
+                  {tFilters("to")}
                 </label>
                 <Input
                   id="member-filter-dob-to"
@@ -185,11 +209,13 @@ export function MemberFiltersDialog({
           </fieldset>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-medium text-muted-foreground">Age</legend>
+            <legend className="text-xs font-medium text-muted-foreground">
+              {tFilters("ageLegend")}
+            </legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor="member-filter-age-from" className="text-xs text-muted-foreground">
-                  From
+                  {tFilters("from")}
                 </label>
                 <Input
                   id="member-filter-age-from"
@@ -202,7 +228,7 @@ export function MemberFiltersDialog({
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="member-filter-age-to" className="text-xs text-muted-foreground">
-                  To
+                  {tFilters("to")}
                 </label>
                 <Input
                   id="member-filter-age-to"
@@ -218,14 +244,14 @@ export function MemberFiltersDialog({
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="outline" className="min-h-11" onClick={clearAndApply}>
-            Clear filters
+            {tFilters("clear")}
           </Button>
           <Button
             type="button"
             className="min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => onApply(draft)}
           >
-            Apply filters
+            {tFilters("apply")}
           </Button>
         </DialogFooter>
       </DialogContent>

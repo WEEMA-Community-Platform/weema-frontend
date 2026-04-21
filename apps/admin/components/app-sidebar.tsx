@@ -8,6 +8,7 @@ import {
   NetworkIcon,
   UsersIcon,
 } from "lucide-react"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
@@ -20,52 +21,58 @@ import {
 } from "@/components/ui/sidebar"
 import { useCurrentUser } from "@/hooks/use-user"
 
-const baseNavMain = [
-  {
-    title: "Base Data",
-    url: "/?section=region",
-    icon: <MapPinnedIcon />,
-    isActive: true,
-    items: [
-      { title: "Region",   url: "/?section=region" },
-      { title: "Zone",     url: "/?section=zone" },
-      { title: "Woreda",   url: "/?section=woreda" },
-      { title: "Kebele",   url: "/?section=kebele" },
-      { title: "Religion", url: "/?section=religion" },
-    ],
-  },
-  {
-    title: "Community Structure",
-    url: "/?section=federation",
-    icon: <NetworkIcon />,
-    isActive: false,
-    items: [
-      { title: "Federations",      url: "/?section=federation" },
-      { title: "Clusters",         url: "/?section=cluster" },
-      { title: "Self-Help Groups", url: "/?section=shg" },
-      { title: "Members", url: "/?section=member" },
-    ],
-  },
-  {
-    title: "Survey",
-    url: "/survey",
-    icon: <ClipboardListIcon />,
-    isActive: false,
-  },
-  {
-    title: "User Management",
-    url: "/?section=users",
-    icon: <UsersIcon />,
-    isActive: false,
-  },
-]
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const t = useTranslations("nav.items")
+  const tBrand = useTranslations("meta.brand")
+  const tStates = useTranslations("common.states")
   const { data: currentUserData } = useCurrentUser()
-  const navMain = useMemo(() => [...baseNavMain], [])
+
+  const navMain = useMemo(
+    () => [
+      {
+        key: "baseData",
+        title: t("baseData"),
+        url: "/?section=region",
+        icon: <MapPinnedIcon />,
+        defaultOpen: true,
+        items: [
+          { key: "region", title: t("region"), url: "/?section=region" },
+          { key: "zone", title: t("zone"), url: "/?section=zone" },
+          { key: "woreda", title: t("woreda"), url: "/?section=woreda" },
+          { key: "kebele", title: t("kebele"), url: "/?section=kebele" },
+          { key: "religion", title: t("religion"), url: "/?section=religion" },
+        ],
+      },
+      {
+        key: "communityStructure",
+        title: t("communityStructure"),
+        url: "/?section=federation",
+        icon: <NetworkIcon />,
+        items: [
+          { key: "federation", title: t("federations"), url: "/?section=federation" },
+          { key: "cluster", title: t("clusters"), url: "/?section=cluster" },
+          { key: "shg", title: t("shg"), url: "/?section=shg" },
+          { key: "member", title: t("members"), url: "/?section=member" },
+        ],
+      },
+      {
+        key: "survey",
+        title: t("survey"),
+        url: "/survey",
+        icon: <ClipboardListIcon />,
+      },
+      {
+        key: "userManagement",
+        title: t("userManagement"),
+        url: "/?section=users",
+        icon: <UsersIcon />,
+      },
+    ],
+    [t]
+  )
 
   const user = currentUserData?.user
-  const displayName = user ? `${user.firstName} ${user.lastName}` : "Loading..."
+  const displayName = user ? `${user.firstName} ${user.lastName}` : tStates("loading")
   const displayEmail = user?.email ?? ""
   const displayRole = user?.role?.replace("ROLE_", "").replace(/_/g, " ") ?? ""
 
@@ -80,8 +87,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <Building2Icon className="size-4" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <p className="text-sm font-semibold">WEEMA Admin</p>
-            <p className="text-xs text-muted-foreground">Community Platform</p>
+            <p className="text-sm font-semibold">{tBrand("name")}</p>
+            <p className="text-xs text-muted-foreground">{tBrand("tagline")}</p>
           </div>
         </Link>
       </SidebarHeader>

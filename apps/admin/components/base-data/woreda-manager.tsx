@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FormEvent, useMemo, useState } from "react";
 import { sileo } from "sileo";
 
@@ -46,14 +47,21 @@ import {
   baseDataDialogFieldGroupClass,
   formTextareaClass,
   inputClass,
-  listEmptyMessage,
   tableActionsCellClass,
   tableRowActionsClass,
+  useListEmptyMessage,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
 
 export function WoredaManager() {
+  const t = useTranslations("basedata.woreda");
+  const tCommon = useTranslations("basedata.common");
+  const tActions = useTranslations("common.actions");
+  const tValidation = useTranslations("common.validation");
+  const tListEmpty = useTranslations("listEmpty.entity");
+  const listEmptyMessage = useListEmptyMessage();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
@@ -113,7 +121,10 @@ export function WoredaManager() {
     event.preventDefault();
 
     if (!name.trim() || !selectedZoneId) {
-      sileo.warning({ title: "Missing fields", description: "Woreda name and zone are required." });
+      sileo.warning({
+        title: t("toasts.missingFieldsTitle"),
+        description: t("toasts.missingFieldsMessage"),
+      });
       return;
     }
 
@@ -123,22 +134,22 @@ export function WoredaManager() {
           id: editingWoreda.id,
           payload: { name: name.trim(), description: description.trim(), zoneId: selectedZoneId },
         });
-        sileo.success({ title: "Woreda updated", description: result.message });
+        sileo.success({ title: t("toasts.updatedTitle"), description: result.message });
       } else {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
           description: description.trim(),
           zoneId: selectedZoneId,
         });
-        sileo.success({ title: "Woreda added", description: result.message });
+        sileo.success({ title: t("toasts.addedTitle"), description: result.message });
       }
       setIsFormOpen(false);
       setPage(1);
       resetForm();
     } catch (error) {
       sileo.error({
-        title: "Could not save woreda",
-        description: error instanceof Error ? error.message : "Unexpected error",
+        title: t("toasts.saveErrorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
     }
   };
@@ -146,18 +157,18 @@ export function WoredaManager() {
   const hasSearch = Boolean(searchQuery.trim());
   const hasFilters = Boolean(appliedFilterRegionId || appliedFilterZoneId);
   const woredasEmptyMessage = listEmptyMessage({
-    entityPlural: "woredas",
+    entityPlural: tListEmpty("woredas"),
     hasSearch,
     hasFilters,
-    emptyCatalogHint: "No woredas yet. Add your first woreda to get started.",
+    emptyCatalogHint: t("emptyHint"),
   });
 
   return (
     <Card className="border-primary/10">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
-        <CardTitle>Woredas</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <DataToolbar
-          searchPlaceholder="Search woredas"
+          searchPlaceholder={t("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={(value) => {
             setSearchQuery(value);
@@ -168,7 +179,7 @@ export function WoredaManager() {
             resetForm();
             setIsFormOpen(true);
           }}
-          addLabel="Add woreda"
+          addLabel={t("addButton")}
           showFilterButton
           onOpenFilters={() => setIsFilterOpen(true)}
           hasActiveFilters={hasFilters}
@@ -176,7 +187,12 @@ export function WoredaManager() {
       </CardHeader>
       <CardContent>
         <TableShell
-          headers={["Name", "Zone", "Description", "Actions"]}
+          headers={[
+            tCommon("columnName"),
+            t("zoneColumn"),
+            tCommon("columnDescription"),
+            tCommon("columnActions"),
+          ]}
           loading={woredasQuery.isLoading}
           loadingColumnCount={4}
           isError={woredasQuery.isError}
@@ -200,7 +216,7 @@ export function WoredaManager() {
                       setViewingWoreda(woreda);
                     }}
                   >
-                    View
+                    {tActions("view")}
                   </Button>
                   <Button
                     type="button"
@@ -215,10 +231,10 @@ export function WoredaManager() {
                       setIsFormOpen(true);
                     }}
                   >
-                    Edit
+                    {tActions("edit")}
                   </Button>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteWoreda(woreda)}>
-                    Delete
+                    {tActions("delete")}
                   </Button>
                 </div>
               </TableCell>
@@ -246,12 +262,12 @@ export function WoredaManager() {
         <DialogContent>
           <div className="flex max-h-[85vh] flex-col overflow-hidden">
             <DialogHeader>
-              <DialogTitle>View woreda</DialogTitle>
-              <DialogDescription>Read-only details for this woreda.</DialogDescription>
+              <DialogTitle>{t("view.title")}</DialogTitle>
+              <DialogDescription>{t("view.description")}</DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="woreda-name-view">Woreda name</FieldLabel>
+                <FieldLabel htmlFor="woreda-name-view">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="woreda-name-view"
                   readOnly
@@ -261,11 +277,11 @@ export function WoredaManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="woreda-zone-view">Zone</FieldLabel>
+                <FieldLabel htmlFor="woreda-zone-view">{t("zoneLabel")}</FieldLabel>
                 <SelectField
                   id="woreda-zone-view"
                   value={viewingWoreda?.zoneId ?? ""}
-                  placeholder="Select zone"
+                  placeholder={t("zonePlaceholder")}
                   options={zoneCreateOptions}
                   onValueChange={() => {}}
                   className={viewReadOnlyInputClass}
@@ -273,19 +289,19 @@ export function WoredaManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="woreda-description-view">Description</FieldLabel>
+                <FieldLabel htmlFor="woreda-description-view">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="woreda-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
                   value={viewingWoreda?.description ?? ""}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <Button type="button" variant="outline" className="h-11" onClick={() => setViewingWoreda(null)}>
-                Close
+                {tActions("close")}
               </Button>
             </DialogFooter>
           </div>
@@ -296,16 +312,14 @@ export function WoredaManager() {
         <DialogContent>
           <form className="flex max-h-[85vh] flex-col overflow-hidden" onSubmit={submitForm}>
             <DialogHeader>
-              <DialogTitle>{editingWoreda ? "Edit woreda" : "Add woreda"}</DialogTitle>
+              <DialogTitle>{editingWoreda ? t("form.titleEdit") : t("form.titleAdd")}</DialogTitle>
               <DialogDescription>
-                {editingWoreda
-                  ? "Update woreda details, then save your changes."
-                  : "Add a new woreda to your base data list."}
+                {editingWoreda ? t("form.descriptionEdit") : t("form.descriptionAdd")}
               </DialogDescription>
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="woreda-name">Woreda name</FieldLabel>
+                <FieldLabel htmlFor="woreda-name">{t("nameLabel")}</FieldLabel>
                 <Input
                   id="woreda-name"
                   value={name}
@@ -315,32 +329,32 @@ export function WoredaManager() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="woreda-zone">Zone</FieldLabel>
+                <FieldLabel htmlFor="woreda-zone">{t("zoneLabel")}</FieldLabel>
                 <SelectField
                   id="woreda-zone"
                   value={selectedZoneId}
-                  placeholder="Select zone"
+                  placeholder={t("zonePlaceholder")}
                   options={zoneCreateOptions}
                   onValueChange={setSelectedZoneId}
                   className={inputClass}
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="woreda-description">Description</FieldLabel>
+                <FieldLabel htmlFor="woreda-description">{tCommon("descriptionLabel")}</FieldLabel>
                 <textarea
                   id="woreda-description"
                   className={formTextareaClass}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Optional details"
+                  placeholder={tCommon("descriptionPlaceholder")}
                 />
               </Field>
             </FieldGroup>
             <DialogFooter>
               <SaveButton
                 isPending={isSubmitting}
-                idleLabel={editingWoreda ? "Save woreda" : "Add woreda"}
-                pendingLabel={editingWoreda ? "Saving..." : "Adding..."}
+                idleLabel={editingWoreda ? t("form.saveEdit") : t("form.saveAdd")}
+                pendingLabel={editingWoreda ? tCommon("saving") : tCommon("adding")}
               />
             </DialogFooter>
           </form>
@@ -359,16 +373,16 @@ export function WoredaManager() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Filter woredas</DialogTitle>
-            <DialogDescription>Narrow the woreda list. Changes apply when you click Apply filters.</DialogDescription>
+            <DialogTitle>{t("filters.title")}</DialogTitle>
+            <DialogDescription>{t("filters.description")}</DialogDescription>
           </DialogHeader>
           <FieldGroup className={baseDataDialogFieldGroupClass}>
             <Field>
-              <FieldLabel htmlFor="woreda-filter-region">Region</FieldLabel>
+              <FieldLabel htmlFor="woreda-filter-region">{t("filters.regionLabel")}</FieldLabel>
               <SelectField
                 id="woreda-filter-region"
                 value={draftFilterRegionId}
-                placeholder="All regions"
+                placeholder={t("filters.regionAll")}
                 options={regionFilterOptions}
                 onValueChange={(value) => {
                   setDraftFilterRegionId(value);
@@ -378,11 +392,11 @@ export function WoredaManager() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="woreda-filter-zone">Zone</FieldLabel>
+              <FieldLabel htmlFor="woreda-filter-zone">{t("filters.zoneLabel")}</FieldLabel>
               <SelectField
                 id="woreda-filter-zone"
                 value={draftFilterZoneId}
-                placeholder="All zones"
+                placeholder={t("filters.zoneAll")}
                 options={zoneFilterOptions}
                 onValueChange={setDraftFilterZoneId}
                 className={inputClass}
@@ -403,7 +417,7 @@ export function WoredaManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Clear filters
+              {tCommon("clearFilters")}
             </Button>
             <Button
               type="button"
@@ -415,7 +429,7 @@ export function WoredaManager() {
                 setIsFilterOpen(false);
               }}
             >
-              Apply filters
+              {tCommon("applyFilters")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -429,30 +443,35 @@ export function WoredaManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete woreda</AlertDialogTitle>
+            <AlertDialogTitle>{t("delete.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Delete <span className="font-semibold text-foreground">{pendingDeleteWoreda?.name}</span>? This action cannot be undone.
+              {t.rich("delete.confirm", {
+                name: pendingDeleteWoreda?.name ?? "",
+                strong: (chunks) => (
+                  <span className="font-semibold text-foreground">{chunks}</span>
+                ),
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tActions("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={async () => {
                 if (!pendingDeleteWoreda) return;
                 try {
                   const result = await deleteMutation.mutateAsync(pendingDeleteWoreda.id);
-                  sileo.success({ title: "Woreda deleted", description: result.message });
+                  sileo.success({ title: t("toasts.deletedTitle"), description: result.message });
                   setPendingDeleteWoreda(null);
                 } catch (error) {
                   sileo.error({
-                    title: "Could not delete woreda",
-                    description: error instanceof Error ? error.message : "Unexpected error",
+                    title: t("toasts.deleteErrorTitle"),
+                    description: error instanceof Error ? error.message : tValidation("unexpectedError"),
                   });
                 }
               }}
             >
-              Delete woreda
+              {t("delete.action")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

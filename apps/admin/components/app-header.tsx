@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { usePathname, useSearchParams } from "next/navigation"
 import {
   Breadcrumb,
@@ -10,24 +11,29 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { PATH_META, SECTION_META } from "@/components/section-meta"
+import { LanguageSwitcherButton } from "@/components/language-switcher"
+import { PATH_META_KEYS, SECTION_META_KEYS } from "@/components/section-meta"
 
 export function AppHeader() {
+  const t = useTranslations()
+  const tSections = useTranslations("sections")
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const section = searchParams.get("section") ?? "region"
   const surveyTitle = searchParams.get("surveyTitle")
-  const isSurveySubmissionsPath = pathname.startsWith("/survey/") && pathname.endsWith("/submissions")
+  const isSurveySubmissionsPath =
+    pathname.startsWith("/survey/") && pathname.endsWith("/submissions")
   const inAnswerWorkspace = searchParams.get("view") === "answers"
   const targetName = searchParams.get("targetName") ?? searchParams.get("memberName")
-  const meta = isSurveySubmissionsPath
-    ? {
-        ...PATH_META["/survey/submissions"],
-        label: surveyTitle
-          ? `${PATH_META["/survey/submissions"].label} - ${surveyTitle}`
-          : PATH_META["/survey/submissions"].label,
-      }
-    : PATH_META[pathname] ?? SECTION_META[section] ?? SECTION_META.region
+
+  const metaKeys = isSurveySubmissionsPath
+    ? PATH_META_KEYS["/survey/submissions"]
+    : PATH_META_KEYS[pathname] ?? SECTION_META_KEYS[section] ?? SECTION_META_KEYS.region
+
+  const group = t(metaKeys.groupKey)
+  const baseLabel = t(metaKeys.labelKey)
+  const label =
+    isSurveySubmissionsPath && surveyTitle ? `${baseLabel} - ${surveyTitle}` : baseLabel
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-primary/10 bg-background/80 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -40,22 +46,29 @@ export function AppHeader() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <span className="text-muted-foreground">{meta.group}</span>
+              <span className="text-muted-foreground">{group}</span>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
-              <BreadcrumbPage>{meta.label}</BreadcrumbPage>
+              <BreadcrumbPage>{label}</BreadcrumbPage>
             </BreadcrumbItem>
             {isSurveySubmissionsPath && inAnswerWorkspace ? (
               <>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>{targetName ? `${targetName} answers` : "Answer workspace"}</BreadcrumbPage>
+                  <BreadcrumbPage>
+                    {targetName
+                      ? tSections("surveySubmissions.targetAnswers", { name: targetName })
+                      : tSections("surveySubmissions.answerWorkspace")}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             ) : null}
           </BreadcrumbList>
         </Breadcrumb>
+      </div>
+      <div className="flex items-center gap-2 px-4">
+        <LanguageSwitcherButton />
       </div>
     </header>
   )
