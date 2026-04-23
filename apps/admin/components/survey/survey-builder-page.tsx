@@ -702,7 +702,11 @@ export function SurveyBuilderPage({
         </main>
 
         <section className="w-[360px] shrink-0 overflow-y-auto p-4">
-          <SurveyPreviewPanel question={selectedQuestion} />
+          <SurveyPreviewPanel
+            question={selectedQuestion}
+            questionByClientId={questionByClientId}
+            sectionQuestions={selectedSection?.questions ?? undefined}
+          />
         </section>
       </div>
 

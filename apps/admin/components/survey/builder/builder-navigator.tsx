@@ -404,7 +404,10 @@ export function BuilderNavigator({
                                                 : `Nested follow-up (L${depth}):`}{" "}
                                             {question.questionText || "Untitled question"}
                                           </button>
-                                          {!isStructureLocked && section.questions.length > 1 ? (
+                                          {!isStructureLocked &&
+                                          section.questions.length > 1 &&
+                                          depth === 0 &&
+                                          !isMultiParentFollowUp ? (
                                             <button
                                               type="button"
                                               className="rounded p-0.5 text-muted-foreground/80 transition-colors hover:text-foreground"
@@ -443,20 +446,28 @@ export function BuilderNavigator({
                           size="sm"
                           className="mt-1 w-full border-dashed"
                           disabled={isStructureLocked}
-                          onClick={() => onAddQuestion(section.clientId)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddQuestion(section.clientId);
+                          }}
                         >
                           <PlusIcon className="size-3.5" />
                           Add question
                         </Button>
                         {!isStructureLocked && section.questions.length > 1 ? (
-                          <MultiFollowUpControls
-                            selectedCount={selectedMultiFollowUpQuestionIds.length}
-                            logicType={multiFollowUpLogicType}
-                            onLogicTypeChange={(logicType) =>
-                              onMultiFollowUpLogicTypeChange(section.clientId, logicType)
-                            }
-                            onCreate={() => onCreateMultiFollowUp(section.clientId)}
-                          />
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <MultiFollowUpControls
+                              selectedCount={selectedMultiFollowUpQuestionIds.length}
+                              logicType={multiFollowUpLogicType}
+                              onLogicTypeChange={(logicType) =>
+                                onMultiFollowUpLogicTypeChange(section.clientId, logicType)
+                              }
+                              onCreate={() => onCreateMultiFollowUp(section.clientId)}
+                            />
+                          </div>
                         ) : null}
                       </div>
                     </>

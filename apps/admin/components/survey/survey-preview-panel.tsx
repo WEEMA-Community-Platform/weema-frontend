@@ -113,7 +113,15 @@ function RenderOptions({ question }: { question: SurveyQuestion }) {
   );
 }
 
-export function SurveyPreviewPanel({ question }: { question: SurveyQuestion | null }) {
+export function SurveyPreviewPanel({
+  question,
+  questionByClientId,
+  sectionQuestions,
+}: {
+  question: SurveyQuestion | null;
+  questionByClientId?: Map<string, SurveyQuestion>;
+  sectionQuestions?: SurveyQuestion[];
+}) {
   const t = useTranslations("survey.preview");
   const operatorLabel = useOperatorLabel();
 
@@ -136,28 +144,139 @@ export function SurveyPreviewPanel({ question }: { question: SurveyQuestion | nu
               </p>
             </div>
             {question.showConditions.length > 0 ? (
-              <div className="rounded-md border border-primary/10 bg-primary/5 p-2 text-xs">
-                <p className="mb-1 font-medium">{t("followUpVisibility")}</p>
-                <ul className="space-y-1">
-                  {question.showConditions.map((condition, index) => (
-                    <li
-                      key={`${question.clientId}-preview-condition-${index}`}
-                      className="wrap-break-word whitespace-normal"
-                    >
-                      {t("rule", {
-                        index: index + 1,
-                        operator: operatorLabel(condition.operator),
-                        value: condition.expectedValue || t("selectedValue"),
-                      })}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <FollowUpVisibilityPreview
+                question={question}
+                operatorLabel={operatorLabel}
+                t={t}
+                questionByClientId={questionByClientId}
+                sectionQuestions={sectionQuestions}
+              />
             ) : null}
             <RenderOptions question={question} />
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function FollowUpVisibilityPreview(props: {
+  question: SurveyQuestion;
+  operatorLabel: (operator: ShowCondition["operator"]) => string;
+  t: ReturnType<typeof useTranslations>;
+  /** Optional context to render parent question labels in multi-question follow-ups. */
+  questionByClientId?: Map<string, SurveyQuestion>;
+  /** Section-local order of questions to compute Q1/Q2 labels. */
+  sectionQuestions?: SurveyQuestion[];
+}) {
+  const { question, operatorLabel, t, questionByClientId, sectionQuestions } = props;
+  const isMulti = question.showConditions.length > 1;
+
+  const indexById = new Map<string, number>();
+  (sectionQuestions ?? []).forEach((q, idx) => indexById.set(q.clientId, idx));
+
+  const parentIds: string[] = [];
+  const seen = new Set<string>();
+  for (const c of question.showConditions) {
+    if (!c.parentQuestionClientId) continue;
+    if (seen.has(c.parentQuestionClientId)) continue;
+    seen.add(c.parentQuestionClientId);
+    parentIds.push(c.parentQuestionClientId);
+  }
+
+  const parentChip = (id: string) => {
+    const orderIdx = indexById.get(id);
+    const short = orderIdx !== undefined ? `Q${orderIdx + 1}` : "Q?";
+    const text = questionByClientId?.get(id)?.questionText;
+    return (
+      <span
+        key={id}
+        className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-background px-2 py-1 text-[10px] leading-none text-muted-foreground"
+        title={text || undefined}
+      >
+        <span className="font-medium text-foreground/80">{short}</span>
+        <span className="max-w-[160px] truncate">{text || t("untitledQuestion")}</span>
+      </span>
+    );
+  };
+
+  return (
+    <div className="rounded-md border border-primary/10 bg-primary/5 p-2 text-xs">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium">{t("followUpVisibility")}</p>
+          {isMulti ? (
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              {/* Don’t add new i18n keys yet; keep this simple. */}
+              Multi-question follow-up — rules join left-to-right.
+            </p>
+          ) : null}
+        </div>
+        {isMulti ? (
+          <span className="shrink-0 rounded-md border border-primary/15 bg-background px-2 py-1 text-[10px] font-medium text-primary">
+            {question.showConditions.length} rules
+          </span>
+        ) : null}
+      </div>
+
+      {isMulti && parentIds.length > 0 ? (
+        <div className="mt-2 space-y-1">
+          <p className="text-[10px] font-medium text-muted-foreground">Parents</p>
+          <div className="flex flex-wrap gap-1.5">{parentIds.map(parentChip)}</div>
+        </div>
+      ) : null}
+
+      <ul className="mt-2 space-y-1">
+        {question.showConditions.map((condition, index) => {
+          const join = index > 0 ? condition.logicType : null;
+          const parentIdx = indexById.get(condition.parentQuestionClientId);
+          const parentShort = parentIdx !== undefined ? `Q${parentIdx + 1}` : "Q?";
+          const parentText = questionByClientId?.get(condition.parentQuestionClientId)?.questionText;
+          return (
+            <li
+              key={`${question.clientId}-preview-condition-${index}`}
+              className="wrap-break-word whitespace-normal"
+            >
+              <div className="flex flex-wrap items-center gap-1.5">
+                {join ? (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                    {join}
+                  </span>
+                ) : null}
+                {isMulti ? (
+                  <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-medium text-foreground/80">
+                    {parentShort}
+                  </span>
+                ) : null}
+                {parentText ? (
+                  <span className="truncate text-[10px] text-muted-foreground">
+                    {parentText}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-0.5 text-[11px] text-muted-foreground">
+                <span>
+                  {t("rule", {
+                    index: index + 1,
+                    operator: operatorLabel(condition.operator),
+                    value: "__VALUE__",
+                  }).split("__VALUE__")[0]}
+                </span>
+                <span className="font-semibold text-foreground">
+                  {condition.expectedValue || t("selectedValue")}
+                </span>
+                <span>
+                  {t("rule", {
+                    index: index + 1,
+                    operator: operatorLabel(condition.operator),
+                    value: "__VALUE__",
+                  }).split("__VALUE__")[1] ?? ""}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
