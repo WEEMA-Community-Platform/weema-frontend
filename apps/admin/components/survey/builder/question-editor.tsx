@@ -163,21 +163,13 @@ export function QuestionEditor(props: {
               ) : null}
             </div>
             {props.question.options.map((option) => (
-              <div key={option.clientId} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+              <div key={option.clientId} className="grid gap-2 md:grid-cols-[1fr_auto]">
                 <Input
                   value={option.text}
                   onChange={(event) =>
                     props.onUpdateOption(option.clientId, { text: event.target.value })
                   }
-                  placeholder="Option label"
-                  className={inputClass}
-                />
-                <Input
-                  value={option.value ?? ""}
-                  onChange={(event) =>
-                    props.onUpdateOption(option.clientId, { value: event.target.value })
-                  }
-                  placeholder="Option value (optional)"
+                  placeholder="Option"
                   className={inputClass}
                 />
                 <Button

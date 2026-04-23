@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ShowCondition, SurveyQuestion } from "@/lib/survey-builder/types";
+import { QUESTION_TYPES } from "@/lib/survey-builder/utils";
 
 function useOperatorLabel() {
   const t = useTranslations("survey.preview.operators");
@@ -113,6 +114,10 @@ function RenderOptions({ question }: { question: SurveyQuestion }) {
   );
 }
 
+function getQuestionTypeLabel(type: SurveyQuestion["questionType"]) {
+  return QUESTION_TYPES.find((item) => item.value === type)?.label ?? type;
+}
+
 export function SurveyPreviewPanel({
   question,
   questionByClientId,
@@ -140,7 +145,15 @@ export function SurveyPreviewPanel({
                 {question.questionText || t("untitledQuestion")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {question.required ? t("required") : t("optional")} · {question.questionType}
+                {question.required ? (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-destructive text-sm">*</span>
+                    <span>{t("required")}</span>
+                  </span>
+                ) : (
+                  t("optional")
+                )}{" "}
+                · {getQuestionTypeLabel(question.questionType)}
               </p>
             </div>
             {question.showConditions.length > 0 ? (
