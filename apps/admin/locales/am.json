@@ -1,10 +1,10 @@
 {
   "meta": {
-    "appTitle": "WEEMA አድሚን",
-    "appDescription": "የWEEMA የማህበረሰብ መድረክ የአድሚን መተግበሪያ",
+    "appTitle": "MINCH data system",
+    "appDescription": "የMINCH data system የአድሚን መተግበሪያ",
     "brand": {
-      "name": "WEEMA አድሚን",
-      "tagline": "የማህበረሰብ መድረክ"
+      "name": "MINCH data system",
+      "tagline": "ዳታ ሲስተም"
     }
   },
   "common": {

@@ -1,10 +1,10 @@
 {
   "meta": {
-    "appTitle": "WEEMA Admin",
-    "appDescription": "WEEMA Community Platform Admin Application",
+    "appTitle": "MINCH data system",
+    "appDescription": "MINCH data system admin application",
     "brand": {
-      "name": "WEEMA Admin",
-      "tagline": "Community Platform"
+      "name": "MINCH data system",
+      "tagline": "Data system"
     }
   },
   "common": {
