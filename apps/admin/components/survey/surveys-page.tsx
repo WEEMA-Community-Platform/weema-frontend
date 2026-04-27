@@ -282,19 +282,21 @@ export function SurveysPage() {
                   <CopyIcon className="size-4" />
                   {tListActions("clone")}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-[12px] whitespace-nowrap"
-                  onClick={() => {
-                    const sourceLanguage = survey.language === "am" ? "am" : "en";
-                    const targetLanguage = sourceLanguage === "en" ? "am" : "en";
-                    router.push(
-                      `/survey/builder?translateFrom=${survey.id}&translateLanguage=${targetLanguage}`
-                    );
-                  }}
-                >
-                  <LanguagesIcon className="size-4" />
-                  {tListActions("translate")}
-                </DropdownMenuItem>
+                {survey.isTranslation ? null : (
+                  <DropdownMenuItem
+                    className="text-[12px] whitespace-nowrap"
+                    onClick={() => {
+                      const sourceLanguage = survey.language === "am" ? "am" : "en";
+                      const targetLanguage = sourceLanguage === "en" ? "am" : "en";
+                      router.push(
+                        `/survey/builder?translateFrom=${survey.id}&translateLanguage=${targetLanguage}`
+                      );
+                    }}
+                  >
+                    <LanguagesIcon className="size-4" />
+                    {tListActions("translate")}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
                   onClick={() =>

@@ -159,7 +159,6 @@ export function BuilderNavigator({
   onCreateMultiFollowUp,
 }: BuilderNavigatorProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const isStructureLocked = isTranslationMode;
 
   return (
     <aside className="flex w-[320px] shrink-0 flex-col border-r border-primary/10 bg-card/30">
@@ -167,9 +166,9 @@ export function BuilderNavigator({
       <div className="shrink-0 px-4 pb-0 pt-4">
         {isTranslationMode ? (
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
-            <span className="font-medium text-primary">Translation mode</span> — update text only.
-            Survey structure is locked; you cannot add/remove/reorder sections, questions, or
-            follow-ups.
+            <span className="font-medium text-primary">Translation mode</span> — draft in the target
+            language. You can edit structure and wording; use Create translation when the layout
+            matches the source, or save as a new survey if you changed structure.
           </div>
         ) : !initialSurveyId ? (
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
@@ -245,7 +244,6 @@ export function BuilderNavigator({
                               isDragging ? "cursor-grabbing" : "cursor-grab"
                             } ${isOver ? "text-primary" : ""}`}
                             onClick={(e) => e.stopPropagation()}
-                            disabled={isStructureLocked}
                             {...dragHandleAttributes}
                             {...dragHandleListeners}
                           >
@@ -278,7 +276,6 @@ export function BuilderNavigator({
                             type="button"
                             variant="destructive"
                             size="icon-sm"
-                            disabled={isStructureLocked}
                             onClick={(e) => {
                               e.stopPropagation();
                               onPendingDelete({
@@ -380,7 +377,6 @@ export function BuilderNavigator({
                                               qDragging ? "cursor-grabbing" : "cursor-grab"
                                             } ${qOver ? "text-primary" : ""}`}
                                             onClick={(e) => e.stopPropagation()}
-                                            disabled={isStructureLocked}
                                             {...qAttrs}
                                             {...qListeners}
                                           >
@@ -404,8 +400,7 @@ export function BuilderNavigator({
                                                 : `Nested follow-up (L${depth}):`}{" "}
                                             {question.questionText || "Untitled question"}
                                           </button>
-                                          {!isStructureLocked &&
-                                          section.questions.length > 1 &&
+                                          {section.questions.length > 1 &&
                                           depth === 0 &&
                                           !isMultiParentFollowUp ? (
                                             <button
@@ -445,7 +440,6 @@ export function BuilderNavigator({
                           variant="outline"
                           size="sm"
                           className="mt-1 w-full border-dashed"
-                          disabled={isStructureLocked}
                           onClick={(e) => {
                             e.stopPropagation();
                             onAddQuestion(section.clientId);
@@ -454,7 +448,7 @@ export function BuilderNavigator({
                           <PlusIcon className="size-3.5" />
                           Add question
                         </Button>
-                        {!isStructureLocked && section.questions.length > 1 ? (
+                        {section.questions.length > 1 ? (
                           <div
                             onClick={(e) => e.stopPropagation()}
                             onMouseDown={(e) => e.stopPropagation()}
@@ -483,7 +477,6 @@ export function BuilderNavigator({
           variant="outline"
           className="mt-3 w-full"
           onClick={onAddSection}
-          disabled={isStructureLocked}
         >
           <PlusIcon className="size-4" />
           Add section

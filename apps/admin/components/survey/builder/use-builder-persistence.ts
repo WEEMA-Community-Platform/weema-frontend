@@ -185,33 +185,32 @@ export function useBuilderPersistence({
             )
         );
 
-        if (hasMissingIds) {
-          sileo.warning({
-            title: "Invalid translation structure",
-            description:
-              "Translation must keep the original structure. Reload and translate without adding/removing questions or options.",
+        if (!hasMissingIds) {
+          const result = await translateSurveyMutation.mutateAsync({
+            id: translationSourceSurveyId,
+            payload,
+          });
+          const createdSurveyId = extractCreatedSurveyId(result);
+          await queryClient.invalidateQueries({ queryKey: ["surveys"] });
+          queryClient.removeQueries({ queryKey: ["surveys"] });
+          if (createdSurveyId) {
+            setInitialSurveyId(createdSurveyId);
+            await reloadSurvey(createdSurveyId);
+          }
+          sileo.success({
+            title: "Survey translated",
+            description: createdSurveyId
+              ? result.message ?? "Translated survey created and opened in edit mode."
+              : result.message ?? "Translated survey has been created.",
           });
           return;
         }
 
-        const result = await translateSurveyMutation.mutateAsync({
-          id: translationSourceSurveyId,
-          payload,
+        sileo.info({
+          title: "Saving as a new survey",
+          description:
+            "Structure or options no longer match a one-to-one translation; the full survey is being created instead.",
         });
-        const createdSurveyId = extractCreatedSurveyId(result);
-        await queryClient.invalidateQueries({ queryKey: ["surveys"] });
-        queryClient.removeQueries({ queryKey: ["surveys"] });
-        if (createdSurveyId) {
-          setInitialSurveyId(createdSurveyId);
-          await reloadSurvey(createdSurveyId);
-        }
-        sileo.success({
-          title: "Survey translated",
-          description: createdSurveyId
-            ? result.message ?? "Translated survey created and opened in edit mode."
-            : result.message ?? "Translated survey has been created.",
-        });
-        return;
       }
 
       if (!initialSurveyId) {
@@ -223,11 +222,17 @@ export function useBuilderPersistence({
           setInitialSurveyId(createdSurveyId);
           await reloadSurvey(createdSurveyId);
         }
+        const fromTranslationFlow = Boolean(translationSourceSurveyId);
         sileo.success({
           title: "Survey created",
-          description: createdSurveyId
-            ? result.message ?? "Survey created and opened in edit mode."
-            : result.message ?? "Survey has been created successfully.",
+          description: fromTranslationFlow
+            ? createdSurveyId
+              ? result.message ??
+                "New survey created from your draft (custom structure or options require a full survey, not translate-only save)."
+              : result.message ?? "Survey has been created successfully."
+            : createdSurveyId
+              ? result.message ?? "Survey created and opened in edit mode."
+              : result.message ?? "Survey has been created successfully.",
         });
         if (!createdSurveyId) {
           sileo.info({

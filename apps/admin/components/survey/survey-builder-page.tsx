@@ -138,7 +138,6 @@ export function SurveyBuilderPage({
   const selectedQuestion =
     selectedSection?.questions.find((q) => q.clientId === selectedQuestionClientId) ?? null;
   const isTranslationMode = Boolean(translationSourceSurveyId) || builder.state.isTranslation;
-  const isStructureLocked = isTranslationMode;
 
   useEffect(() => {
     if (editorMode === "settings") return;
@@ -244,20 +243,42 @@ export function SurveyBuilderPage({
   };
 
   const handleAddSection = () => {
-    if (isStructureLocked) return;
     builder.addSection();
     setEditorMode("cards");
+    if (isTranslationMode) {
+      sileo.warning({
+        title: "Section added",
+        description:
+          "Add a matching section in the source (original) survey if both language versions should stay aligned.",
+      });
+    } else {
+      sileo.info({
+        title: "Section added",
+        description: "Name the section and add questions in the outline when ready.",
+      });
+    }
   };
 
   const handleAddQuestion = (sectionClientId: string) => {
-    if (isStructureLocked) return;
-    builder.addQuestion(sectionClientId);
+    const nextId = builder.addQuestion(sectionClientId);
     setSelectedSectionClientId(sectionClientId);
-    setEditorMode("cards");
+    setSelectedQuestionClientId(nextId);
+    setEditorMode("question");
+    if (isTranslationMode) {
+      sileo.warning({
+        title: "New question added",
+        description:
+          "Add the same question to the source (original) survey so both versions stay in sync.",
+      });
+    } else {
+      sileo.info({
+        title: "New question added",
+        description: "Set type, text, and options in the editor below.",
+      });
+    }
   };
 
   const handleSectionDragEnd = ({ active, over }: DragEndEvent) => {
-    if (isStructureLocked) return;
     if (!over || active.id === over.id) return;
     persistence.setPendingReorder({
       kind: "section",
@@ -267,7 +288,6 @@ export function SurveyBuilderPage({
   };
 
   const handleQuestionDragEnd = (sectionClientId: string, { active, over }: DragEndEvent) => {
-    if (isStructureLocked) return;
     if (!over || active.id === over.id) return;
     persistence.setPendingReorder({
       kind: "question",
@@ -280,7 +300,6 @@ export function SurveyBuilderPage({
   // ─── Follow-up helpers ────────────────────────────────────────────────────
 
   const handleAddFollowUp = () => {
-    if (isStructureLocked) return;
     if (!selectedSection || !selectedQuestion) return;
     const sectionQuestionIds = new Set(selectedSection.questions.map((q) => q.clientId));
     const directParentId =
@@ -295,10 +314,21 @@ export function SurveyBuilderPage({
     }));
     setSelectedQuestionClientId(nextId);
     setEditorMode("question");
+    if (isTranslationMode) {
+      sileo.warning({
+        title: "Follow-up question added",
+        description:
+          "Add the same follow-up in the source (original) survey so both versions stay in sync.",
+      });
+    } else {
+      sileo.info({
+        title: "Follow-up question added",
+        description: "Linked to the parent above; adjust text and conditions as needed.",
+      });
+    }
   };
 
   const handleAddNestedFollowUp = () => {
-    if (isStructureLocked) return;
     if (!selectedSection || !selectedQuestion) return;
     const sectionQuestionIds = new Set(selectedSection.questions.map((q) => q.clientId));
     const followUpDepth = getFollowUpDepth(selectedQuestion.clientId, questionByClientId, sectionQuestionIds);
@@ -321,10 +351,21 @@ export function SurveyBuilderPage({
     }));
     setSelectedQuestionClientId(nextId);
     setEditorMode("question");
+    if (isTranslationMode) {
+      sileo.warning({
+        title: "Nested follow-up added",
+        description:
+          "Add the same nested follow-up in the source (original) survey so both versions stay in sync.",
+      });
+    } else {
+      sileo.info({
+        title: "Nested follow-up added",
+        description: "One more level of follow-up; fill in the wording below.",
+      });
+    }
   };
 
   const handleAddCondition = () => {
-    if (isStructureLocked) return;
     if (!selectedSection || !selectedQuestion) return;
     const sectionQuestionIds = new Set(selectedSection.questions.map((q) => q.clientId));
     const preferredParentId = getQuestionParentId(selectedQuestion, sectionQuestionIds);
@@ -340,7 +381,6 @@ export function SurveyBuilderPage({
   };
 
   const handleToggleMultiFollowUpQuestion = (sectionClientId: string, questionClientId: string) => {
-    if (isStructureLocked) return;
     setMultiFollowUpSelections((prev) => {
       const current = prev[sectionClientId] ?? [];
       const next = current.includes(questionClientId)
@@ -351,7 +391,6 @@ export function SurveyBuilderPage({
   };
 
   const handleCreateMultiFollowUp = (sectionClientId: string) => {
-    if (isStructureLocked) return;
     const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
     if (!section) return;
     const selectedParentIds = multiFollowUpSelections[sectionClientId] ?? [];
@@ -379,6 +418,18 @@ export function SurveyBuilderPage({
     setSelectedSectionClientId(sectionClientId);
     setSelectedQuestionClientId(nextId);
     setEditorMode("question");
+    if (isTranslationMode) {
+      sileo.warning({
+        title: "Multi-parent follow-up added",
+        description:
+          "Add the same follow-up in the source (original) survey so both versions stay in sync.",
+      });
+    } else {
+      sileo.info({
+        title: "Multi-parent follow-up added",
+        description: "This question shows when the selected parent conditions are met.",
+      });
+    }
   };
 
   useEffect(() => {
@@ -586,13 +637,11 @@ export function SurveyBuilderPage({
               section={selectedSection}
               questionByClientId={questionByClientId}
               dependentsMap={dependentsMap}
-              isTranslationMode={isTranslationMode}
               onOpen={(questionClientId) => {
                 setSelectedQuestionClientId(questionClientId);
                 setEditorMode("question");
               }}
               onDelete={(questionClientId) => {
-                if (isStructureLocked) return;
                 if (!selectedSection) return;
                 const q = selectedSection.questions.find((q) => q.clientId === questionClientId);
                 persistence.setPendingDelete({
@@ -646,31 +695,23 @@ export function SurveyBuilderPage({
                 builder.setQuestionType(selectedSection.clientId, selectedQuestion.clientId, nextType)
               }
               onDelete={() =>
-                isStructureLocked
-                  ? undefined
-                  : persistence.setPendingDelete({
-                      kind: "question",
-                      sectionClientId: selectedSection.clientId,
-                      questionClientId: selectedQuestion.clientId,
-                      questionText: selectedQuestion.questionText || "Untitled question",
-                    })
+                persistence.setPendingDelete({
+                  kind: "question",
+                  sectionClientId: selectedSection.clientId,
+                  questionClientId: selectedQuestion.clientId,
+                  questionText: selectedQuestion.questionText || "Untitled question",
+                })
               }
-              onAddOption={() =>
-                isStructureLocked
-                  ? undefined
-                  : builder.addOption(selectedSection.clientId, selectedQuestion.clientId)
-              }
+              onAddOption={() => builder.addOption(selectedSection.clientId, selectedQuestion.clientId)}
               onUpdateOption={(optionClientId, patch) =>
                 builder.updateOption(selectedSection.clientId, selectedQuestion.clientId, optionClientId, patch)
               }
               onDeleteOption={(optionClientId) =>
-                isStructureLocked
-                  ? undefined
-                  : builder.deleteOption(
-                      selectedSection.clientId,
-                      selectedQuestion.clientId,
-                      optionClientId
-                    )
+                builder.deleteOption(
+                  selectedSection.clientId,
+                  selectedQuestion.clientId,
+                  optionClientId
+                )
               }
               onQuestionConfigChange={(config) =>
                 builder.setQuestionConfig(selectedSection.clientId, selectedQuestion.clientId, config)
@@ -682,9 +723,7 @@ export function SurveyBuilderPage({
                 builder.updateCondition(selectedSection.clientId, selectedQuestion.clientId, idx, updater)
               }
               onDeleteCondition={(idx) =>
-                isStructureLocked
-                  ? undefined
-                  : builder.deleteCondition(selectedSection.clientId, selectedQuestion.clientId, idx)
+                builder.deleteCondition(selectedSection.clientId, selectedQuestion.clientId, idx)
               }
             />
           ) : null}

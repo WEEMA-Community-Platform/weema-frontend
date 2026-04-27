@@ -15,6 +15,7 @@ export type SurveysListQuery = {
   targetId?: string;
 };
 
+/** List row from GET /api/survey. When `isTranslation` is true, the row is a language translation (not a clone). */
 export type SurveyListItem = {
   id: string;
   title: string;
@@ -27,7 +28,8 @@ export type SurveyListItem = {
   totalQuestions?: number;
   language?: "en" | "am" | string;
   parentSurveyId?: string | null;
-  isTranslation?: boolean;
+  /** True when this survey is a translation of another; `parentSurveyId` may also exist on non-translation clones. */
+  isTranslation: boolean;
   isClone?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -211,6 +213,15 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload;
 }
 
+type SurveyListRow = Omit<SurveyListItem, "isTranslation"> & { isTranslation?: boolean };
+
+function normalizeSurveyListItem(row: SurveyListRow): SurveyListItem {
+  return {
+    ...row,
+    isTranslation: Boolean(row.isTranslation),
+  };
+}
+
 export async function getSurveys(query: SurveysListQuery = {}): Promise<SurveysListResponse> {
   const qs = buildQueryString({
     page: query.page ?? 1,
@@ -227,7 +238,11 @@ export async function getSurveys(query: SurveysListQuery = {}): Promise<SurveysL
   );
 
   if ("surveys" in payload && Array.isArray(payload.surveys)) {
-    return payload as SurveysListResponse;
+    const p = payload as SurveysListResponse;
+    return {
+      ...p,
+      surveys: p.surveys.map((row) => normalizeSurveyListItem(row as SurveyListRow)),
+    };
   }
 
   const dataRows = Array.isArray((payload as { data?: unknown[] }).data)
@@ -237,7 +252,7 @@ export async function getSurveys(query: SurveysListQuery = {}): Promise<SurveysL
   return {
     message: payload.message,
     statusCode: payload.statusCode,
-    surveys: dataRows,
+    surveys: dataRows.map((row) => normalizeSurveyListItem(row as SurveyListRow)),
     totalPages: 1,
     pageSize: dataRows.length,
     currentPage: 1,

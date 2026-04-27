@@ -72,7 +72,6 @@ export function QuestionEditor(props: {
     props.questionByClientId,
     sectionQuestionIds
   );
-  const isStructureLocked = Boolean(props.isTranslationMode);
 
   return (
     <Card className="border-primary/15">
@@ -90,17 +89,15 @@ export function QuestionEditor(props: {
           >
             {props.isPrimaryActionPending ? "Saving..." : props.primaryActionLabel}
           </Button>
-          {!isStructureLocked ? (
-            <Button type="button" variant="destructive" onClick={props.onDelete}>
-              Delete question
-            </Button>
-          ) : null}
+          <Button type="button" variant="destructive" onClick={props.onDelete}>
+            Delete question
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isStructureLocked ? (
+        {props.isTranslationMode ? (
           <p className="rounded-md border border-primary/15 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-            Translation mode is active. You can edit text labels only.
+            Translation draft: edit wording and structure as needed for the target language.
           </p>
         ) : null}
         <Input
@@ -114,7 +111,6 @@ export function QuestionEditor(props: {
           <Select
             value={props.question.questionType}
             onValueChange={(value) => props.onTypeChange(value as SurveyQuestion["questionType"])}
-            disabled={isStructureLocked}
           >
             <SelectTrigger className={inputClass}>
               <SelectValue placeholder="Question type" />
@@ -132,7 +128,6 @@ export function QuestionEditor(props: {
               type="checkbox"
               checked={props.question.required}
               onChange={(event) => props.onUpdate({ required: event.target.checked })}
-              disabled={isStructureLocked}
             />
             Required question
           </label>
@@ -155,12 +150,10 @@ export function QuestionEditor(props: {
           <div className="space-y-2 rounded-lg border border-primary/10 p-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">Options</p>
-              {!isStructureLocked ? (
-                <Button type="button" variant="outline" size="sm" onClick={props.onAddOption}>
-                  <PlusIcon className="size-3.5" />
-                  Add option
-                </Button>
-              ) : null}
+              <Button type="button" variant="outline" size="sm" onClick={props.onAddOption}>
+                <PlusIcon className="size-3.5" />
+                Add option
+              </Button>
             </div>
             {props.question.options.map((option) => (
               <div key={option.clientId} className="grid gap-2 md:grid-cols-[1fr_auto]">
@@ -177,7 +170,6 @@ export function QuestionEditor(props: {
                   variant="destructive"
                   size="icon-sm"
                   className="self-center"
-                  disabled={isStructureLocked}
                   onClick={() => props.onDeleteOption(option.clientId)}
                 >
                   <Trash2Icon className="size-4" />
@@ -187,7 +179,7 @@ export function QuestionEditor(props: {
           </div>
         ) : null}
 
-        {props.question.questionType === "JSON" && !isStructureLocked ? (
+        {props.question.questionType === "JSON" ? (
           <JsonQuestionConfigEditor
             question={props.question}
             onQuestionConfigChange={props.onQuestionConfigChange}
@@ -204,32 +196,30 @@ export function QuestionEditor(props: {
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {!isStructureLocked ? (
-                <>
-                  <Button type="button" variant="outline" size="sm" onClick={props.onAddFollowUpQuestion}>
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={props.onAddFollowUpQuestion}>
+                  <PlusIcon className="size-3.5" />
+                  {isFollowUpQuestion ? "Add sibling follow-up" : "Add follow-up question"}
+                </Button>
+                {isFollowUpQuestion ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={props.onAddNestedFollowUpQuestion}
+                    disabled={followUpDepth >= 2}
+                  >
                     <PlusIcon className="size-3.5" />
-                    {isFollowUpQuestion ? "Add sibling follow-up" : "Add follow-up question"}
+                    Add nested follow-up
                   </Button>
-                  {isFollowUpQuestion ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={props.onAddNestedFollowUpQuestion}
-                      disabled={followUpDepth >= 2}
-                    >
-                      <PlusIcon className="size-3.5" />
-                      Add nested follow-up
-                    </Button>
-                  ) : null}
-                  {isFollowUpQuestion ? (
-                    <Button type="button" variant="outline" size="sm" onClick={props.onAddCondition}>
-                      <PlusIcon className="size-3.5" />
-                      Add condition
-                    </Button>
-                  ) : null}
-                </>
-              ) : null}
+                ) : null}
+                {isFollowUpQuestion ? (
+                  <Button type="button" variant="outline" size="sm" onClick={props.onAddCondition}>
+                    <PlusIcon className="size-3.5" />
+                    Add condition
+                  </Button>
+                ) : null}
+              </>
             </div>
           </div>
           {!isFollowUpQuestion ? (
@@ -243,7 +233,7 @@ export function QuestionEditor(props: {
                 Follow-up type:{" "}
                 <span className="font-medium text-foreground">
                   {followUpDepth <= 1
-                    ? "Direct follow-up (original question)"
+                    ? "Direct follow-up (parent question)"
                     : `Nested follow-up (level ${followUpDepth})`}
                 </span>
               </p>
@@ -318,7 +308,6 @@ export function QuestionEditor(props: {
                             expectedValue: isChoiceType(parentQuestion.questionType) ? undefined : "",
                           }));
                         }}
-                        disabled={isStructureLocked}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Parent question" />
@@ -339,7 +328,6 @@ export function QuestionEditor(props: {
                             operator: value as ShowCondition["operator"],
                           }))
                         }
-                        disabled={isStructureLocked}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Operator" />
@@ -361,7 +349,7 @@ export function QuestionEditor(props: {
                               logicType: value as ShowCondition["logicType"],
                             }))
                           }
-                          disabled={isStructureLocked || index === 0}
+                          disabled={index === 0}
                         >
                           <SelectTrigger className="h-11 w-[72px] min-w-[72px] px-2 text-[10px] [&_svg]:ml-auto [&_svg]:size-3">
                             <SelectValue placeholder="Logic type" />
@@ -384,7 +372,6 @@ export function QuestionEditor(props: {
                         variant="destructive"
                         size="icon-sm"
                         className="h-11 w-11 justify-self-end"
-                        disabled={isStructureLocked}
                         onClick={() => props.onDeleteCondition(index)}
                       >
                         <Trash2Icon className="size-3.5" />
@@ -399,7 +386,6 @@ export function QuestionEditor(props: {
                             optionClientId: value,
                           }))
                         }
-                        disabled={isStructureLocked}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Expected option" />
@@ -421,7 +407,6 @@ export function QuestionEditor(props: {
                             expectedValue: value,
                           }))
                         }
-                        disabled={isStructureLocked}
                       >
                         <SelectTrigger className={inputClass}>
                           <SelectValue placeholder="Expected value" />
@@ -443,7 +428,6 @@ export function QuestionEditor(props: {
                         }
                         placeholder="Expected value"
                         className={inputClass}
-                        disabled={isStructureLocked}
                       />
                     )}
                     {hasMultipleConditions && index === 0 ? (

@@ -12,7 +12,6 @@ export function QuestionCardsBoard(props: {
   section: SurveySection | null;
   questionByClientId: Map<string, SurveyQuestion>;
   dependentsMap: Map<string, string[]>;
-  isTranslationMode?: boolean;
   onOpen: (questionClientId: string) => void;
   onDelete: (questionClientId: string) => void;
 }) {
@@ -60,9 +59,7 @@ export function QuestionCardsBoard(props: {
       <div>
         <h2 className="text-lg font-semibold">{props.section.title || "Untitled section"}</h2>
         <p className="text-sm text-muted-foreground">
-          {props.isTranslationMode
-            ? "Translation card view: open a question to edit text only."
-            : "Card view: open a question to edit details."}
+          Card view: open a question to edit details.
         </p>
       </div>
       {rootQuestions.map((question, index) => {
@@ -96,19 +93,17 @@ export function QuestionCardsBoard(props: {
                   >
                     Open
                   </Button>
-                  {!props.isTranslationMode ? (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        props.onDelete(question.clientId);
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  ) : null}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      props.onDelete(question.clientId);
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </div>
               </div>
 

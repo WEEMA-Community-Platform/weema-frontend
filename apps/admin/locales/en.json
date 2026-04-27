@@ -1053,7 +1053,7 @@
       "targetTypePlaceholder": "Select target type",
       "languageLabel": "Language",
       "languagePlaceholder": "Select language",
-      "translationHint": "Translation mode keeps survey structure fixed. Only text content is editable.",
+      "translationHint": "This draft uses the source survey as a starting point in the selected language. You can change structure and text before saving.",
       "save": "Save settings",
       "saving": "Saving settings…",
       "targetType": {

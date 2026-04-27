@@ -1053,7 +1053,7 @@
       "targetTypePlaceholder": "የዒላማ ዓይነት ይምረጡ",
       "languageLabel": "ቋንቋ",
       "languagePlaceholder": "ቋንቋ ይምረጡ",
-      "translationHint": "የትርጉም ሁነታ የዳሰሳውን መዋቅር ያስተካክላል። ጽሑፍ ብቻ ሊስተካከል ይችላል።",
+      "translationHint": "ይህ ረቂቅ ከምንጭ ዳሰሳ በተመረጠው ቋንቋ እንደ መነሻ ይጠቀማል። ከመቀመጫዎ በፊት መዋቅርን እና ጽሑፍን ማስተካከል ይችላሉ።",
       "save": "ቅንብሮችን አስቀምጥ",
       "saving": "ቅንብሮችን በማስቀመጥ ላይ…",
       "targetType": {
