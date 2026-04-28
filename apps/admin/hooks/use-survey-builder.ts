@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import type {
   JsonQuestionConfig,
+  NumberQuestionConfig,
   ShowCondition,
   SurveyBuilderState,
   SurveyOption,
@@ -296,12 +297,16 @@ export function useSurveyBuilder(initialState: SurveyBuilderState) {
     (
       sectionClientId: string,
       questionClientId: string,
-      questionConfig: JsonQuestionConfig | undefined
+      questionConfig: JsonQuestionConfig | NumberQuestionConfig | undefined
     ) => {
-      updateQuestion(sectionClientId, questionClientId, (question) => ({
-        ...question,
-        questionConfig,
-      }));
+      updateQuestion(sectionClientId, questionClientId, (question) => {
+        if (questionConfig === undefined) {
+          const next = { ...question };
+          delete next.questionConfig;
+          return next;
+        }
+        return { ...question, questionConfig };
+      });
     },
     [updateQuestion]
   );

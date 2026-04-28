@@ -13,7 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { GridAxisItem, ShowCondition, SurveyQuestion, SurveySection } from "@/lib/survey-builder/types";
+import type {
+  GridAxisItem,
+  JsonQuestionConfig,
+  ShowCondition,
+  SurveyQuestion,
+  SurveySection,
+} from "@/lib/survey-builder/types";
+import { isJsonQuestionConfig, isNumberQuestionConfig } from "@/lib/survey-builder/types";
 import {
   JSON_TYPES,
   QUESTION_TYPES,
@@ -50,7 +57,7 @@ export function QuestionEditor(props: {
   onAddOption: () => void;
   onUpdateOption: (optionClientId: string, patch: { text?: string; value?: string }) => void;
   onDeleteOption: (optionClientId: string) => void;
-  onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"]) => void;
+  onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"] | undefined) => void;
   onAddFollowUpQuestion: () => void;
   onAddNestedFollowUpQuestion: () => void;
   onAddCondition: () => void;
@@ -177,6 +184,13 @@ export function QuestionEditor(props: {
               </div>
             ))}
           </div>
+        ) : null}
+
+        {props.question.questionType === "NUMBER" ? (
+          <NumberQuestionConstraintsEditor
+            question={props.question}
+            onQuestionConfigChange={props.onQuestionConfigChange}
+          />
         ) : null}
 
         {props.question.questionType === "JSON" ? (
@@ -445,12 +459,102 @@ export function QuestionEditor(props: {
   );
 }
 
+function NumberQuestionConstraintsEditor(props: {
+  question: SurveyQuestion;
+  onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"] | undefined) => void;
+}) {
+  const existing = props.question.questionConfig;
+  const minValue = existing && isNumberQuestionConfig(existing) ? existing.minValue : undefined;
+  const maxValue = existing && isNumberQuestionConfig(existing) ? existing.maxValue : undefined;
+
+  const hasConflict =
+    minValue !== undefined &&
+    maxValue !== undefined &&
+    Number.isFinite(minValue) &&
+    Number.isFinite(maxValue) &&
+    maxValue < minValue;
+
+  const commit = (nextMin: number | undefined, nextMax: number | undefined) => {
+    const hasMin = nextMin !== undefined && Number.isFinite(nextMin);
+    const hasMax = nextMax !== undefined && Number.isFinite(nextMax);
+    if (!hasMin && !hasMax) {
+      props.onQuestionConfigChange(undefined);
+      return;
+    }
+    props.onQuestionConfigChange({
+      configType: "NUMBER",
+      ...(hasMin ? { minValue: nextMin } : {}),
+      ...(hasMax ? { maxValue: nextMax } : {}),
+    });
+  };
+
+  const reconcileOnBlur = () => {
+    if (
+      minValue !== undefined &&
+      maxValue !== undefined &&
+      Number.isFinite(minValue) &&
+      Number.isFinite(maxValue) &&
+      maxValue < minValue
+    ) {
+      commit(minValue, minValue);
+    }
+  };
+
+  return (
+    <div className="space-y-2 rounded-lg border border-primary/10 p-3">
+      <div className="space-y-1">
+        <p className="text-sm font-medium">Number limits</p>
+        <p className="text-xs text-muted-foreground">
+          Optional bounds; answers must fall within minimum and maximum (inclusive). Maximum must be
+          at least the minimum.
+        </p>
+      </div>
+      {hasConflict ? (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          Maximum is below minimum; leave the field or tab away and it will be set to match the
+          minimum.
+        </p>
+      ) : null}
+      <div className="grid gap-2 md:grid-cols-2">
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">Minimum value</p>
+          <Input
+            type="number"
+            value={minValue === undefined ? "" : minValue}
+            onChange={(event) => {
+              const raw = event.target.value;
+              if (raw === "") commit(undefined, maxValue);
+              else commit(Number(raw), maxValue);
+            }}
+            onBlur={reconcileOnBlur}
+            className={inputClass}
+          />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">Maximum value</p>
+          <Input
+            type="number"
+            value={maxValue === undefined ? "" : maxValue}
+            onChange={(event) => {
+              const raw = event.target.value;
+              if (raw === "") commit(minValue, undefined);
+              else commit(minValue, Number(raw));
+            }}
+            onBlur={reconcileOnBlur}
+            className={inputClass}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JsonQuestionConfigEditor(props: {
   question: SurveyQuestion;
-  onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"]) => void;
+  onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"] | undefined) => void;
 }) {
   const config = props.question.questionConfig;
-  if (!config) return null;
+  if (!config || !isJsonQuestionConfig(config)) return null;
 
   return (
     <div className="space-y-3 rounded-lg border border-primary/10 p-3">
@@ -511,7 +615,7 @@ function JsonQuestionConfigEditor(props: {
 }
 
 function RepeatableTableEditor(props: {
-  config: Extract<SurveyQuestion["questionConfig"], { jsonType: "REPEATABLE_TABLE" }>;
+  config: Extract<JsonQuestionConfig, { jsonType: "REPEATABLE_TABLE" }>;
   onChange: (config: SurveyQuestion["questionConfig"]) => void;
 }) {
   if (!props.config) return null;
@@ -656,7 +760,7 @@ function RepeatableTableEditor(props: {
 }
 
 function GridEditor(props: {
-  config: Extract<SurveyQuestion["questionConfig"], { jsonType: "GRID" }>;
+  config: Extract<JsonQuestionConfig, { jsonType: "GRID" }>;
   onChange: (config: SurveyQuestion["questionConfig"]) => void;
 }) {
   if (!props.config) return null;

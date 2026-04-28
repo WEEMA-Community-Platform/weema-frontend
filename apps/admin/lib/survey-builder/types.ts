@@ -53,6 +53,25 @@ export type GridQuestionConfig = {
 
 export type JsonQuestionConfig = RepeatableTableQuestionConfig | GridQuestionConfig;
 
+/** Min/max value bounds for NUMBER question type (stored as questionConfig, same API shape as JSON components). */
+export type NumberQuestionConfig = {
+  configType: "NUMBER";
+  minValue?: number;
+  maxValue?: number;
+};
+
+export function isJsonQuestionConfig(
+  config: JsonQuestionConfig | NumberQuestionConfig | undefined
+): config is JsonQuestionConfig {
+  return config !== undefined && "jsonType" in config;
+}
+
+export function isNumberQuestionConfig(
+  config: JsonQuestionConfig | NumberQuestionConfig | undefined
+): config is NumberQuestionConfig {
+  return config !== undefined && "configType" in config && config.configType === "NUMBER";
+}
+
 export type SurveyOption = {
   id?: string;
   clientId: string;
@@ -78,7 +97,7 @@ export type SurveyQuestion = {
   required: boolean;
   orderNo: number;
   options: SurveyOption[];
-  questionConfig?: JsonQuestionConfig;
+  questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
   showConditions: ShowCondition[];
 };
 

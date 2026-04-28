@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ShowCondition, SurveyQuestion } from "@/lib/survey-builder/types";
+import { isJsonQuestionConfig, isNumberQuestionConfig } from "@/lib/survey-builder/types";
 
 function useOperatorLabel() {
   const t = useTranslations("survey.preview.operators");
@@ -74,7 +75,27 @@ function RenderOptions({ question }: { question: SurveyQuestion }) {
     );
   }
 
-  if (question.questionType === "JSON" && question.questionConfig) {
+  if (question.questionType === "NUMBER" && question.questionConfig && isNumberQuestionConfig(question.questionConfig)) {
+    const { minValue, maxValue } = question.questionConfig;
+    const hasMin = minValue !== undefined && Number.isFinite(minValue);
+    const hasMax = maxValue !== undefined && Number.isFinite(maxValue);
+    if (hasMin || hasMax) {
+      return (
+        <div className="space-y-2 rounded-md border border-primary/10 p-3 text-sm">
+          <p className="text-xs font-medium text-muted-foreground">{t("answerPreview")}</p>
+          <p className="text-muted-foreground">
+            Allowed values: {hasMin ? String(minValue) : "(no minimum)"} –{" "}
+            {hasMax ? String(maxValue) : "(no maximum)"}
+          </p>
+          <div className="rounded border border-dashed border-primary/20 px-3 py-2 text-muted-foreground">
+            <input type="number" className="w-full max-w-xs rounded border bg-transparent px-2 py-1" disabled />
+          </div>
+        </div>
+      );
+    }
+  }
+
+  if (question.questionType === "JSON" && question.questionConfig && isJsonQuestionConfig(question.questionConfig)) {
     if (question.questionConfig.jsonType === "REPEATABLE_TABLE") {
       return (
         <div className="space-y-2 text-sm">

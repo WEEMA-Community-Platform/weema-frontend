@@ -7,6 +7,7 @@ import type {
   SurveyQuestion,
   SurveySection,
 } from "@/lib/survey-builder/types";
+import { isJsonQuestionConfig, isNumberQuestionConfig } from "@/lib/survey-builder/types";
 
 export const QUESTION_TYPES: Array<{ value: QuestionType; label: string }> = [
   { value: "SHORT_TEXT", label: "Short text" },
@@ -49,6 +50,10 @@ export function isChoiceType(questionType: QuestionType) {
 
 export function isJsonType(questionType: QuestionType) {
   return questionType === "JSON";
+}
+
+export function isNumberType(questionType: QuestionType) {
+  return questionType === "NUMBER";
 }
 
 export function createEmptyOption(orderNo = 1): SurveyOption {
@@ -116,10 +121,16 @@ export function normalizeQuestionForType(question: SurveyQuestion, questionType:
     nextQuestion.options = [createEmptyOption(1), createEmptyOption(2)];
   }
 
-  if (!isJsonType(questionType)) {
+  if (isJsonType(questionType)) {
+    if (!nextQuestion.questionConfig || !isJsonQuestionConfig(nextQuestion.questionConfig)) {
+      nextQuestion.questionConfig = createDefaultJsonConfig();
+    }
+  } else if (isNumberType(questionType)) {
+    if (nextQuestion.questionConfig && isJsonQuestionConfig(nextQuestion.questionConfig)) {
+      delete nextQuestion.questionConfig;
+    }
+  } else {
     delete nextQuestion.questionConfig;
-  } else if (!nextQuestion.questionConfig) {
-    nextQuestion.questionConfig = createDefaultJsonConfig();
   }
 
   return nextQuestion;

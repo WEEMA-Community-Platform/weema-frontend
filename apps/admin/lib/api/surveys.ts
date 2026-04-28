@@ -3,6 +3,7 @@ import type {
   BackendSurveyRecord,
   CreateSurveyPayload,
 } from "@/lib/survey-builder/normalize";
+import { toBackendQuestionConfig } from "@/lib/survey-builder/normalize";
 import type { QuestionType, SurveyQuestion, SurveySection } from "@/lib/survey-builder/types";
 
 export type SurveysListQuery = {
@@ -165,9 +166,14 @@ export type UpsertQuestionPayload = {
     orderNo: number;
   }>;
   questionConfig?: {
-    component: "REPEATABLE_TABLE" | "GRID";
+    component: "REPEATABLE_TABLE" | "GRID" | "NUMBER";
     minRows?: number;
     maxRows?: number;
+    /** NUMBER question bounds — API uses `min` / `max` on the wire. */
+    min?: number;
+    max?: number;
+    minValue?: number;
+    maxValue?: number;
     columns?: Array<
       | { key: string; label: string; type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN"; required: boolean }
       | { key: string; label: string }
@@ -666,38 +672,6 @@ export async function reorderQuestions(questionIds: string[]): Promise<BaseApiRe
     body: JSON.stringify({ questionIds }),
   });
   return parseResponse<BaseApiResponse>(response);
-}
-
-function toBackendQuestionConfig(questionConfig: SurveyQuestion["questionConfig"]) {
-  if (!questionConfig) return undefined;
-  if (questionConfig.jsonType === "REPEATABLE_TABLE") {
-    const minRows = Math.max(0, Number(questionConfig.minRows ?? 0));
-    const maxRows = Math.max(minRows, Number(questionConfig.maxRows ?? minRows));
-    return {
-      component: "REPEATABLE_TABLE" as const,
-      minRows,
-      maxRows,
-      columns: questionConfig.columns.map((column, index) => ({
-        key: column.key?.trim() || `col_${index + 1}`,
-        label: column.label.trim(),
-        type: column.columnType,
-        required: Boolean(column.required),
-      })),
-    };
-  }
-
-  return {
-    component: "GRID" as const,
-    multipleSelection: questionConfig.selectionType === "MULTIPLE",
-    rows: questionConfig.rows.map((row, index) => ({
-      key: row.key?.trim() || `row_${index + 1}`,
-      label: row.label.trim(),
-    })),
-    columns: questionConfig.columns.map((column, index) => ({
-      key: column.key?.trim() || `col_${index + 1}`,
-      label: column.label.trim(),
-    })),
-  };
 }
 
 export function serializeQuestionPayload(

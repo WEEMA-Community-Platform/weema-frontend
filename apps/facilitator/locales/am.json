@@ -1,10 +1,10 @@
 {
   "meta": {
-    "appTitle": "WEEMA አመቻች",
-    "appDescription": "የWEEMA የማህበረሰብ መድረክ የአመቻች መተግበሪያ",
+    "appTitle": "MINCH ዳታ ሲስተም አመቻች",
+    "appDescription": "የ MINCH ዳታ ሲስተም የአመቻች መተግበሪያ",
     "brand": {
-      "name": "WEEMA አመቻች",
-      "tagline": "የማህበረሰብ መድረክ"
+      "name": "MINCH ዳታ ሲስተም አመቻች",
+      "tagline": "ዳታ ሲስተም"
     }
   },
 
@@ -129,9 +129,9 @@
   "auth": {
     "login": {
       "heading": "እንኳን ደህና መጡ",
-      "subheading": "ወደ WEEMA የአመቻች መለያዎ ይግቡ",
+      "subheading": "ወደ MINCH የአመቻች መለያዎ ይግቡ",
       "email": "ኢሜይል",
-      "emailPlaceholder": "facilitator@weema.com",
+      "emailPlaceholder": "facilitator@minch.com",
       "password": "የይለፍ ቃል",
       "showPassword": "የይለፍ ቃሉን አሳይ",
       "hidePassword": "የይለፍ ቃሉን ደብቅ",
@@ -513,6 +513,12 @@
       "questionIndex": "ጥያቄ {index}",
       "answer": "መልስ",
       "numberPlaceholder": "የቁጥር መልስ ያስገቡ",
+      "numberRangeHintBoth": "የተፈቀደ ርቀት፦ {min}–{max} (አብራችው ጨምሮ)።",
+      "numberRangeHintMin": "ዝቅተኛው የተፈቀደ፦ {min}።",
+      "numberRangeHintMax": "ከፍተኛው የተፈቀደ፦ {max}።",
+      "numberInvalid": "እባክዎ ትክክለኛ ቁጥር ያስገቡ።",
+      "numberBelowMin": "ቢያንስ {min} መሆን አለበት።",
+      "numberAboveMax": "በበይም {max} መሆን አለበት።",
       "selectAnswer": "መልስ ይምረጡ",
       "yes": "አዎ",
       "no": "አይ",
@@ -544,7 +550,9 @@
         "incompleteMessage": "ከመስጠት በፊት ሁሉንም ጥያቄዎች ይመልሱ።",
         "submittedTitle": "ገቢ ተጠናቋል",
         "submittedMessage": "ገቢ በተሳካ ሁኔታ ተልኳል።",
-        "submitErrorTitle": "ማስገባት አልተቻለም"
+        "submitErrorTitle": "ማስገባት አልተቻለም",
+        "numberRangeBlockedTitle": "የቁጥር መልሶችን ያስተካክሉ",
+        "numberRangeBlockedDescription": "አንድ ወይም ብዙ የቁጥር መልሶች ልክ ያልሆኑ ወይም ከተፈቀደው በላይ/በታች ናቸው። እባክዎ እነዚህን መስኮች ያዘምኑና እንደገና ያስቀምጡ።"
       }
     },
     "preview": {

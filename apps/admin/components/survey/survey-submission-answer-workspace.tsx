@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SurveySubmissionAnswer, SurveySubmissionRecord } from "@/lib/api/surveys";
-import type { JsonQuestionConfig } from "@/lib/survey-builder/types";
+import type { JsonQuestionConfig, NumberQuestionConfig } from "@/lib/survey-builder/types";
+import { isJsonQuestionConfig, isNumberQuestionConfig } from "@/lib/survey-builder/types";
 import {
   useSaveSurveySubmissionAnswerMutation,
   useSubmitSurveySubmissionMutation,
@@ -25,7 +26,7 @@ export type QuestionTemplate = {
   questionId?: string;
   questionText: string;
   questionType: string;
-  questionConfig?: JsonQuestionConfig;
+  questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
   options: Array<{ id?: string; text: string }>;
 };
 
@@ -35,7 +36,7 @@ type WorkspaceQuestion = {
   questionId?: string;
   questionText: string;
   questionType: string;
-  questionConfig?: JsonQuestionConfig;
+  questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
   options: Array<{ id?: string; text: string }>;
 };
 
@@ -48,6 +49,27 @@ type AnswerDraft = {
   multiChoiceValue: string;
   jsonValue: unknown;
 };
+
+function getNumberAnswerBounds(question: WorkspaceQuestion): { min?: number; max?: number } {
+  const cfg = question.questionConfig;
+  if (question.questionType !== "NUMBER" || !cfg || !isNumberQuestionConfig(cfg)) return {};
+  return {
+    min: cfg.minValue !== undefined && Number.isFinite(cfg.minValue) ? cfg.minValue : undefined,
+    max: cfg.maxValue !== undefined && Number.isFinite(cfg.maxValue) ? cfg.maxValue : undefined,
+  };
+}
+
+function isNumberWithinBounds(
+  valueStr: string,
+  bounds: { min?: number; max?: number }
+): boolean {
+  if (!valueStr.trim()) return false;
+  const n = Number(valueStr);
+  if (!Number.isFinite(n)) return false;
+  if (bounds.min !== undefined && n < bounds.min) return false;
+  if (bounds.max !== undefined && n > bounds.max) return false;
+  return true;
+}
 
 const ANSWERS_PAGE_SIZE = 6;
 
@@ -108,7 +130,7 @@ function getInitialDraft(answer: SurveySubmissionAnswer): AnswerDraft {
 function getInitialDraftFromQuestion(question: WorkspaceQuestion): AnswerDraft {
   if (question.answer) return getInitialDraft(question.answer);
   let jsonValue: unknown = null;
-  if (question.questionType === "JSON" && question.questionConfig) {
+  if (question.questionType === "JSON" && question.questionConfig && isJsonQuestionConfig(question.questionConfig)) {
     if (question.questionConfig.jsonType === "REPEATABLE_TABLE") {
       const minRows = Math.max(1, Number(question.questionConfig.minRows ?? 1));
       const cols = question.questionConfig.columns;
@@ -441,6 +463,7 @@ function QuestionAnswerEditor({
 }) {
   const t = useTranslations("survey.workspace");
   const type = question.questionType.toUpperCase();
+  const numberBounds = type === "NUMBER" ? getNumberAnswerBounds(question) : null;
   const options = question.options;
   return (
     <div className="rounded-xl border border-primary/10 bg-card p-4">
@@ -465,6 +488,8 @@ function QuestionAnswerEditor({
               value={draft.numberValue}
               onChange={(event) => onDraftChange({ numberValue: event.target.value })}
               placeholder={t("numberPlaceholder")}
+              min={numberBounds?.min !== undefined ? numberBounds.min : undefined}
+              max={numberBounds?.max !== undefined ? numberBounds.max : undefined}
             />
           ) : type === "DATE" ? (
             <Input
@@ -562,7 +587,11 @@ function QuestionAnswerEditor({
           ) : type === "JSON" ? (
             <JsonQuestionEditor
               draft={draft}
-              questionConfig={question.questionConfig}
+              questionConfig={
+                question.questionConfig && isJsonQuestionConfig(question.questionConfig)
+                  ? question.questionConfig
+                  : undefined
+              }
               onDraftChange={onDraftChange}
             />
           ) : type === "LONG_TEXT" ? (
@@ -588,7 +617,13 @@ function QuestionAnswerEditor({
 
 function isQuestionAnswered(question: WorkspaceQuestion, draft: AnswerDraft): boolean {
   const type = question.questionType.toUpperCase();
-  if (type === "NUMBER") return draft.numberValue.trim() !== "";
+  if (type === "NUMBER") {
+    const bounds = getNumberAnswerBounds(question);
+    if (bounds.min === undefined && bounds.max === undefined) {
+      return draft.numberValue.trim() !== "";
+    }
+    return isNumberWithinBounds(draft.numberValue, bounds);
+  }
   if (type === "DATE") return draft.dateValue.trim() !== "";
   if (type === "BOOLEAN") return draft.booleanValue !== "";
   if (type === "SINGLE_CHOICE") return draft.singleChoiceValue.trim() !== "";

@@ -145,7 +145,7 @@ export function LoginForm({
           <div className="relative hidden bg-muted md:block">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,oklch(0.72_0.17_45/.35),transparent_42%),radial-gradient(circle_at_80%_70%,oklch(0.58_0.14_40/.32),transparent_48%)]" />
             <Image
-              src="/weema-logo.png"
+              src="/weemaNewLogo.png"
               alt="WEEMA International"
               fill
               sizes="(min-width: 768px) 40vw, 100vw"

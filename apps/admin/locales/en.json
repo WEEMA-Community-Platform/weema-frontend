@@ -1,9 +1,9 @@
 {
   "meta": {
-    "appTitle": "MINCH data system",
+    "appTitle": "MINCH Data System Admin",
     "appDescription": "MINCH data system admin application",
     "brand": {
-      "name": "MINCH data system",
+      "name": "MINCH Data System",
       "tagline": "Data system"
     }
   },
@@ -174,7 +174,7 @@
   "auth": {
     "login": {
       "heading": "Welcome back",
-      "subheading": "Sign in to your WEEMA Admin account",
+      "subheading": "Sign in to your MINCH Admin account",
       "email": "Email",
       "emailPlaceholder": "admin@weema.com",
       "password": "Password",

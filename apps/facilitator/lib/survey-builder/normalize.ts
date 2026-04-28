@@ -1,18 +1,21 @@
 import type {
   ConditionOperator,
   JsonQuestionConfig,
+  NumberQuestionConfig,
   QuestionType,
   ShowCondition,
   SurveyBuilderState,
   SurveyQuestion,
   SurveyValidationIssue,
 } from "@/lib/survey-builder/types";
+import { isJsonQuestionConfig, isNumberQuestionConfig } from "@/lib/survey-builder/types";
 import {
   applyOrderNo,
   createClientId,
   createEmptyOption,
   isChoiceType,
   isJsonType,
+  isNumberType,
   normalizeQuestionForType,
 } from "@/lib/survey-builder/utils";
 
@@ -50,9 +53,13 @@ type BackendGridAxisItem = {
 };
 
 type BackendQuestionConfig = {
-  component?: "REPEATABLE_TABLE" | "GRID";
+  component?: "REPEATABLE_TABLE" | "GRID" | "NUMBER";
   minRows?: number;
   maxRows?: number;
+  min?: number | null;
+  max?: number | null;
+  minValue?: number;
+  maxValue?: number;
   columns?: BackendRepeatableTableColumn[] | BackendGridAxisItem[];
   rows?: BackendGridAxisItem[];
   multipleSelection?: boolean;
@@ -68,7 +75,7 @@ type BackendSurveyQuestion = {
   isRequired?: boolean;
   orderNo?: number;
   options?: BackendSurveyOption[];
-  questionConfig?: JsonQuestionConfig | BackendQuestionConfig | null;
+  questionConfig?: JsonQuestionConfig | BackendQuestionConfig | NumberQuestionConfig | null;
   showConditions?: BackendSurveyCondition[];
   conditions?: BackendSurveyCondition[];
 };
@@ -111,9 +118,13 @@ export type CreateSurveyPayload = {
         orderNo: number;
       }>;
       questionConfig?: {
-        component: "REPEATABLE_TABLE" | "GRID";
+        component: "REPEATABLE_TABLE" | "GRID" | "NUMBER";
         minRows?: number;
         maxRows?: number;
+        min?: number;
+        max?: number;
+        minValue?: number;
+        maxValue?: number;
         columns?: Array<{ key: string; label: string; type: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN"; required: boolean } | { key: string; label: string }>;
         rows?: Array<{ key: string; label: string }>;
         multipleSelection?: boolean;
@@ -153,11 +164,24 @@ function toCondition(condition: BackendSurveyCondition): ShowCondition | null {
 
 function normalizeQuestionConfig(
   questionConfig: BackendSurveyQuestion["questionConfig"]
-): JsonQuestionConfig | undefined {
+): JsonQuestionConfig | NumberQuestionConfig | undefined {
   if (!questionConfig) return undefined;
 
   const config = questionConfig as BackendQuestionConfig;
   const component = config.component;
+  if (component === "NUMBER") {
+    const out: NumberQuestionConfig = { configType: "NUMBER" };
+    const minV = config.minValue ?? config.min;
+    const maxV = config.maxValue ?? config.max;
+    if (minV !== undefined && minV !== null && Number.isFinite(Number(minV))) {
+      out.minValue = Number(minV);
+    }
+    if (maxV !== undefined && maxV !== null && Number.isFinite(Number(maxV))) {
+      out.maxValue = Number(maxV);
+    }
+    if (out.minValue === undefined && out.maxValue === undefined) return undefined;
+    return out;
+  }
   if (component === "REPEATABLE_TABLE") {
     const columns = (config.columns as BackendRepeatableTableColumn[] | undefined) ?? [];
     return {
@@ -203,8 +227,19 @@ function normalizeQuestionConfig(
   return undefined;
 }
 
-function toBackendQuestionConfig(config?: JsonQuestionConfig) {
+export function toBackendQuestionConfig(config?: SurveyQuestion["questionConfig"]) {
   if (!config) return undefined;
+  if (isNumberQuestionConfig(config)) {
+    const hasMin = config.minValue !== undefined && Number.isFinite(config.minValue);
+    const hasMax = config.maxValue !== undefined && Number.isFinite(config.maxValue);
+    if (!hasMin && !hasMax) return undefined;
+    return {
+      component: "NUMBER" as const,
+      ...(hasMin ? { min: config.minValue, minValue: config.minValue } : {}),
+      ...(hasMax ? { max: config.maxValue, maxValue: config.maxValue } : {}),
+    };
+  }
+  if (!isJsonQuestionConfig(config)) return undefined;
   if (config.jsonType === "REPEATABLE_TABLE") {
     const minRows = Math.max(0, Number(config.minRows ?? 0));
     const maxRows = Math.max(minRows, Number(config.maxRows ?? minRows));
@@ -343,9 +378,11 @@ export function serializeSurveyPayload(state: SurveyBuilderState): CreateSurveyP
               }))
             : undefined,
           questionConfig:
-            isJsonType(item.questionType) && item.questionConfig
+            isJsonType(item.questionType) && item.questionConfig && isJsonQuestionConfig(item.questionConfig)
               ? toBackendQuestionConfig(item.questionConfig)
-              : undefined,
+              : isNumberType(item.questionType) && item.questionConfig && isNumberQuestionConfig(item.questionConfig)
+                ? toBackendQuestionConfig(item.questionConfig)
+                : undefined,
           showConditions:
             item.showConditions.length > 0
               ? item.showConditions.map((condition) => ({
@@ -416,7 +453,7 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
       }
 
       if (isJsonType(question.questionType)) {
-        if (!question.questionConfig) {
+        if (!question.questionConfig || !isJsonQuestionConfig(question.questionConfig)) {
           issues.push({
             path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig`,
             message: "JSON configuration is required for JSON question type.",
@@ -441,6 +478,22 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
           issues.push({
             path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig`,
             message: "Grid requires at least one row and one column.",
+          });
+        }
+      }
+
+      if (question.questionType === "NUMBER" && question.questionConfig && isNumberQuestionConfig(question.questionConfig)) {
+        const { minValue, maxValue } = question.questionConfig;
+        if (
+          minValue !== undefined &&
+          maxValue !== undefined &&
+          Number.isFinite(minValue) &&
+          Number.isFinite(maxValue) &&
+          maxValue < minValue
+        ) {
+          issues.push({
+            path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.maxValue`,
+            message: "Maximum value must be greater than or equal to minimum value.",
           });
         }
       }

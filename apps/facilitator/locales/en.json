@@ -1,10 +1,10 @@
 {
   "meta": {
-    "appTitle": "WEEMA Facilitator",
-    "appDescription": "WEEMA Community Platform Facilitator Application",
+    "appTitle": "MINCH Facilitator",
+    "appDescription": "MINCH data systemFacilitator Application",
     "brand": {
-      "name": "WEEMA Facilitator",
-      "tagline": "Community Platform"
+      "name": "MINCH Data System Facilitator",
+      "tagline": "Data System Platform"
     }
   },
 
@@ -129,9 +129,9 @@
   "auth": {
     "login": {
       "heading": "Welcome back",
-      "subheading": "Sign in to your WEEMA Facilitator account",
+      "subheading": "Sign in to your MINCH Facilitator account",
       "email": "Email",
-      "emailPlaceholder": "facilitator@weema.com",
+      "emailPlaceholder": "facilitator@minch.com",
       "password": "Password",
       "showPassword": "Show password",
       "hidePassword": "Hide password",
@@ -146,7 +146,7 @@
       "title": "Reset password",
       "intro": "Enter your email, verify the OTP, then set a new password.",
       "email": "Email",
-      "emailPlaceholder": "facilitator@weema.com",
+      "emailPlaceholder": "facilitator@minch.com",
       "sendOtp": "Send OTP",
       "otp": "OTP code",
       "otpPlaceholder": "123456",
@@ -513,6 +513,12 @@
       "questionIndex": "Question {index}",
       "answer": "Answer",
       "numberPlaceholder": "Enter numeric answer",
+      "numberRangeHintBoth": "Allowed range: {min}–{max} (inclusive).",
+      "numberRangeHintMin": "Minimum allowed: {min}.",
+      "numberRangeHintMax": "Maximum allowed: {max}.",
+      "numberInvalid": "Enter a valid number.",
+      "numberBelowMin": "Must be at least {min}.",
+      "numberAboveMax": "Must be no more than {max}.",
       "selectAnswer": "Select answer",
       "yes": "Yes",
       "no": "No",
@@ -544,7 +550,9 @@
         "incompleteMessage": "Please answer all questions before submitting.",
         "submittedTitle": "Submission completed",
         "submittedMessage": "Submission has been submitted successfully.",
-        "submitErrorTitle": "Failed to submit"
+        "submitErrorTitle": "Failed to submit",
+        "numberRangeBlockedTitle": "Fix number answers",
+        "numberRangeBlockedDescription": "One or more numeric answers are invalid or outside the allowed range. Update those fields, then save again."
       }
     },
     "preview": {
