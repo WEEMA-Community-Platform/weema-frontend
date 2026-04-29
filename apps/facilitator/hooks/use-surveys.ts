@@ -56,12 +56,13 @@ export function useSurveyDetailQuery(id: string | null, options?: { enabled?: bo
 
 export function useSurveySubmissionsBySurveyQuery(
   surveyId: string | null,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; shgId?: string }
 ) {
   const enabled = (options?.enabled ?? true) && !!surveyId;
+  const shgId = options?.shgId?.trim() || undefined;
   return useQuery({
-    queryKey: ["survey", surveyId, "submissions"],
-    queryFn: () => getSurveySubmissionsBySurveyId(surveyId!),
+    queryKey: ["survey", surveyId, "submissions", shgId ?? "all"],
+    queryFn: () => getSurveySubmissionsBySurveyId(surveyId!, { shgId }),
     enabled,
   });
 }

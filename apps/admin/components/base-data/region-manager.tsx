@@ -10,7 +10,8 @@ import {
   useRegionsQuery,
   useUpdateRegionMutation,
 } from "@/hooks/use-base-data";
-import type { Region } from "@/lib/api/base-data";
+import { exportRegionsList, type Region } from "@/lib/api/base-data";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -57,9 +58,11 @@ export function RegionManager() {
   const tActions = useTranslations("common.actions");
   const tValidation = useTranslations("common.validation");
   const tListEmpty = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("basedata.export");
   const listEmptyMessage = useListEmptyMessage();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportPending, setExportPending] = useState(false);
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -74,6 +77,49 @@ export function RegionManager() {
   const deleteMutation = useDeleteRegionMutation();
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportRegionsList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tExport("columns.name"), cell: (r: Record<string, unknown>) => str(r.name) },
+        {
+          header: tExport("columns.description"),
+          cell: (r: Record<string, unknown>) => str(r.description),
+        },
+        {
+          header: tExport("columns.createdAt"),
+          cell: (r: Record<string, unknown>) => str(r.createdAt),
+        },
+        {
+          header: tExport("columns.updatedAt"),
+          cell: (r: Record<string, unknown>) => str(r.updatedAt),
+        },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("regions"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
+  };
 
   const hasSearch = Boolean(searchQuery.trim());
   const regionsEmptyMessage = listEmptyMessage({
@@ -151,6 +197,10 @@ export function RegionManager() {
             setSearchQuery(value);
             setPage(1);
           }}
+          onExport={exportCsv}
+          exportLabel={tExport("button")}
+          exportPendingLabel={tExport("exporting")}
+          exportPending={exportPending}
           onAdd={openCreate}
           addLabel={t("addButton")}
         />

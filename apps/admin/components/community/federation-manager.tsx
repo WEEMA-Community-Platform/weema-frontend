@@ -13,6 +13,8 @@ import {
 } from "@/hooks/use-community";
 import { useCurrentUser } from "@/hooks/use-user";
 import type { EntityStatus, Federation } from "@/lib/api/community";
+import { exportFederationsList } from "@/lib/api/community";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import {
   CardMetaRow,
   CommunityCard,
@@ -53,6 +55,8 @@ export function FederationManager() {
   const tStatus = useTranslations("common.states");
   const tValidation = useTranslations("common.validation");
   const tEntity = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("community.export");
+  const tFedCols = useTranslations("community.export.federation.columns");
 
   const STATUS_OPTIONS = useMemo(
     () => [
@@ -78,6 +82,7 @@ export function FederationManager() {
   const [pendingDelete, setPendingDelete] = useState<Federation | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [assigningFederation, setAssigningFederation] = useState<Federation | null>(null);
+  const [exportPending, setExportPending] = useState(false);
 
   const federationsQuery = useFederationsQuery({
     page,
@@ -128,12 +133,60 @@ export function FederationManager() {
     emptyCatalogHint: tPage("emptyHint"),
   });
 
+  const entityStatusLabel = (raw: string) =>
+    raw === "ACTIVE" ? tStatus("active") : raw === "INACTIVE" ? tStatus("inactive") : raw;
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportFederationsList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tFedCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
+        { header: tFedCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
+        { header: tFedCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },
+        {
+          header: tFedCols("status"),
+          cell: (r: Record<string, unknown>) => entityStatusLabel(String(r.status ?? "")),
+        },
+        { header: tFedCols("manager"), cell: (r: Record<string, unknown>) => str(r.managerName) },
+        { header: tFedCols("clusterCount"), cell: (r: Record<string, unknown>) => str(r.clusterCount) },
+        { header: tFedCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
+        { header: tFedCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("federations"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <DataToolbar
         searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
+        onExport={exportCsv}
+        exportLabel={tExport("button")}
+        exportPendingLabel={tExport("exporting")}
+        exportPending={exportPending}
         onAdd={openCreate}
         addLabel={tPage("addButton")}
         showFilterButton

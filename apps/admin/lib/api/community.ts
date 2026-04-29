@@ -1,4 +1,8 @@
-import type { BaseApiResponse } from "@/lib/api/base-data";
+import {
+  parseExportListResponse,
+  type BaseApiResponse,
+  type BaseDataExportListResponse,
+} from "@/lib/api/base-data";
 
 export type EntityStatus = "ACTIVE" | "INACTIVE";
 
@@ -417,4 +421,28 @@ export async function bulkUnlockSHGs(ids: string[]) {
     credentials: "include",
   });
   return parseResponse<BaseApiResponse>(response);
+}
+
+export async function exportFederationsList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/federations", {
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseExportListResponse(response);
+}
+
+export async function exportClustersList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/clusters", {
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseExportListResponse(response);
+}
+
+export async function exportSelfHelpGroupsList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/self-help-groups", {
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseExportListResponse(response);
 }

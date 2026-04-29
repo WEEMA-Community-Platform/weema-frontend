@@ -4,10 +4,13 @@ type RouteParams = {
   params: Promise<{ surveyId: string }>;
 };
 
-export async function GET(_request: Request, { params }: RouteParams) {
+export async function GET(request: Request, { params }: RouteParams) {
   const { surveyId } = await params;
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const path = `/api/survey-submissions/survey/${surveyId}${qs ? `?${qs}` : ""}`;
   return forwardAuthorizedRequest({
     method: "GET",
-    path: `/api/survey-submissions/survey/${surveyId}/pending-targets`,
+    path,
   });
 }

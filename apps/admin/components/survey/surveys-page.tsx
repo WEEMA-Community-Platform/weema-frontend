@@ -6,6 +6,7 @@ import {
   ClipboardListIcon,
   CircleCheckBigIcon,
   CopyIcon,
+  DownloadIcon,
   LanguagesIcon,
   LayersIcon,
   Link2Icon,
@@ -49,6 +50,12 @@ import {
   usePublishSurveyMutation,
   useSurveysQuery,
 } from "@/hooks/use-surveys";
+import { exportSurveysList, type SurveyListItem } from "@/lib/api/surveys";
+import { downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import {
+  buildSurveyListExportCsv,
+  surveyListItemToExportRow,
+} from "@/lib/survey-list-export-csv";
 
 const PAGE_SIZE = 10;
 
@@ -81,6 +88,9 @@ export function SurveysPage() {
   const tActions = useTranslations("common.actions");
   const tListEmpty = useTranslations("listEmpty");
   const tListEmptyEntity = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("survey.export");
+  const tListCol = useTranslations("survey.export.list.columns");
+  const tCommonBase = useTranslations("basedata.common");
   const tDelete = useTranslations("survey.list.delete");
   const tPublish = useTranslations("survey.list.publish");
   const tListActions = useTranslations("survey.list.actions");
@@ -112,6 +122,7 @@ export function SurveysPage() {
   const [assignTargetsOpen, setAssignTargetsOpen] = useState(false);
   /** Defer clearing survey payload until after dialog exit animation (Dialog overlay/content use duration-150). */
   const assignTargetsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [exportAllPending, setExportAllPending] = useState(false);
 
   const untitledLabel = tList("untitled");
 
@@ -195,6 +206,73 @@ export function SurveysPage() {
     return tList("emptyCatalogHint");
   })();
 
+  const listExportHeaders = useMemo(
+    () => ({
+      title: tListCol("title"),
+      description: tListCol("description"),
+      targetType: tListCol("targetType"),
+      status: tListCol("status"),
+      version: tListCol("version"),
+      language: tListCol("language"),
+      isActive: tListCol("isActive"),
+      isDeleted: tListCol("isDeleted"),
+      parentSurveyTitle: tListCol("parentSurveyTitle"),
+      totalSections: tListCol("totalSections"),
+      totalQuestions: tListCol("totalQuestions"),
+      createdAt: tListCol("createdAt"),
+      updatedAt: tListCol("updatedAt"),
+    }),
+    [tListCol]
+  );
+
+  const exportAllSurveysCsv = async () => {
+    setExportAllPending(true);
+    try {
+      const { data } = await exportSurveysList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const csv = buildSurveyListExportCsv(
+        data,
+        listExportHeaders,
+        tCommonBase("yes"),
+        tCommonBase("no")
+      );
+      downloadBaseDataCsv(csv, exportFilename("surveys"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportAllPending(false);
+    }
+  };
+
+  const exportSurveySummaryCsv = (survey: SurveyListItem) => {
+    const csv = buildSurveyListExportCsv(
+      [surveyListItemToExportRow(survey)],
+      listExportHeaders,
+      tCommonBase("yes"),
+      tCommonBase("no")
+    );
+    const safe = survey.id.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 12) || "survey";
+    downloadBaseDataCsv(csv, exportFilename(`survey-summary-${safe}`));
+    sileo.success({
+      title: tExport("detailSuccessTitle"),
+      description: tExport("summarySuccessDescription"),
+    });
+  };
+
   /** After delete, refetch and clamp page so we never sit past the last page or on an empty page. */
   const reconcilePageAfterDelete = async () => {
     const { data } = await surveysQuery.refetch();
@@ -218,6 +296,10 @@ export function SurveysPage() {
         }}
         onAdd={() => router.push("/survey/builder")}
         addLabel={tList("addButton")}
+        onExport={exportAllSurveysCsv}
+        exportLabel={tExport("button")}
+        exportPendingLabel={tExport("exporting")}
+        exportPending={exportAllPending}
         onOpenFilters={() => setIsFilterOpen(true)}
         showFilterButton
         hasActiveFilters={hasActiveFilters}
@@ -269,6 +351,13 @@ export function SurveysPage() {
                     {tListActions("publish")}
                   </DropdownMenuItem>
                 ) : null}
+                <DropdownMenuItem
+                  className="text-[12px] whitespace-nowrap"
+                  onClick={() => exportSurveySummaryCsv(survey)}
+                >
+                  <DownloadIcon className="size-4" />
+                  {tExport("actions.exportSummary")}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
                   onClick={() =>

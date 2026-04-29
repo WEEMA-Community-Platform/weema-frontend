@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftIcon, PlusIcon, SaveIcon } from "lucide-react";
+import { ArrowLeftIcon, DownloadIcon, Loader2, PlusIcon, SaveIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,6 +18,10 @@ type BuilderHeaderProps = {
   onCreateNew: () => void;
   onSaveSurvey: () => void;
   onSaveAllChanges: () => void;
+  onExportDetail?: () => void;
+  exportDetailPending?: boolean;
+  exportDetailLabel?: string;
+  exportDetailPendingLabel?: string;
 };
 
 export function BuilderHeader({
@@ -30,6 +34,10 @@ export function BuilderHeader({
   onCreateNew,
   onSaveSurvey,
   onSaveAllChanges,
+  onExportDetail,
+  exportDetailPending = false,
+  exportDetailLabel,
+  exportDetailPendingLabel,
 }: BuilderHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b border-primary/10 px-4">
@@ -48,6 +56,27 @@ export function BuilderHeader({
           <PlusIcon className="size-4" />
           New survey
         </Button>
+
+        {initialSurveyId && onExportDetail && exportDetailLabel && exportDetailPendingLabel ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={exportDetailPending}
+            onClick={onExportDetail}
+          >
+            {exportDetailPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                {exportDetailPendingLabel}
+              </>
+            ) : (
+              <>
+                <DownloadIcon className="size-4" aria-hidden />
+                {exportDetailLabel}
+              </>
+            )}
+          </Button>
+        ) : null}
 
         {!initialSurveyId ? (
           <Tooltip>

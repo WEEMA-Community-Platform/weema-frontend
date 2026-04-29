@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronLeftIcon, ChevronRightIcon, Loader2, Plus, SlidersHorizontal } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Download,
+  Loader2,
+  Plus,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Children, ReactNode } from "react";
 
@@ -86,6 +93,10 @@ export function DataToolbar({
   onSearchChange,
   onAdd,
   addLabel,
+  onExport,
+  exportLabel,
+  exportPendingLabel,
+  exportPending = false,
   onOpenFilters,
   showFilterButton = false,
   hasActiveFilters = false,
@@ -95,6 +106,10 @@ export function DataToolbar({
   onSearchChange: (value: string) => void;
   onAdd?: () => void;
   addLabel?: string;
+  onExport?: () => void;
+  exportLabel?: string;
+  exportPendingLabel?: string;
+  exportPending?: boolean;
   onOpenFilters?: () => void;
   showFilterButton?: boolean;
   hasActiveFilters?: boolean;
@@ -122,6 +137,27 @@ export function DataToolbar({
               className="ml-0.5 size-1.5 rounded-full bg-primary"
               aria-label={tTable("filtersActiveLabel")}
             />
+          )}
+        </Button>
+      )}
+      {onExport && exportLabel && exportPendingLabel && (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 border-primary/30"
+          disabled={exportPending}
+          onClick={onExport}
+        >
+          {exportPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              {exportPendingLabel}
+            </>
+          ) : (
+            <>
+              <Download className="size-4" aria-hidden />
+              {exportLabel}
+            </>
           )}
         </Button>
       )}

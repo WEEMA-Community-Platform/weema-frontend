@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DragEndEvent } from "@dnd-kit/core";
+import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +18,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSurveyBuilder } from "@/hooks/use-survey-builder";
+import { exportSurveyById } from "@/lib/api/surveys";
 import type { ShowCondition, SurveyValidationIssue } from "@/lib/survey-builder/types";
 import { createEmptySurvey } from "@/lib/survey-builder/utils";
+import {
+  buildSurveyDetailExportCsv,
+  type SurveyDetailCsvLabels,
+} from "@/lib/survey-export-csv";
+import { downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { SurveyPreviewPanel } from "@/components/survey/survey-preview-panel";
 import { SurveySettingsForm } from "@/components/survey/survey-settings-form";
 import { QuestionCardsBoard } from "@/components/survey/builder/question-cards-board";
@@ -68,9 +75,15 @@ export function SurveyBuilderPage({
   >({});
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [pendingLeaveAction, setPendingLeaveAction] = useState<PendingLeaveAction>(null);
+  const [exportDetailPending, setExportDetailPending] = useState(false);
   const initialDraftSnapshotRef = useRef<string | null>(null);
   const hasHistoryGuardRef = useRef(false);
   const bypassLeaveGuardRef = useRef(false);
+
+  const tExport = useTranslations("survey.export");
+  const tDetail = useTranslations("survey.export.detail");
+  const tCommonBase = useTranslations("basedata.common");
+  const tValidation = useTranslations("common.validation");
 
   const builder = useSurveyBuilder(createEmptySurvey());
   if (initialDraftSnapshotRef.current === null) {
@@ -513,6 +526,51 @@ export function SurveyBuilderPage({
     setPendingLeaveAction(null);
   };
 
+  const handleExportSurveyDetail = useCallback(async () => {
+    if (!initialSurveyId) return;
+    setExportDetailPending(true);
+    try {
+      const { data } = await exportSurveyById(initialSurveyId);
+      const labels: SurveyDetailCsvLabels = {
+        sectionOverview: tDetail("sectionOverview"),
+        sectionQuestions: tDetail("sectionQuestions"),
+        colField: tDetail("colField"),
+        colValue: tDetail("colValue"),
+        lblTitle: tDetail("lblTitle"),
+        lblDescription: tDetail("lblDescription"),
+        lblTargetType: tDetail("lblTargetType"),
+        lblStatus: tDetail("lblStatus"),
+        lblVersion: tDetail("lblVersion"),
+        lblLanguage: tDetail("lblLanguage"),
+        lblCreatedAt: tDetail("lblCreatedAt"),
+        lblUpdatedAt: tDetail("lblUpdatedAt"),
+        colSectionTitle: tDetail("colSectionTitle"),
+        colSectionOrder: tDetail("colSectionOrder"),
+        colQuestionOrder: tDetail("colQuestionOrder"),
+        colQuestionText: tDetail("colQuestionText"),
+        colQuestionType: tDetail("colQuestionType"),
+        colRequired: tDetail("colRequired"),
+        colEnabled: tDetail("colEnabled"),
+        colOptions: tDetail("colOptions"),
+        colConfiguration: tDetail("colConfiguration"),
+        colConditions: tDetail("colConditions"),
+      };
+      const csv = buildSurveyDetailExportCsv(data, labels, tCommonBase("yes"), tCommonBase("no"));
+      downloadBaseDataCsv(csv, exportFilename(`survey-${initialSurveyId}`));
+      sileo.success({
+        title: tExport("detailSuccessTitle"),
+        description: tExport("detailSuccessDescription"),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportDetailPending(false);
+    }
+  }, [initialSurveyId, tDetail, tCommonBase, tExport, tValidation]);
+
   // ─── Loading skeleton ─────────────────────────────────────────────────────
 
   if (initialSurveyId && isLoadingInitialSurvey) {
@@ -565,6 +623,10 @@ export function SurveyBuilderPage({
         onCreateNew={handleCreateNew}
         onSaveSurvey={() => void persistence.handleSaveSurvey()}
         onSaveAllChanges={() => void persistence.handleSaveAllChanges()}
+        onExportDetail={initialSurveyId ? handleExportSurveyDetail : undefined}
+        exportDetailPending={exportDetailPending}
+        exportDetailLabel={tExport("button")}
+        exportDetailPendingLabel={tExport("exporting")}
       />
 
       <div className="flex h-[calc(100vh-56px)]">

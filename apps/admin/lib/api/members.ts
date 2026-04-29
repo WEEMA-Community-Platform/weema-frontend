@@ -1,4 +1,8 @@
-import type { BaseApiResponse } from "@/lib/api/base-data";
+import {
+  parseExportListResponse,
+  type BaseApiResponse,
+  type BaseDataExportListResponse,
+} from "@/lib/api/base-data";
 
 export type Member = {
   id: string;
@@ -189,4 +193,12 @@ export async function bulkUnlockMembers(ids: string[]) {
     credentials: "include",
   });
   return parseResponse<BaseApiResponse>(response);
+}
+
+export async function exportMembersList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/members", {
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseExportListResponse(response);
 }

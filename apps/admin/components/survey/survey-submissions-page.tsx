@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
+import { ArrowLeftIcon, LockIcon, SlidersHorizontal, UnlockIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
@@ -20,13 +20,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { type QuestionTemplate } from "@/components/survey/survey-submission-answer-workspace";
 import { SubmissionWorkspacePanel } from "@/components/survey/survey-submission-workspace-panel";
+import { MemberSubmissionsTableCard } from "@/components/survey/survey-submissions-tables";
 import {
-  MemberSubmissionsTableCard,
-} from "@/components/survey/survey-submissions-tables";
+  SurveySubmissionsFiltersDialog,
+  type SurveySubmissionsAppliedFilters,
+} from "@/components/survey/survey-submissions-filters-dialog";
 import {
   useLockSurveySubmissionMutation,
   useStartSurveySubmissionMutation,
   useUnlockSurveySubmissionMutation,
+  useSurveyAssignmentTargetsQuery,
   useSurveyDetailQuery,
   useSurveySubmissionDetailQuery,
   useSurveySubmissionsBySurveyQuery,
@@ -181,13 +184,24 @@ export function SurveySubmissionsPage({
   const tPage = useTranslations("survey.submissions");
   const tToasts = useTranslations("survey.submissions.lock.toasts");
   const tValidation = useTranslations("common.validation");
+  const tTable = useTranslations("community.members.table");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
   const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
+  const filterShgId = searchParams.get("shgId") ?? "";
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
+  const [isSubmissionFilterOpen, setIsSubmissionFilterOpen] = useState(false);
 
-  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
+  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId, {
+    shgId: filterShgId || undefined,
+  });
+  const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(
+    surveyId,
+    {},
+    { enabled: Boolean(surveyId) && !selectedSubmissionId }
+  );
+
   const submissions = submissionsQuery.data?.submissions ?? [];
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
@@ -225,6 +239,49 @@ export function SurveySubmissionsPage({
   const setRouteSearch = (next: URLSearchParams) => {
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const shgFilterOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    const ad = assignmentTargetsQuery.data?.assignmentData;
+    const assigned =
+      ad?.assignedTargets && ad.assignedTargets.length > 0
+        ? ad.assignedTargets
+        : ad?.assignedSelfHelpGroups && ad.assignedSelfHelpGroups.length > 0
+          ? ad.assignedSelfHelpGroups
+          : [];
+    for (const row of assigned) {
+      byId.set(row.id, row.name);
+    }
+    const rows = submissionsQuery.data?.submissions ?? [];
+    for (const s of rows) {
+      const id = s.selfHelpGroupId;
+      if (id) byId.set(id, s.selfHelpGroupName || id);
+    }
+    if (filterShgId && !byId.has(filterShgId)) {
+      byId.set(filterShgId, filterShgId);
+    }
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [assignmentTargetsQuery.data?.assignmentData, submissionsQuery.data?.submissions, filterShgId]);
+
+  const setShgFilter = (nextId: string) => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (nextId) next.set("shgId", nextId);
+    else next.delete("shgId");
+    setRouteSearch(next);
+  };
+
+  const hasActiveSubmissionFilters = Boolean(filterShgId);
+  const appliedSubmissionFilters: SurveySubmissionsAppliedFilters = useMemo(
+    () => ({ shgId: filterShgId }),
+    [filterShgId]
+  );
+
+  const applySubmissionFilters = (filters: SurveySubmissionsAppliedFilters) => {
+    setShgFilter(filters.shgId);
+    setIsSubmissionFilterOpen(false);
   };
 
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
@@ -289,7 +346,32 @@ export function SurveySubmissionsPage({
           <ArrowLeftIcon className="size-4" />
           {tPage("backToSurveys")}
         </Button>
+        {!selectedSubmissionId && shgFilterOptions.length > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 border-primary/30"
+            onClick={() => setIsSubmissionFilterOpen(true)}
+          >
+            <SlidersHorizontal className="size-4" />
+            {tTable("filters")}
+            {hasActiveSubmissionFilters ? (
+              <span
+                className="ml-0.5 size-1.5 rounded-full bg-primary"
+                aria-label={tTable("filtersActiveLabel")}
+              />
+            ) : null}
+          </Button>
+        ) : null}
       </div>
+
+      <SurveySubmissionsFiltersDialog
+        open={isSubmissionFilterOpen}
+        onOpenChange={setIsSubmissionFilterOpen}
+        applied={appliedSubmissionFilters}
+        onApply={applySubmissionFilters}
+        shgOptions={shgFilterOptions}
+      />
 
       {selectedSubmissionId ? (
         <SubmissionWorkspacePanel

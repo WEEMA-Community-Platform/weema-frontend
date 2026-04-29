@@ -12,7 +12,8 @@ import {
   useWoredasQuery,
   useZonesQuery,
 } from "@/hooks/use-base-data";
-import type { Kebele } from "@/lib/api/base-data";
+import { exportKebelesList, type Kebele } from "@/lib/api/base-data";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -60,9 +61,11 @@ export function KebeleManager() {
   const tActions = useTranslations("common.actions");
   const tValidation = useTranslations("common.validation");
   const tListEmpty = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("basedata.export");
   const listEmptyMessage = useListEmptyMessage();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportPending, setExportPending] = useState(false);
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -96,6 +99,61 @@ export function KebeleManager() {
   const updateMutation = useUpdateKebeleMutation();
   const deleteMutation = useDeleteKebeleMutation();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportKebelesList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tExport("columns.name"), cell: (r: Record<string, unknown>) => str(r.name) },
+        {
+          header: tExport("columns.region"),
+          cell: (r: Record<string, unknown>) => str(r.regionName),
+        },
+        {
+          header: tExport("columns.zone"),
+          cell: (r: Record<string, unknown>) => str(r.zoneName),
+        },
+        {
+          header: tExport("columns.woreda"),
+          cell: (r: Record<string, unknown>) => str(r.woredaName),
+        },
+        {
+          header: tExport("columns.description"),
+          cell: (r: Record<string, unknown>) => str(r.description),
+        },
+        {
+          header: tExport("columns.createdAt"),
+          cell: (r: Record<string, unknown>) => str(r.createdAt),
+        },
+        {
+          header: tExport("columns.updatedAt"),
+          cell: (r: Record<string, unknown>) => str(r.updatedAt),
+        },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("kebeles"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
+  };
 
   const zoneOptions = useMemo(
     () => (zonesQuery.data?.zones ?? []).map((z) => ({ value: z.id, label: z.name })),
@@ -177,6 +235,10 @@ export function KebeleManager() {
             setSearchQuery(value);
             setPage(1);
           }}
+          onExport={exportCsv}
+          exportLabel={tExport("button")}
+          exportPendingLabel={tExport("exporting")}
+          exportPending={exportPending}
           onAdd={() => {
             setViewingKebele(null);
             resetForm();

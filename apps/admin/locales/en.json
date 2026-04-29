@@ -222,6 +222,78 @@
     }
   },
   "community": {
+    "export": {
+      "button": "Export CSV",
+      "exporting": "Exporting…",
+      "successTitle": "Export ready",
+      "successDescription": "{count, plural, one {# row downloaded.} other {# rows downloaded.}}",
+      "errorTitle": "Export failed",
+      "emptyTitle": "Nothing to export",
+      "emptyDescription": "There is no data to include in the file.",
+      "federation": {
+        "columns": {
+          "name": "Name",
+          "description": "Description",
+          "location": "Location",
+          "status": "Status",
+          "manager": "Manager",
+          "clusterCount": "Clusters",
+          "createdAt": "Created",
+          "updatedAt": "Last updated"
+        }
+      },
+      "cluster": {
+        "columns": {
+          "name": "Name",
+          "description": "Description",
+          "location": "Location",
+          "status": "Status",
+          "federation": "Federation",
+          "manager": "Manager",
+          "facilitator": "Facilitator",
+          "shgCount": "Self-help groups",
+          "createdAt": "Created",
+          "updatedAt": "Last updated"
+        }
+      },
+      "shg": {
+        "columns": {
+          "name": "Name",
+          "description": "Description",
+          "status": "Status",
+          "cluster": "Cluster",
+          "woreda": "Woreda",
+          "kebele": "Kebele",
+          "facilitator": "Facilitator",
+          "memberCount": "Members",
+          "location": "Location",
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "locked": "Locked",
+          "createdAt": "Created",
+          "updatedAt": "Last updated"
+        }
+      },
+      "member": {
+        "columns": {
+          "firstName": "First name",
+          "lastName": "Last name",
+          "phone": "Phone",
+          "gender": "Gender",
+          "dateOfBirth": "Date of birth",
+          "maritalStatus": "Marital status",
+          "fan": "FAN",
+          "dateJoinedShg": "Date joined SHG",
+          "status": "Status",
+          "religion": "Religion",
+          "shg": "Self-help group",
+          "cluster": "Cluster",
+          "locked": "Locked",
+          "createdAt": "Created",
+          "updatedAt": "Last updated"
+        }
+      }
+    },
     "shg": {
       "page": {
         "searchPlaceholder": "Search self-help groups",
@@ -429,7 +501,8 @@
         "marital": {
           "single": "Single",
           "married": "Married",
-          "divorced": "Divorced"
+          "divorced": "Divorced",
+          "widowed": "Widowed"
         },
         "status": {
           "active": "Active",
@@ -768,6 +841,62 @@
     }
   },
   "survey": {
+    "export": {
+      "button": "Export CSV",
+      "exporting": "Exporting…",
+      "successTitle": "Export ready",
+      "successDescription": "{count, plural, one {# row downloaded.} other {# rows downloaded.}}",
+      "detailSuccessTitle": "Export ready",
+      "detailSuccessDescription": "Survey definition downloaded as CSV.",
+      "summarySuccessDescription": "Survey list row downloaded as CSV.",
+      "errorTitle": "Export failed",
+      "emptyTitle": "Nothing to export",
+      "emptyDescription": "There is no data to include in the file.",
+      "actions": {
+        "exportSummary": "Export summary (CSV)"
+      },
+      "list": {
+        "columns": {
+          "title": "Title",
+          "description": "Description",
+          "targetType": "Target type",
+          "status": "Status",
+          "version": "Version",
+          "language": "Language",
+          "isActive": "Active",
+          "isDeleted": "Deleted",
+          "parentSurveyTitle": "Parent survey",
+          "totalSections": "Sections",
+          "totalQuestions": "Questions",
+          "createdAt": "Created",
+          "updatedAt": "Last updated"
+        }
+      },
+      "detail": {
+        "sectionOverview": "Survey overview",
+        "sectionQuestions": "Questions",
+        "colField": "Field",
+        "colValue": "Value",
+        "lblTitle": "Title",
+        "lblDescription": "Description",
+        "lblTargetType": "Target type",
+        "lblStatus": "Status",
+        "lblVersion": "Version",
+        "lblLanguage": "Language",
+        "lblCreatedAt": "Created",
+        "lblUpdatedAt": "Last updated",
+        "colSectionTitle": "Section",
+        "colSectionOrder": "Section order",
+        "colQuestionOrder": "Question order",
+        "colQuestionText": "Question",
+        "colQuestionType": "Type",
+        "colRequired": "Required",
+        "colEnabled": "Enabled",
+        "colOptions": "Options",
+        "colConfiguration": "Configuration",
+        "colConditions": "Visibility conditions"
+      }
+    },
     "list": {
       "searchPlaceholder": "Search surveys",
       "emptyHint": "No surveys assigned yet.",
@@ -837,6 +966,14 @@
     "submissions": {
       "backToSurveys": "Back to surveys",
       "loadError": "Failed to load pending targets.",
+      "filters": {
+        "title": "Filter submissions",
+        "description": "Narrow submissions by self-help group. Changes apply when you click Apply filters.",
+        "selfHelpGroup": "Self-help group",
+        "selfHelpGroupAll": "All groups",
+        "clear": "Clear filters",
+        "apply": "Apply filters"
+      },
       "status": {
         "submitted": "Submitted",
         "notStarted": "Not started",
@@ -1135,6 +1272,25 @@
       "applyFilters": "Apply filters",
       "yes": "Yes",
       "no": "No"
+    },
+    "export": {
+      "button": "Export CSV",
+      "exporting": "Exporting…",
+      "successTitle": "Export ready",
+      "successDescription": "{count, plural, one {# row downloaded.} other {# rows downloaded.}}",
+      "errorTitle": "Export failed",
+      "emptyTitle": "Nothing to export",
+      "emptyDescription": "There is no data to include in the file.",
+      "columns": {
+        "name": "Name",
+        "description": "Description",
+        "region": "Region",
+        "zone": "Zone",
+        "woreda": "Woreda",
+        "createdAt": "Created",
+        "updatedAt": "Last updated",
+        "specialWoreda": "Special woreda"
+      }
     },
     "region": {
       "title": "Regions",

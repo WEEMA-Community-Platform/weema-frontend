@@ -11,7 +11,8 @@ import {
   useUpdateZoneMutation,
   useZonesQuery,
 } from "@/hooks/use-base-data";
-import type { Zone } from "@/lib/api/base-data";
+import { exportZonesList, type Zone } from "@/lib/api/base-data";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,9 +78,11 @@ export function ZoneManager() {
   const tEmpty = useTranslations("common.empty");
   const tValidation = useTranslations("common.validation");
   const tListEmpty = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("basedata.export");
   const listEmptyMessage = useListEmptyMessage();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportPending, setExportPending] = useState(false);
   const [page, setPage] = useState(1);
   const [appliedFilterRegionId, setAppliedFilterRegionId] = useState("");
   const [draftFilterRegionId, setDraftFilterRegionId] = useState("");
@@ -106,6 +109,58 @@ export function ZoneManager() {
   const updateMutation = useUpdateZoneMutation();
   const deleteMutation = useDeleteZoneMutation();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportZonesList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tExport("columns.name"), cell: (r: Record<string, unknown>) => str(r.name) },
+        {
+          header: tExport("columns.region"),
+          cell: (r: Record<string, unknown>) => str(r.regionName),
+        },
+        {
+          header: tExport("columns.description"),
+          cell: (r: Record<string, unknown>) => str(r.description),
+        },
+        {
+          header: tExport("columns.specialWoreda"),
+          cell: (r: Record<string, unknown>) =>
+            coerceSpecialWoreda(r.specialWoreda ?? r.isSpecialWoreda) ? tCommon("yes") : tCommon("no"),
+        },
+        {
+          header: tExport("columns.createdAt"),
+          cell: (r: Record<string, unknown>) => str(r.createdAt),
+        },
+        {
+          header: tExport("columns.updatedAt"),
+          cell: (r: Record<string, unknown>) => str(r.updatedAt),
+        },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("zones"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
+  };
 
   const regionOptions = useMemo(
     () =>
@@ -188,6 +243,10 @@ export function ZoneManager() {
             setSearchQuery(value);
             setPage(1);
           }}
+          onExport={exportCsv}
+          exportLabel={tExport("button")}
+          exportPendingLabel={tExport("exporting")}
+          exportPending={exportPending}
           onAdd={() => {
             setViewingZone(null);
             resetForm();

@@ -337,3 +337,45 @@ export async function deleteKebele(id: string) {
   return parseResponse<BaseApiResponse>(response);
 }
 
+export type BaseDataExportListResponse = BaseApiResponse & {
+  data: Record<string, unknown>[];
+};
+
+export async function parseExportListResponse(
+  response: Response
+): Promise<BaseDataExportListResponse> {
+  const payload = (await response.json().catch(() => null)) as
+    | (BaseApiResponse & { data?: unknown })
+    | null;
+
+  if (!response.ok || !payload || !Array.isArray(payload.data)) {
+    throw new Error(
+      payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string"
+        ? payload.message
+        : "Request failed"
+    );
+  }
+
+  return payload as BaseDataExportListResponse;
+}
+
+export async function exportRegionsList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/regions", { cache: "no-store" });
+  return parseExportListResponse(response);
+}
+
+export async function exportZonesList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/zones", { cache: "no-store" });
+  return parseExportListResponse(response);
+}
+
+export async function exportWoredasList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/woredas", { cache: "no-store" });
+  return parseExportListResponse(response);
+}
+
+export async function exportKebelesList(): Promise<BaseDataExportListResponse> {
+  const response = await fetch("/api/export/kebeles", { cache: "no-store" });
+  return parseExportListResponse(response);
+}
+

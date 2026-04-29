@@ -222,6 +222,78 @@
     }
   },
   "community": {
+    "export": {
+      "button": "CSV ወደ ውጪ ላክ",
+      "exporting": "በመላክ ላይ…",
+      "successTitle": "ማውጫው ዝግጁ ነው",
+      "successDescription": "{count, plural, one {# ረድፍ ተወርዷል።} other {# ረድፎች ተወርደዋል።}}",
+      "errorTitle": "ማውጫ አልተሳካም",
+      "emptyTitle": "ለማውጣት የለም",
+      "emptyDescription": "በፋይል ውስጥ ለማካተት ውሂብ የለም።",
+      "federation": {
+        "columns": {
+          "name": "ስም",
+          "description": "መግለጫ",
+          "location": "አካባቢ",
+          "status": "ሁኔታ",
+          "manager": "ስራ አመራር",
+          "clusterCount": "ክላስተሮች",
+          "createdAt": "ተፈጥሯል",
+          "updatedAt": "የተዘመነ"
+        }
+      },
+      "cluster": {
+        "columns": {
+          "name": "ስም",
+          "description": "መግለጫ",
+          "location": "አካባቢ",
+          "status": "ሁኔታ",
+          "federation": "ፌዴሬሽን",
+          "manager": "ስራ አመራር",
+          "facilitator": "አመቻች",
+          "shgCount": "የራስ አገዝ ቡድኖች",
+          "createdAt": "ተፈጥሯል",
+          "updatedAt": "የተዘመነ"
+        }
+      },
+      "shg": {
+        "columns": {
+          "name": "ስም",
+          "description": "መግለጫ",
+          "status": "ሁኔታ",
+          "cluster": "ክላስተር",
+          "woreda": "ወረዳ",
+          "kebele": "ቀበሌ",
+          "facilitator": "አመቻች",
+          "memberCount": "አባላት",
+          "location": "አካባቢ",
+          "latitude": "ኬክሮስ",
+          "longitude": "ኬንትሮስ",
+          "locked": "ተቆልፏል",
+          "createdAt": "ተፈጥሯል",
+          "updatedAt": "የተዘመነ"
+        }
+      },
+      "member": {
+        "columns": {
+          "firstName": "ስም",
+          "lastName": "የአባት ስም",
+          "phone": "ስልክ",
+          "gender": "ጾታ",
+          "dateOfBirth": "የትውልድ ቀን",
+          "maritalStatus": "የጋብቻ ሁኔታ",
+          "fan": "FAN",
+          "dateJoinedShg": "SHG የተቀላቀሉበት ቀን",
+          "status": "ሁኔታ",
+          "religion": "ሃይማኖት",
+          "shg": "የራስ አገዝ ቡድን",
+          "cluster": "ክላስተር",
+          "locked": "ቆልፍ ሁኔታ",
+          "createdAt": "ተፈጥሯል",
+          "updatedAt": "የተዘመነ"
+        }
+      }
+    },
     "shg": {
       "page": {
         "searchPlaceholder": "የራስ አገዝ ቡድኖችን ፈልግ",
@@ -429,7 +501,8 @@
         "marital": {
           "single": "ያላገባ",
           "married": "ያገባ",
-          "divorced": "የተፋታ"
+          "divorced": "የተፋታ",
+          "widowed": "መበለት"
         },
         "status": {
           "active": "ንቁ",
@@ -768,6 +841,62 @@
     }
   },
   "survey": {
+    "export": {
+      "button": "CSV ወደ ውጪ ላክ",
+      "exporting": "በመላክ ላይ…",
+      "successTitle": "ማውጫው ዝግጁ ነው",
+      "successDescription": "{count, plural, one {# ረድፍ ተወርዷል።} other {# ረድፎች ተወርደዋል።}}",
+      "detailSuccessTitle": "ማውጫው ዝግጁ ነው",
+      "detailSuccessDescription": "የዳሰሳው ፍለጋ በ CSV ተወርዷል።",
+      "summarySuccessDescription": "የዳሰሳ ማጠቃለያ ረድፍ በ CSV ተወርዷል።",
+      "errorTitle": "ማውጫ አልተሳካም",
+      "emptyTitle": "ለማውጣት የለም",
+      "emptyDescription": "በፋይል ውስጥ ለማካተት ውሂብ የለም።",
+      "actions": {
+        "exportSummary": "ማጠቃለያ CSV ላክ"
+      },
+      "list": {
+        "columns": {
+          "title": "ርዕስ",
+          "description": "መግለጫ",
+          "targetType": "የዒላማ ዓይነት",
+          "status": "ሁኔታ",
+          "version": "ስሪት",
+          "language": "ቋንቋ",
+          "isActive": "ንቁ",
+          "isDeleted": "ተሰርዟል",
+          "parentSurveyTitle": "የወላጅ ዳሰሳ",
+          "totalSections": "ክፍሎች",
+          "totalQuestions": "ጥያቄዎች",
+          "createdAt": "ተፈጥሯል",
+          "updatedAt": "የተዘመነ"
+        }
+      },
+      "detail": {
+        "sectionOverview": "የዳሰሳ አጠቃላይ እይታ",
+        "sectionQuestions": "ጥያቄዎች",
+        "colField": "መስክ",
+        "colValue": "ክምችት",
+        "lblTitle": "ርዕስ",
+        "lblDescription": "መግለጫ",
+        "lblTargetType": "የዒላማ ዓይነት",
+        "lblStatus": "ሁኔታ",
+        "lblVersion": "ስሪት",
+        "lblLanguage": "ቋንቋ",
+        "lblCreatedAt": "ተፈጥሯል",
+        "lblUpdatedAt": "የተዘመነ",
+        "colSectionTitle": "ክፍል",
+        "colSectionOrder": "የክፍል ቅደም",
+        "colQuestionOrder": "የጥያቄ ቅደም",
+        "colQuestionText": "ጥያቄ",
+        "colQuestionType": "አይነት",
+        "colRequired": "ግዴታ",
+        "colEnabled": "ንቁ",
+        "colOptions": "አማራጮች",
+        "colConfiguration": "አዋቅር",
+        "colConditions": "የመታየት መለያዎች"
+      }
+    },
     "list": {
       "searchPlaceholder": "ዳሰሳዎችን ፈልግ",
       "emptyHint": "እስካሁን የተመደበ ዳሰሳ የለም።",
@@ -837,6 +966,14 @@
     "submissions": {
       "backToSurveys": "ወደ ዳሰሳዎች ተመለስ",
       "loadError": "በመጠባበቅ ያሉ ዒላማዎችን መጫን አልተቻለም።",
+      "filters": {
+        "title": "ገቢዎችን ማጣራት",
+        "description": "ገቢዎችን በራስ አገዝ ቡድን ይበትኑ። ሲጫኑ «ማጣሪያዎችን ይተግብሩ» እንዲሰራ ይደረጋል።",
+        "selfHelpGroup": "የራስ አገዝ ቡድን",
+        "selfHelpGroupAll": "ሁሉም ቡድኖች",
+        "clear": "ማጣሪያዎችን አጽዳ",
+        "apply": "ማጣሪያዎችን ተግብር"
+      },
       "status": {
         "submitted": "ገብቷል",
         "notStarted": "አልተጀመረም",
@@ -1135,6 +1272,25 @@
       "applyFilters": "ማጣሪያዎችን ተግብር",
       "yes": "አዎ",
       "no": "አይ"
+    },
+    "export": {
+      "button": "CSV ወደ ውጪ ላክ",
+      "exporting": "በመላክ ላይ…",
+      "successTitle": "ማውጫው ዝግጁ ነው",
+      "successDescription": "{count, plural, one {# ረድፍ ተወርዷል።} other {# ረድፎች ተወርደዋል።}}",
+      "errorTitle": "ማውጫ አልተሳካም",
+      "emptyTitle": "ለማውጣት የለም",
+      "emptyDescription": "በፋይል ውስጥ ለማካተት ውሂብ የለም።",
+      "columns": {
+        "name": "ስም",
+        "description": "መግለጫ",
+        "region": "ክልል",
+        "zone": "ዞን",
+        "woreda": "ወረዳ",
+        "createdAt": "ተፈጥሯል",
+        "updatedAt": "የተዘመነ",
+        "specialWoreda": "ልዩ ወረዳ"
+      }
     },
     "region": {
       "title": "ክልሎች",

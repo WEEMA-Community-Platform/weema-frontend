@@ -17,6 +17,8 @@ import {
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
 import { useUsersQuery } from "@/hooks/use-users-admin";
 import type { EntityStatus, SHG } from "@/lib/api/community";
+import { exportSelfHelpGroupsList } from "@/lib/api/community";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { extractLatLngFromMapsUrl } from "@/lib/maps-coordinates";
 import {
   CardMetaRow,
@@ -63,6 +65,9 @@ export function SHGManager() {
   const tStatus = useTranslations("common.states");
   const tValidation = useTranslations("common.validation");
   const tEntity = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("community.export");
+  const tShgCols = useTranslations("community.export.shg.columns");
+  const tCommonBase = useTranslations("basedata.common");
 
   const STATUS_OPTIONS = useMemo(
     () => [
@@ -118,6 +123,7 @@ export function SHGManager() {
   const [draftFilterIsLocked, setDraftFilterIsLocked] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [pendingLock, setPendingLock] = useState<{ shg: SHG; action: "lock" | "unlock" } | null>(null);
+  const [exportPending, setExportPending] = useState(false);
 
   const isLockedFilter =
     appliedFilterIsLocked === "true" ? true : appliedFilterIsLocked === "false" ? false : undefined;
@@ -371,12 +377,70 @@ export function SHGManager() {
     emptyCatalogHint: tPage("emptyHint"),
   });
 
+  const entityStatusLabel = (raw: string) =>
+    raw === "ACTIVE" ? tStatus("active") : raw === "INACTIVE" ? tStatus("inactive") : raw;
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportSelfHelpGroupsList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tShgCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
+        { header: tShgCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
+        {
+          header: tShgCols("status"),
+          cell: (r: Record<string, unknown>) => entityStatusLabel(String(r.status ?? "")),
+        },
+        { header: tShgCols("cluster"), cell: (r: Record<string, unknown>) => str(r.clusterName) },
+        { header: tShgCols("woreda"), cell: (r: Record<string, unknown>) => str(r.woredaName) },
+        { header: tShgCols("kebele"), cell: (r: Record<string, unknown>) => str(r.kebeleName) },
+        { header: tShgCols("facilitator"), cell: (r: Record<string, unknown>) => str(r.facilitatorName) },
+        { header: tShgCols("memberCount"), cell: (r: Record<string, unknown>) => str(r.memberCount) },
+        { header: tShgCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },
+        { header: tShgCols("latitude"), cell: (r: Record<string, unknown>) => str(r.latitude) },
+        { header: tShgCols("longitude"), cell: (r: Record<string, unknown>) => str(r.longitude) },
+        {
+          header: tShgCols("locked"),
+          cell: (r: Record<string, unknown>) =>
+            r.locked === true || r.locked === "true" ? tCommonBase("yes") : tCommonBase("no"),
+        },
+        { header: tShgCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
+        { header: tShgCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("self-help-groups"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <DataToolbar
         searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
+        onExport={exportCsv}
+        exportLabel={tExport("button")}
+        exportPendingLabel={tExport("exporting")}
+        exportPending={exportPending}
         onAdd={openCreate}
         addLabel={tPage("addButton")}
         showFilterButton

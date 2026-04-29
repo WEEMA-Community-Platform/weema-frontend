@@ -9,6 +9,7 @@ export const MARITAL_OPTIONS = [
   { value: "SINGLE", label: "Single" },
   { value: "MARRIED", label: "Married" },
   { value: "DIVORCED", label: "Divorced" },
+  { value: "WIDOWED", label: "Widowed" },
 ] as const;
 
 export const STATUS_OPTIONS: { value: EntityStatus; label: string }[] = [

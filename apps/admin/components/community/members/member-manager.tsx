@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { sileo } from "sileo";
 
 import {
   useCreateMemberMutation,
@@ -15,6 +16,9 @@ import {
 import { useReligionsQuery } from "@/hooks/use-base-data";
 import { useSHGsQuery } from "@/hooks/use-community";
 import type { Member } from "@/lib/api/members";
+import { exportMembersList } from "@/lib/api/members";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { GENDER_OPTIONS } from "@/components/community/members/constants";
 import { MemberCreateDialog } from "@/components/community/members/member-create-dialog";
 import { MemberDeleteDialog } from "@/components/community/members/member-delete-dialog";
 import { MemberDetailDialog } from "@/components/community/members/member-detail-dialog";
@@ -48,6 +52,7 @@ export function MemberManager() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Member | null>(null);
   const [pendingLock, setPendingLock] = useState<{ member: Member; action: "lock" | "unlock" } | null>(null);
+  const [exportPending, setExportPending] = useState(false);
 
   const isLockedFilter =
     appliedIsLocked === "true" ? true : appliedIsLocked === "false" ? false : undefined;
@@ -120,6 +125,13 @@ export function MemberManager() {
   const tListEmpty = useTranslations("listEmpty");
   const tListEntity = useTranslations("listEmpty.entity");
   const tTable = useTranslations("community.members.table");
+  const tExport = useTranslations("community.export");
+  const tMemCols = useTranslations("community.export.member.columns");
+  const tGender = useTranslations("community.members.options.gender");
+  const tMarital = useTranslations("community.members.options.marital");
+  const tMemStatus = useTranslations("community.members.options.status");
+  const tCommonBase = useTranslations("basedata.common");
+  const tValidation = useTranslations("common.validation");
   const entityPlural = tListEntity("members");
   const emptyMessage =
     hasSearch && hasActiveFilters
@@ -150,6 +162,90 @@ export function MemberManager() {
     setAppliedAgeTo(f.ageTo);
     setPage(1);
     setIsFilterOpen(false);
+  };
+
+  const genderExportLabel = (raw: unknown) => {
+    const v = String(raw ?? "");
+    const found = GENDER_OPTIONS.find((o) => o.value === v);
+    return found ? tGender(found.value.toLowerCase() as "male" | "female") : v;
+  };
+
+  const maritalExportLabel = (raw: unknown) => {
+    if (raw == null || raw === "") return "";
+    const upper = String(raw).toUpperCase();
+    const map = {
+      SINGLE: "single",
+      MARRIED: "married",
+      DIVORCED: "divorced",
+      WIDOWED: "widowed",
+    } as const;
+    const key = map[upper as keyof typeof map];
+    return key ? tMarital(key) : String(raw);
+  };
+
+  const memberStatusExportLabel = (raw: unknown) => {
+    const upper = String(raw ?? "").toUpperCase();
+    if (upper === "ACTIVE") return tMemStatus("active");
+    if (upper === "INACTIVE") return tMemStatus("inactive");
+    return String(raw ?? "");
+  };
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportMembersList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tMemCols("firstName"), cell: (r: Record<string, unknown>) => str(r.firstName) },
+        { header: tMemCols("lastName"), cell: (r: Record<string, unknown>) => str(r.lastName) },
+        { header: tMemCols("phone"), cell: (r: Record<string, unknown>) => str(r.contactPhone) },
+        { header: tMemCols("gender"), cell: (r: Record<string, unknown>) => genderExportLabel(r.gender) },
+        { header: tMemCols("dateOfBirth"), cell: (r: Record<string, unknown>) => str(r.dateOfBirth) },
+        {
+          header: tMemCols("maritalStatus"),
+          cell: (r: Record<string, unknown>) => maritalExportLabel(r.maritalStatus),
+        },
+        { header: tMemCols("fan"), cell: (r: Record<string, unknown>) => str(r.fan) },
+        { header: tMemCols("dateJoinedShg"), cell: (r: Record<string, unknown>) => str(r.dateJoinedShg) },
+        {
+          header: tMemCols("status"),
+          cell: (r: Record<string, unknown>) => memberStatusExportLabel(r.status),
+        },
+        { header: tMemCols("religion"), cell: (r: Record<string, unknown>) => str(r.religionName) },
+        {
+          header: tMemCols("shg"),
+          cell: (r: Record<string, unknown>) => str(r.selfHelpGroupName),
+        },
+        { header: tMemCols("cluster"), cell: (r: Record<string, unknown>) => str(r.clusterName) },
+        {
+          header: tMemCols("locked"),
+          cell: (r: Record<string, unknown>) =>
+            r.locked === true || r.locked === "true" ? tCommonBase("yes") : tCommonBase("no"),
+        },
+        { header: tMemCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
+        { header: tMemCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("members"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
   };
 
   return (
@@ -216,6 +312,10 @@ export function MemberManager() {
         onDelete={setPendingDelete}
         onLock={(m) => setPendingLock({ member: m, action: "lock" })}
         onUnlock={(m) => setPendingLock({ member: m, action: "unlock" })}
+        onExport={exportCsv}
+        exportLabel={tExport("button")}
+        exportPendingLabel={tExport("exporting")}
+        exportPending={exportPending}
       />
 
       <MemberFiltersDialog

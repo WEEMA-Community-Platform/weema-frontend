@@ -15,6 +15,8 @@ import {
 import { useCurrentUser } from "@/hooks/use-user";
 import { useWoredasQuery } from "@/hooks/use-base-data";
 import type { Cluster, EntityStatus } from "@/lib/api/community";
+import { exportClustersList } from "@/lib/api/community";
+import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +57,8 @@ export function ClusterManager() {
   const tStatus = useTranslations("common.states");
   const tValidation = useTranslations("common.validation");
   const tEntity = useTranslations("listEmpty.entity");
+  const tExport = useTranslations("community.export");
+  const tClusterCols = useTranslations("community.export.cluster.columns");
 
   const STATUS_OPTIONS = useMemo(
     () => [
@@ -84,6 +88,7 @@ export function ClusterManager() {
   const [pendingDelete, setPendingDelete] = useState<Cluster | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [assigningCluster, setAssigningCluster] = useState<Cluster | null>(null);
+  const [exportPending, setExportPending] = useState(false);
 
   const clustersQuery = useClustersQuery({
     page,
@@ -185,12 +190,65 @@ export function ClusterManager() {
     emptyCatalogHint: tPage("emptyHint"),
   });
 
+  const entityStatusLabel = (raw: string) =>
+    raw === "ACTIVE" ? tStatus("active") : raw === "INACTIVE" ? tStatus("inactive") : raw;
+
+  const exportCsv = async () => {
+    const str = (v: unknown) => (v == null ? "" : String(v));
+    setExportPending(true);
+    try {
+      const { data } = await exportClustersList();
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const columns = [
+        { header: tClusterCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
+        { header: tClusterCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
+        { header: tClusterCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },
+        {
+          header: tClusterCols("status"),
+          cell: (r: Record<string, unknown>) => entityStatusLabel(String(r.status ?? "")),
+        },
+        { header: tClusterCols("federation"), cell: (r: Record<string, unknown>) => str(r.federationName) },
+        { header: tClusterCols("manager"), cell: (r: Record<string, unknown>) => str(r.managerName) },
+        { header: tClusterCols("facilitator"), cell: (r: Record<string, unknown>) => str(r.facilitatorName) },
+        {
+          header: tClusterCols("shgCount"),
+          cell: (r: Record<string, unknown>) => str(r.selfHelpGroupCount),
+        },
+        { header: tClusterCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
+        { header: tClusterCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
+      ];
+      const csv = buildBaseDataCsv(columns, data);
+      downloadBaseDataCsv(csv, exportFilename("clusters"));
+      sileo.success({
+        title: tExport("successTitle"),
+        description: tExport("successDescription", { count: data.length }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description: error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportPending(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <DataToolbar
         searchPlaceholder={tPage("searchPlaceholder")}
         searchValue={searchQuery}
         onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
+        onExport={exportCsv}
+        exportLabel={tExport("button")}
+        exportPendingLabel={tExport("exporting")}
+        exportPending={exportPending}
         onAdd={openCreate}
         addLabel={tPage("addButton")}
         showFilterButton

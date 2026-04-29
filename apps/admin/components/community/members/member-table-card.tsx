@@ -47,6 +47,10 @@ type MemberTableCardProps = {
   onLock: (member: Member) => void;
   onUnlock: (member: Member) => void;
   emptyMessage: string;
+  onExport?: () => void;
+  exportLabel?: string;
+  exportPendingLabel?: string;
+  exportPending?: boolean;
 };
 
 export function MemberTableCard({
@@ -70,6 +74,10 @@ export function MemberTableCard({
   onLock,
   onUnlock,
   emptyMessage,
+  onExport,
+  exportLabel,
+  exportPendingLabel,
+  exportPending = false,
 }: MemberTableCardProps) {
   const tTable = useTranslations("community.members.table");
   const tActions = useTranslations("common.actions");
@@ -90,6 +98,10 @@ export function MemberTableCard({
           searchPlaceholder={tTable("searchPlaceholder")}
           searchValue={searchQuery}
           onSearchChange={onSearchChange}
+          onExport={onExport}
+          exportLabel={exportLabel}
+          exportPendingLabel={exportPendingLabel}
+          exportPending={exportPending}
           onAdd={onAdd}
           addLabel={tTable("addButton")}
           showFilterButton
