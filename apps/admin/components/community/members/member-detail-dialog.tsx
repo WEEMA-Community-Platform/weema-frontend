@@ -92,7 +92,7 @@ export function MemberDetailDialog({
     if (!raw) return raw;
     const found = MARITAL_OPTIONS.find((o) => o.value === raw);
     return found
-      ? tMarital(found.value.toLowerCase() as "single" | "married" | "divorced")
+      ? tMarital(found.value.toLowerCase() as "single" | "married" | "divorced" | "widowed")
       : raw;
   };
 
@@ -129,7 +129,7 @@ export function MemberDetailDialog({
                 <MemberDetailField
                   label={t("fields.gender")}
                   value={genderLabel(member.gender)}
-                />
+                />  
                 <MemberDetailField
                   label={t("fields.dateOfBirth")}
                   value={member.dateOfBirth}

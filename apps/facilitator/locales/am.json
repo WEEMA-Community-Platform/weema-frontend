@@ -332,7 +332,8 @@
         "marital": {
           "single": "ያላገባ",
           "married": "ያገባ",
-          "divorced": "የተፋታ"
+          "divorced": "የተፋታ",
+          "widowed": "የትዳር አጋር የሞተበት/የሞተባት"
         },
         "status": {
           "active": "ንቁ",

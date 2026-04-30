@@ -94,7 +94,7 @@ export function MemberFormFields({
   }));
   const maritalOptions = MARITAL_OPTIONS.map((o) => ({
     value: o.value,
-    label: tMarital(o.value.toLowerCase() as "single" | "married" | "divorced"),
+    label: tMarital(o.value.toLowerCase() as "single" | "married" | "divorced" | "widowed"),
   }));
   const statusOptions = STATUS_OPTIONS.map((o) => ({
     value: o.value,
