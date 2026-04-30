@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
@@ -200,8 +200,13 @@ export function SurveySubmissionsPage({
   const [isSubmissionFilterOpen, setIsSubmissionFilterOpen] = useState(false);
   const [exportSubmissionsPending, setExportSubmissionsPending] = useState(false);
 
+  const surveyDetailQuery = useSurveyDetailQuery(surveyId);
+  const surveyTargetType = surveyDetailQuery.data?.survey?.targetType;
+  const submissionFiltersEligible =
+    (targetTypeFromQuery ?? surveyTargetType ?? "").toUpperCase() === "MEMBER";
+
   const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId, {
-    shgId: filterShgId || undefined,
+    shgId: submissionFiltersEligible ? filterShgId.trim() || undefined : undefined,
   });
   const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(
     surveyId,
@@ -213,9 +218,7 @@ export function SurveySubmissionsPage({
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
-  const surveyDetailQuery = useSurveyDetailQuery(surveyId);
   const primaryTargetType = submissions[0]?.targetType;
-  const surveyTargetType = surveyDetailQuery.data?.survey?.targetType;
   const targetLabels = labelsForTargetType(targetTypeFromQuery ?? primaryTargetType ?? surveyTargetType);
   const targetLabelSingular = targetLabels.singular;
   const targetLabelPlural = targetLabels.plural;
@@ -249,6 +252,7 @@ export function SurveySubmissionsPage({
   };
 
   const shgFilterOptions = useMemo(() => {
+    if (!submissionFiltersEligible) return [];
     const byId = new Map<string, string>();
     const ad = assignmentTargetsQuery.data?.assignmentData;
     const assigned =
@@ -271,7 +275,7 @@ export function SurveySubmissionsPage({
     return [...byId.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [assignmentTargetsQuery.data?.assignmentData, submissionsQuery.data?.submissions, filterShgId]);
+  }, [assignmentTargetsQuery.data?.assignmentData, submissionFiltersEligible, submissionsQuery.data?.submissions, filterShgId]);
 
   const setShgFilter = (nextId: string) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -280,7 +284,14 @@ export function SurveySubmissionsPage({
     setRouteSearch(next);
   };
 
-  const hasActiveSubmissionFilters = Boolean(filterShgId);
+  useEffect(() => {
+    if (!submissionFiltersEligible) {
+      if (filterShgId) setShgFilter("");
+      setIsSubmissionFilterOpen(false);
+    }
+  }, [submissionFiltersEligible, filterShgId]);
+
+  const hasActiveSubmissionFilters = submissionFiltersEligible && Boolean(filterShgId);
   const appliedSubmissionFilters: SurveySubmissionsAppliedFilters = useMemo(
     () => ({ shgId: filterShgId }),
     [filterShgId]
@@ -322,7 +333,7 @@ export function SurveySubmissionsPage({
     setExportSubmissionsPending(true);
     try {
       const { data } = await exportSurveySubmissionsBySurveyId(surveyId, {
-        shgId: filterShgId || undefined,
+        shgId: submissionFiltersEligible ? filterShgId.trim() || undefined : undefined,
       });
       if (data.length === 0) {
         sileo.warning({
@@ -425,13 +436,15 @@ export function SurveySubmissionsPage({
         </Button>
       </div>
 
-      <SurveySubmissionsFiltersDialog
-        open={isSubmissionFilterOpen}
-        onOpenChange={setIsSubmissionFilterOpen}
-        applied={appliedSubmissionFilters}
-        onApply={applySubmissionFilters}
-        shgOptions={shgFilterOptions}
-      />
+      {submissionFiltersEligible ? (
+        <SurveySubmissionsFiltersDialog
+          open={isSubmissionFilterOpen}
+          onOpenChange={setIsSubmissionFilterOpen}
+          applied={appliedSubmissionFilters}
+          onApply={applySubmissionFilters}
+          shgOptions={shgFilterOptions}
+        />
+      ) : null}
 
       {selectedSubmissionId ? (
         <SubmissionWorkspacePanel
@@ -469,7 +482,7 @@ export function SurveySubmissionsPage({
             onUnlockSubmission={(submission) =>
               setPendingSubmissionLock({ submission, action: "unlock" })
             }
-            showSubmissionFilters={shgFilterOptions.length > 0}
+            showSubmissionFilters={submissionFiltersEligible && shgFilterOptions.length > 0}
             hasActiveSubmissionFilters={hasActiveSubmissionFilters}
             onOpenSubmissionFilters={() => setIsSubmissionFilterOpen(true)}
             exportSubmissionsLabel={tExportSubmissions("button")}
