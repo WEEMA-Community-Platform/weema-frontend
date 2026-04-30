@@ -178,10 +178,11 @@ function SubmissionLockDialog({
 
 export function SurveySubmissionsPage({
   surveyId,
-  initialTargetType,
+  surveyTargetType,
 }: {
   surveyId: string;
-  initialTargetType?: string;
+  /** Resolved on the server (list / URL + survey GET). Drives SHG filters (MEMBER only) and labels. */
+  surveyTargetType: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -193,7 +194,6 @@ export function SurveySubmissionsPage({
   const tCommonBase = useTranslations("basedata.common");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
-  const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
   const filterShgId = searchParams.get("shgId") ?? "";
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
@@ -201,9 +201,8 @@ export function SurveySubmissionsPage({
   const [exportSubmissionsPending, setExportSubmissionsPending] = useState(false);
 
   const surveyDetailQuery = useSurveyDetailQuery(surveyId);
-  const surveyTargetType = surveyDetailQuery.data?.survey?.targetType;
-  const submissionFiltersEligible =
-    (targetTypeFromQuery ?? surveyTargetType ?? "").toUpperCase() === "MEMBER";
+  const surveyTargetTypeFromDetail = surveyDetailQuery.data?.survey?.targetType;
+  const submissionFiltersEligible = surveyTargetType.trim().toUpperCase() === "MEMBER";
 
   const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId, {
     shgId: submissionFiltersEligible ? filterShgId.trim() || undefined : undefined,
@@ -219,7 +218,9 @@ export function SurveySubmissionsPage({
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
   const primaryTargetType = submissions[0]?.targetType;
-  const targetLabels = labelsForTargetType(targetTypeFromQuery ?? primaryTargetType ?? surveyTargetType);
+  const targetTypeForLabels =
+    surveyTargetType.trim() || surveyTargetTypeFromDetail || primaryTargetType;
+  const targetLabels = labelsForTargetType(targetTypeForLabels);
   const targetLabelSingular = targetLabels.singular;
   const targetLabelPlural = targetLabels.plural;
 

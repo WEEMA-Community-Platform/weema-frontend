@@ -42,10 +42,10 @@ function isNotStartedStatus(status?: string | null) {
 
 export function SurveySubmissionsPage({
   surveyId,
-  initialTargetType,
+  surveyTargetType,
 }: {
   surveyId: string;
-  initialTargetType?: string;
+  surveyTargetType: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -53,7 +53,6 @@ export function SurveySubmissionsPage({
   const tPage = useTranslations("survey.submissions");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
-  const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
 
   const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
   const submissions = submissionsQuery.data?.submissions ?? [];
@@ -62,8 +61,10 @@ export function SurveySubmissionsPage({
   const selectedSubmission = detailQuery.data?.submission ?? null;
   const surveyDetailQuery = useSurveyDetailQuery(surveyId);
   const primaryTargetType = submissions[0]?.targetType;
-  const surveyTargetType = surveyDetailQuery.data?.survey?.targetType;
-  const targetLabels = labelsForTargetType(targetTypeFromQuery ?? primaryTargetType ?? surveyTargetType);
+  const surveyTargetTypeFromDetail = surveyDetailQuery.data?.survey?.targetType;
+  const targetTypeForLabels =
+    surveyTargetType.trim() || surveyTargetTypeFromDetail || primaryTargetType;
+  const targetLabels = labelsForTargetType(targetTypeForLabels);
   const targetLabelSingular = targetLabels.singular;
   const targetLabelPlural = targetLabels.plural;
   const startSubmissionMutation = useStartSurveySubmissionMutation();
