@@ -33,3 +33,20 @@ export function exportFilename(prefix: string): string {
   const day = new Date().toISOString().slice(0, 10);
   return `${prefix}-${day}.csv`;
 }
+
+/**
+ * Single filename segment from a label (letters/numbers any script). Strips path-unsafe chars.
+ * Returns "" if nothing usable remains — callers should pick a fallback prefix.
+ */
+export function slugifyForFilename(raw: string | null | undefined, maxLen = 64): string {
+  if (raw == null) return "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  let s = trimmed
+    .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+  s = s.slice(0, maxLen).replace(/-+$/g, "");
+  return s;
+}

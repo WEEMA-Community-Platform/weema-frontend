@@ -51,7 +51,7 @@ import {
   useSurveysQuery,
 } from "@/hooks/use-surveys";
 import { exportSurveysList, type SurveyListItem } from "@/lib/api/surveys";
-import { downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import {
   buildSurveyListExportCsv,
   surveyListItemToExportRow,
@@ -265,8 +265,8 @@ export function SurveysPage() {
       tCommonBase("yes"),
       tCommonBase("no")
     );
-    const safe = survey.id.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 12) || "survey";
-    downloadBaseDataCsv(csv, exportFilename(`survey-summary-${safe}`));
+    const nameSlug = slugifyForFilename(survey.title) || "survey";
+    downloadBaseDataCsv(csv, exportFilename(`survey-summary-${nameSlug}`));
     sileo.success({
       title: tExport("detailSuccessTitle"),
       description: tExport("summarySuccessDescription"),

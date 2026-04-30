@@ -895,6 +895,38 @@
         "colOptions": "አማራጮች",
         "colConfiguration": "አዋቅር",
         "colConditions": "የመታየት መለያዎች"
+      },
+      "submissions": {
+        "button": "ገቢዎች CSV ላክ",
+        "exporting": "በመላክ ላይ…",
+        "successTitle": "ማውጫው ዝግጁ ነው",
+        "successDescription": "{count, plural, one {# ረድፍ ተወርዷል።} other {# ረድፎች ተወርደዋል።}}",
+        "errorTitle": "ማውጫ አልተሳካም",
+        "emptyTitle": "ለማውጣት የለም",
+        "emptyDescription": "በፋይል ውስጥ ለማካተት ገቢ የለም።",
+        "columns": {
+          "surveyTitle": "የዳሰሳ ርዕስ",
+          "targetType": "የዒላማ ዓይነት",
+          "submissionStatus": "የገባ ሁኔታ",
+          "startedAt": "የተጀመረበት",
+          "submittedAt": "የገባበት",
+          "memberName": "የአባል ስም",
+          "memberPhone": "የአባል ስልክ",
+          "memberFan": "Member FAN",
+          "selfHelpGroupName": "የራስ አገዝ ቡድን",
+          "clusterName": "ክላስተር",
+          "federationName": "ፌዴሬሽን",
+          "locked": "ተቆልፏል",
+          "sectionTitle": "ክፍል",
+          "questionText": "ጥያቄ",
+          "questionType": "የጥያቄ አይነት",
+          "answerText": "መልስ (ጽሑፍ)",
+          "answerNumber": "መልስ (ቁጥር)",
+          "answerDate": "መልስ (ቀን)",
+          "answerBoolean": "መልስ (አዎ/አይደለም)",
+          "answerJson": "መልስ (JSON)",
+          "selectedOptions": "የተመረጡ አማራጮች"
+        }
       }
     },
     "list": {

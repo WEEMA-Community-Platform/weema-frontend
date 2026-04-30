@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftIcon, LockIcon, SlidersHorizontal, UnlockIcon } from "lucide-react";
+import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
@@ -34,7 +34,12 @@ import {
   useSurveySubmissionDetailQuery,
   useSurveySubmissionsBySurveyQuery,
 } from "@/hooks/use-surveys";
-import type { SurveySubmissionRecord } from "@/lib/api/surveys";
+import {
+  exportSurveySubmissionsBySurveyId,
+  type SurveySubmissionRecord,
+} from "@/lib/api/surveys";
+import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
+import { buildSurveySubmissionsExportCsv } from "@/lib/survey-submissions-export-csv";
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
 type PendingSubmissionLock = { submission: SurveySubmissionRecord; action: "lock" | "unlock" };
@@ -184,7 +189,8 @@ export function SurveySubmissionsPage({
   const tPage = useTranslations("survey.submissions");
   const tToasts = useTranslations("survey.submissions.lock.toasts");
   const tValidation = useTranslations("common.validation");
-  const tTable = useTranslations("community.members.table");
+  const tExportSubmissions = useTranslations("survey.export.submissions");
+  const tCommonBase = useTranslations("basedata.common");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
   const targetTypeFromQuery = searchParams.get("targetType") || initialTargetType;
@@ -192,6 +198,7 @@ export function SurveySubmissionsPage({
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
   const [isSubmissionFilterOpen, setIsSubmissionFilterOpen] = useState(false);
+  const [exportSubmissionsPending, setExportSubmissionsPending] = useState(false);
 
   const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId, {
     shgId: filterShgId || undefined,
@@ -284,6 +291,76 @@ export function SurveySubmissionsPage({
     setIsSubmissionFilterOpen(false);
   };
 
+  const submissionExportHeaders = useMemo(
+    () => ({
+      surveyTitle: tExportSubmissions("columns.surveyTitle"),
+      targetType: tExportSubmissions("columns.targetType"),
+      submissionStatus: tExportSubmissions("columns.submissionStatus"),
+      startedAt: tExportSubmissions("columns.startedAt"),
+      submittedAt: tExportSubmissions("columns.submittedAt"),
+      memberName: tExportSubmissions("columns.memberName"),
+      memberPhone: tExportSubmissions("columns.memberPhone"),
+      memberFan: tExportSubmissions("columns.memberFan"),
+      selfHelpGroupName: tExportSubmissions("columns.selfHelpGroupName"),
+      clusterName: tExportSubmissions("columns.clusterName"),
+      federationName: tExportSubmissions("columns.federationName"),
+      locked: tExportSubmissions("columns.locked"),
+      sectionTitle: tExportSubmissions("columns.sectionTitle"),
+      questionText: tExportSubmissions("columns.questionText"),
+      questionType: tExportSubmissions("columns.questionType"),
+      answerText: tExportSubmissions("columns.answerText"),
+      answerNumber: tExportSubmissions("columns.answerNumber"),
+      answerDate: tExportSubmissions("columns.answerDate"),
+      answerBoolean: tExportSubmissions("columns.answerBoolean"),
+      answerJson: tExportSubmissions("columns.answerJson"),
+      selectedOptions: tExportSubmissions("columns.selectedOptions"),
+    }),
+    [tExportSubmissions]
+  );
+
+  const handleExportSubmissions = async () => {
+    setExportSubmissionsPending(true);
+    try {
+      const { data } = await exportSurveySubmissionsBySurveyId(surveyId, {
+        shgId: filterShgId || undefined,
+      });
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExportSubmissions("emptyTitle"),
+          description: tExportSubmissions("emptyDescription"),
+        });
+        return;
+      }
+      const { csv, rowCount } = buildSurveySubmissionsExportCsv(
+        data,
+        submissionExportHeaders,
+        tCommonBase("yes"),
+        tCommonBase("no")
+      );
+      const titleFromDetail = surveyDetailQuery.data?.survey?.title;
+      const first = data[0];
+      const titleFromExport =
+        first && typeof first.surveyTitle === "string" ? first.surveyTitle : null;
+      const nameSlug =
+        slugifyForFilename(titleFromDetail) ||
+        slugifyForFilename(titleFromExport) ||
+        "survey-submissions";
+      downloadBaseDataCsv(csv, exportFilename(`survey-submissions-${nameSlug}`));
+      sileo.success({
+        title: tExportSubmissions("successTitle"),
+        description: tExportSubmissions("successDescription", { count: rowCount }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExportSubmissions("errorTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    } finally {
+      setExportSubmissionsPending(false);
+    }
+  };
+
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("submissionId", submission.id);
@@ -346,23 +423,6 @@ export function SurveySubmissionsPage({
           <ArrowLeftIcon className="size-4" />
           {tPage("backToSurveys")}
         </Button>
-        {!selectedSubmissionId && shgFilterOptions.length > 0 ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 border-primary/30"
-            onClick={() => setIsSubmissionFilterOpen(true)}
-          >
-            <SlidersHorizontal className="size-4" />
-            {tTable("filters")}
-            {hasActiveSubmissionFilters ? (
-              <span
-                className="ml-0.5 size-1.5 rounded-full bg-primary"
-                aria-label={tTable("filtersActiveLabel")}
-              />
-            ) : null}
-          </Button>
-        ) : null}
       </div>
 
       <SurveySubmissionsFiltersDialog
@@ -409,6 +469,13 @@ export function SurveySubmissionsPage({
             onUnlockSubmission={(submission) =>
               setPendingSubmissionLock({ submission, action: "unlock" })
             }
+            showSubmissionFilters={shgFilterOptions.length > 0}
+            hasActiveSubmissionFilters={hasActiveSubmissionFilters}
+            onOpenSubmissionFilters={() => setIsSubmissionFilterOpen(true)}
+            exportSubmissionsLabel={tExportSubmissions("button")}
+            exportSubmissionsPendingLabel={tExportSubmissions("exporting")}
+            exportSubmissionsPending={exportSubmissionsPending}
+            onExportSubmissions={() => void handleExportSubmissions()}
           />
         </>
       )}

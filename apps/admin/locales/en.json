@@ -895,6 +895,38 @@
         "colOptions": "Options",
         "colConfiguration": "Configuration",
         "colConditions": "Visibility conditions"
+      },
+      "submissions": {
+        "button": "Export submissions",
+        "exporting": "Exporting…",
+        "successTitle": "Export ready",
+        "successDescription": "{count, plural, one {# row downloaded.} other {# rows downloaded.}}",
+        "errorTitle": "Export failed",
+        "emptyTitle": "Nothing to export",
+        "emptyDescription": "There are no submissions to include in the file.",
+        "columns": {
+          "surveyTitle": "Survey title",
+          "targetType": "Target type",
+          "submissionStatus": "Submission status",
+          "startedAt": "Started at",
+          "submittedAt": "Submitted at",
+          "memberName": "Member name",
+          "memberPhone": "Member phone",
+          "memberFan": "Member FAN",
+          "selfHelpGroupName": "Self-help group",
+          "clusterName": "Cluster",
+          "federationName": "Federation",
+          "locked": "Locked",
+          "sectionTitle": "Section",
+          "questionText": "Question",
+          "questionType": "Question type",
+          "answerText": "Answer (text)",
+          "answerNumber": "Answer (number)",
+          "answerDate": "Answer (date)",
+          "answerBoolean": "Answer (boolean)",
+          "answerJson": "Answer (JSON)",
+          "selectedOptions": "Selected options"
+        }
       }
     },
     "list": {

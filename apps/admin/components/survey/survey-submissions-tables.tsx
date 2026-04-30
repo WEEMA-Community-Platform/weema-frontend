@@ -1,6 +1,6 @@
 "use client";
 
-import { LockIcon, UnlockIcon } from "lucide-react";
+import { DownloadIcon, Loader2Icon, LockIcon, SlidersHorizontal, UnlockIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +74,13 @@ type MemberSubmissionsTableCardProps = {
   onPrimaryAction: (submission: SurveySubmissionRecord) => void;
   onLockSubmission: (submission: SurveySubmissionRecord) => void;
   onUnlockSubmission: (submission: SurveySubmissionRecord) => void;
+  showSubmissionFilters?: boolean;
+  hasActiveSubmissionFilters?: boolean;
+  onOpenSubmissionFilters?: () => void;
+  exportSubmissionsLabel?: string;
+  exportSubmissionsPendingLabel?: string;
+  exportSubmissionsPending?: boolean;
+  onExportSubmissions?: () => void;
 };
 
 export function MemberSubmissionsTableCard({
@@ -88,8 +95,16 @@ export function MemberSubmissionsTableCard({
   onPrimaryAction,
   onLockSubmission,
   onUnlockSubmission,
+  showSubmissionFilters = false,
+  hasActiveSubmissionFilters = false,
+  onOpenSubmissionFilters,
+  exportSubmissionsLabel,
+  exportSubmissionsPendingLabel,
+  exportSubmissionsPending = false,
+  onExportSubmissions,
 }: MemberSubmissionsTableCardProps) {
   const t = useTranslations("survey.submissions.memberTable");
+  const tTable = useTranslations("community.members.table");
   const titleTargetLabel = targetLabelPlural[0]
     ? targetLabelPlural[0].toUpperCase() + targetLabelPlural.slice(1)
     : targetLabelPlural;
@@ -100,7 +115,7 @@ export function MemberSubmissionsTableCard({
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-primary/10 px-4 pb-4 pt-4">
-        <CardTitle>
+        <CardTitle className="min-w-0 flex-1 text-base font-semibold leading-snug sm:text-lg">
           {selectedAssignmentName
             ? t("titleWithAssignment", {
                 target: titleTargetLabel,
@@ -108,6 +123,52 @@ export function MemberSubmissionsTableCard({
               })
             : t("title", { target: titleTargetLabel })}
         </CardTitle>
+        {showSubmissionFilters || onExportSubmissions ? (
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 shrink-0">
+            {showSubmissionFilters && onOpenSubmissionFilters ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 border-primary/30"
+                onClick={onOpenSubmissionFilters}
+              >
+                <SlidersHorizontal className="size-4" />
+                {tTable("filters")}
+                {hasActiveSubmissionFilters ? (
+                  <span
+                    className="ml-0.5 size-1.5 rounded-full bg-primary"
+                    aria-label={tTable("filtersActiveLabel")}
+                  />
+                ) : null}
+              </Button>
+            ) : null}
+            {onExportSubmissions &&
+            exportSubmissionsLabel &&
+            exportSubmissionsPendingLabel ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 border-primary/30"
+                disabled={exportSubmissionsPending}
+                onClick={onExportSubmissions}
+              >
+                {exportSubmissionsPending ? (
+                  <>
+                    <Loader2Icon className="size-4 animate-spin" aria-hidden />
+                    {exportSubmissionsPendingLabel}
+                  </>
+                ) : (
+                  <>
+                    <DownloadIcon className="size-4" aria-hidden />
+                    {exportSubmissionsLabel}
+                  </>
+                )}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent className="px-0 pb-4 pt-0">
         <TableShell

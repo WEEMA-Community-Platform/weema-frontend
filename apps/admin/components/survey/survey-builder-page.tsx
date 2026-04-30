@@ -25,7 +25,7 @@ import {
   buildSurveyDetailExportCsv,
   type SurveyDetailCsvLabels,
 } from "@/lib/survey-export-csv";
-import { downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import { SurveyPreviewPanel } from "@/components/survey/survey-preview-panel";
 import { SurveySettingsForm } from "@/components/survey/survey-settings-form";
 import { QuestionCardsBoard } from "@/components/survey/builder/question-cards-board";
@@ -556,7 +556,10 @@ export function SurveyBuilderPage({
         colConditions: tDetail("colConditions"),
       };
       const csv = buildSurveyDetailExportCsv(data, labels, tCommonBase("yes"), tCommonBase("no"));
-      downloadBaseDataCsv(csv, exportFilename(`survey-${initialSurveyId}`));
+      const titleFromExport = typeof data.title === "string" ? data.title : null;
+      const nameSlug =
+        slugifyForFilename(titleFromExport) || slugifyForFilename(builder.state.title) || "survey";
+      downloadBaseDataCsv(csv, exportFilename(`survey-${nameSlug}`));
       sileo.success({
         title: tExport("detailSuccessTitle"),
         description: tExport("detailSuccessDescription"),
@@ -569,7 +572,7 @@ export function SurveyBuilderPage({
     } finally {
       setExportDetailPending(false);
     }
-  }, [initialSurveyId, tDetail, tCommonBase, tExport, tValidation]);
+  }, [initialSurveyId, builder.state.title, tDetail, tCommonBase, tExport, tValidation]);
 
   // ─── Loading skeleton ─────────────────────────────────────────────────────
 

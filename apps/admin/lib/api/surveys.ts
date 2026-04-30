@@ -860,3 +860,18 @@ export async function exportSurveyById(surveyId: string): Promise<SurveyExportDe
   });
   return parseExportSurveyDetailResponse(response);
 }
+
+export async function exportSurveySubmissionsBySurveyId(
+  surveyId: string,
+  query: SurveySubmissionsBySurveyQuery = {}
+): Promise<BaseDataExportListResponse> {
+  const qs = buildQueryString({
+    "shg-id": query.shgId?.trim() || undefined,
+  });
+  const url = `/api/export/survey-submissions/${surveyId}${qs ? `?${qs}` : ""}`;
+  const response = await fetch(url, {
+    cache: "no-store",
+    credentials: "include",
+  });
+  return parseExportListResponse(response);
+}
