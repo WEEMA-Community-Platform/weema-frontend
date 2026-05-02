@@ -69,7 +69,11 @@ function getInitialDraft(answer: SurveySubmissionAnswer): AnswerDraft {
         : answer.answerBoolean
           ? "true"
           : "false",
+    singleChoiceOptionId: answer.selectedOptions[0]?.optionId ?? "",
     singleChoiceValue: answer.selectedOptions[0]?.optionText ?? "",
+    multiChoiceOptionIds: answer.selectedOptions
+      .map((option) => option.optionId)
+      .filter((optionId): optionId is string => Boolean(optionId)),
     multiChoiceValue: answer.selectedOptions.map((option) => option.optionText).join(", "),
     jsonValue:
       answer.answerJson !== null && answer.answerJson !== undefined ? deepClone(answer.answerJson) : null,
@@ -101,7 +105,9 @@ export function getInitialDraftFromQuestion(question: WorkspaceQuestion): Answer
     numberValue: "",
     dateValue: "",
     booleanValue: "",
+    singleChoiceOptionId: "",
     singleChoiceValue: "",
+    multiChoiceOptionIds: [],
     multiChoiceValue: "",
     jsonValue,
   };
@@ -118,8 +124,11 @@ export function isQuestionAnswered(question: WorkspaceQuestion, draft: AnswerDra
   }
   if (type === "DATE") return draft.dateValue.trim() !== "";
   if (type === "BOOLEAN") return draft.booleanValue !== "";
-  if (type === "SINGLE_CHOICE") return draft.singleChoiceValue.trim() !== "";
+  if (type === "SINGLE_CHOICE") {
+    return Boolean(draft.singleChoiceOptionId || draft.singleChoiceValue.trim());
+  }
   if (type === "MULTIPLE_CHOICE") {
+    if (draft.multiChoiceOptionIds.length > 0) return true;
     return draft.multiChoiceValue
       .split(",")
       .map((item) => item.trim())
@@ -166,14 +175,25 @@ export function buildSubmissionAnswerPayload(question: WorkspaceQuestion, draft:
   }
 
   if (type === "SINGLE_CHOICE") {
-    const selected = question.options.find(
-      (option) => option.text.trim().toLowerCase() === draft.singleChoiceValue.trim().toLowerCase()
-    );
+    if (draft.singleChoiceOptionId) {
+      const selectedById = question.options.find((option) => option.id === draft.singleChoiceOptionId);
+      payload.selectedOptionIds = selectedById?.id ? [selectedById.id] : [];
+      return payload;
+    }
+    const selected = question.options.find((option) => {
+      return option.text.trim().toLowerCase() === draft.singleChoiceValue.trim().toLowerCase();
+    });
     payload.selectedOptionIds = selected?.id ? [selected.id] : [];
     return payload;
   }
 
   if (type === "MULTIPLE_CHOICE") {
+    if (draft.multiChoiceOptionIds.length > 0) {
+      payload.selectedOptionIds = question.options
+        .filter((option) => option.id && draft.multiChoiceOptionIds.includes(option.id))
+        .map((option) => option.id as string);
+      return payload;
+    }
     const selectedTexts = draft.multiChoiceValue
       .split(",")
       .map((item) => item.trim().toLowerCase())

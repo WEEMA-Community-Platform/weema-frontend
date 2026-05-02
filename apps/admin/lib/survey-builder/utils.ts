@@ -61,6 +61,7 @@ export function createEmptyOption(orderNo = 1): SurveyOption {
     clientId: createClientId(),
     text: "",
     value: "",
+    isExclusive: false,
     orderNo,
   };
 }
@@ -95,6 +96,7 @@ export function createEmptySection(orderNo = 1): SurveySection {
     description: "",
     orderNo,
     questions: [],
+    skipConditions: [],
   };
 }
 

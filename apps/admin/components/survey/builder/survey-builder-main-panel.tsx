@@ -2,8 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SurveySettingsForm } from "@/components/survey/survey-settings-form";
 import { QuestionCardsBoard } from "@/components/survey/builder/question-cards-board";
 import { QuestionEditor } from "@/components/survey/builder/question-editor";
+import { SectionSkipConditionsEditor } from "@/components/survey/builder/section-skip-conditions-editor";
 import { type EditorMode, type SurveyQuestionWithContext } from "@/components/survey/builder/shared";
-import { type SurveySection, type SurveyValidationIssue } from "@/lib/survey-builder/types";
+import {
+  type SectionSkipCondition,
+  type SurveySection,
+  type SurveyValidationIssue,
+} from "@/lib/survey-builder/types";
 import type { useSurveyBuilder } from "@/hooks/use-survey-builder";
 
 type Props = {
@@ -36,6 +41,13 @@ type Props = {
   onAddCondition: () => void;
   onUpdateCondition: ReturnType<typeof useSurveyBuilder>["updateCondition"];
   onDeleteCondition: ReturnType<typeof useSurveyBuilder>["deleteCondition"];
+  onAddSectionSkipCondition: (sectionClientId: string) => void;
+  onUpdateSectionSkipCondition: (
+    sectionClientId: string,
+    conditionIndex: number,
+    updater: (condition: SectionSkipCondition) => SectionSkipCondition
+  ) => void;
+  onDeleteSectionSkipCondition: (sectionClientId: string, conditionIndex: number) => void;
   surveyTitle: string;
   surveyDescription: string;
   surveyTargetType: string;
@@ -72,6 +84,9 @@ export function SurveyBuilderMainPanel({
   onAddCondition,
   onUpdateCondition,
   onDeleteCondition,
+  onAddSectionSkipCondition,
+  onUpdateSectionSkipCondition,
+  onDeleteSectionSkipCondition,
   surveyTitle,
   surveyDescription,
   surveyTargetType,
@@ -105,21 +120,36 @@ export function SurveyBuilderMainPanel({
           </CardContent>
         </Card>
       ) : editorMode === "cards" ? (
-        <QuestionCardsBoard
-          section={selectedSection}
-          questionByClientId={questionByClientId}
-          dependentsMap={dependentsMap}
-          onOpen={onSelectQuestion}
-          onDelete={(questionClientId) => {
-            if (!selectedSection) return;
-            const q = selectedSection.questions.find((question) => question.clientId === questionClientId);
-            onRequestDeleteQuestion(
-              selectedSection.clientId,
-              questionClientId,
-              q?.questionText || "Untitled question"
-            );
-          }}
-        />
+        <div className="space-y-4">
+          {selectedSection ? (
+            <SectionSkipConditionsEditor
+              section={selectedSection}
+              questionByClientId={questionByClientId}
+              onAddCondition={() => onAddSectionSkipCondition(selectedSection.clientId)}
+              onUpdateCondition={(conditionIndex, updater) =>
+                onUpdateSectionSkipCondition(selectedSection.clientId, conditionIndex, updater)
+              }
+              onDeleteCondition={(conditionIndex) =>
+                onDeleteSectionSkipCondition(selectedSection.clientId, conditionIndex)
+              }
+            />
+          ) : null}
+          <QuestionCardsBoard
+            section={selectedSection}
+            questionByClientId={questionByClientId}
+            dependentsMap={dependentsMap}
+            onOpen={onSelectQuestion}
+            onDelete={(questionClientId) => {
+              if (!selectedSection) return;
+              const q = selectedSection.questions.find((question) => question.clientId === questionClientId);
+              onRequestDeleteQuestion(
+                selectedSection.clientId,
+                questionClientId,
+                q?.questionText || "Untitled question"
+              );
+            }}
+          />
+        </div>
       ) : selectedSection && selectedQuestion ? (
         <QuestionEditor
           question={selectedQuestion}

@@ -16,11 +16,13 @@ import {
   useUpdateQuestionMutation,
   useUpdateSurveyMutation,
   useUpdateSurveySectionMutation,
+  useUpdateSurveySectionSkipConditionsMutation,
 } from "@/hooks/use-surveys";
 import {
   getSurveyById,
   serializeQuestionPayload,
   serializeSectionPayload,
+  serializeSectionSkipConditionsPayload,
 } from "@/lib/api/surveys";
 import {
   normalizeSurveyResponse,
@@ -76,6 +78,7 @@ export function useBuilderPersistence({
   const updateSurveyMutation = useUpdateSurveyMutation();
   const createSectionsMutation = useCreateSurveySectionsMutation();
   const updateSectionMutation = useUpdateSurveySectionMutation();
+  const updateSectionSkipConditionsMutation = useUpdateSurveySectionSkipConditionsMutation();
   const deleteSectionMutation = useDeleteSurveySectionMutation();
   const reorderSectionsMutation = useReorderSurveySectionsMutation();
   const createQuestionMutation = useCreateQuestionsMutation();
@@ -342,6 +345,13 @@ export function useBuilderPersistence({
             description: draftSection.description.trim(),
           },
         });
+        await updateSectionSkipConditionsMutation.mutateAsync({
+          id: section.id,
+          payload: serializeSectionSkipConditionsPayload(
+            draftSection.skipConditions ?? [],
+            getIdMapsFromState(builder.state)
+          ),
+        });
       }
       let idMaps = getIdMapsFromState(builder.state);
       for (const section of builder.state.sections) {
@@ -399,12 +409,31 @@ export function useBuilderPersistence({
           id: section.id,
           payload: { title: section.title.trim(), description: section.description.trim() },
         });
+        await updateSectionSkipConditionsMutation.mutateAsync({
+          id: section.id,
+          payload: serializeSectionSkipConditionsPayload(
+            section.skipConditions ?? [],
+            { questionIdByClientId, optionIdByClientId }
+          ),
+        });
         sileo.success({ title: "Section saved", description: result.message ?? "Section has been updated." });
       } else {
+        const draftSection = section;
         const result = await createSectionsMutation.mutateAsync({
           surveyId: initialSurveyId,
           payload: [serializeSectionPayload(section, { questionIdByClientId, optionIdByClientId })],
         });
+        const refreshed = await reloadSurvey(initialSurveyId);
+        const createdSection = refreshed.sections.find((s) => s.clientId === draftSection.clientId);
+        if (createdSection?.id) {
+          await updateSectionSkipConditionsMutation.mutateAsync({
+            id: createdSection.id,
+            payload: serializeSectionSkipConditionsPayload(
+              draftSection.skipConditions ?? [],
+              getIdMapsFromState(refreshed)
+            ),
+          });
+        }
         sileo.success({ title: "Section created", description: result.message ?? "Section has been added." });
       }
       await reloadSurvey(initialSurveyId);

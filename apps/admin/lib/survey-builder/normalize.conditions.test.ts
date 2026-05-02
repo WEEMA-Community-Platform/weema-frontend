@@ -21,6 +21,7 @@ test("serializeSurveyPayload keeps all mixed-parent follow-up conditions", () =>
         title: "Section 1",
         description: "",
         orderNo: 1,
+        skipConditions: [],
         questions: [
           {
             clientId: "q1",
@@ -135,6 +136,7 @@ test("normalizeSurveyResponse remaps parent and option IDs for multi-parent foll
         clientId: "section-client-1",
         title: "Section",
         orderNo: 1,
+        skipConditions: [],
         questions: [
           {
             id: "question-1-id",

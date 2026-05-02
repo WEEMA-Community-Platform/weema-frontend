@@ -3,6 +3,7 @@ import type {
   JsonQuestionConfig,
   NumberQuestionConfig,
   QuestionType,
+  SectionSkipCondition,
   ShowCondition,
   SurveyBuilderState,
   SurveyQuestion,
@@ -58,6 +59,7 @@ type BackendSurveyOption = {
   text?: string;
   optionText?: string;
   value?: string;
+  isExclusive?: boolean;
   orderNo?: number;
 };
 
@@ -110,6 +112,7 @@ type BackendSurveySection = {
   description?: string;
   orderNo?: number;
   questions?: BackendSurveyQuestion[];
+  skipConditions?: BackendSurveyCondition[];
 };
 
 export type BackendSurveyRecord = {
@@ -140,6 +143,7 @@ export type CreateSurveyPayload = {
       options?: Array<{
         clientId: string;
         optionText: string;
+        isExclusive?: boolean;
         orderNo: number;
       }>;
       questionConfig?: {
@@ -308,6 +312,7 @@ function normalizeQuestion(question: BackendSurveyQuestion, index: number): Surv
         clientId: option.clientId ?? option.optionClientId ?? createClientId(),
         text: option.text ?? option.optionText ?? "",
         value: option.value ?? "",
+        isExclusive: Boolean(option.isExclusive),
         orderNo: option.orderNo ?? optionIndex + 1,
       })),
       questionConfig: normalizeQuestionConfig(question.questionConfig),
@@ -342,6 +347,9 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
         description: section.description ?? "",
         orderNo: section.orderNo ?? index + 1,
         questions: applyOrderNo((section.questions ?? []).map(normalizeQuestion)),
+        skipConditions: (section.skipConditions ?? [])
+          .map(toCondition)
+          .filter((item): item is SectionSkipCondition => item !== null),
       }))
     ),
   };
@@ -363,6 +371,15 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
   }
 
   for (const section of normalized.sections) {
+    section.skipConditions = section.skipConditions.map((condition) => ({
+      ...condition,
+      parentQuestionClientId:
+        questionIdToClientId.get(condition.parentQuestionClientId) ??
+        condition.parentQuestionClientId,
+      optionClientId: condition.optionClientId
+        ? optionIdToClientId.get(condition.optionClientId) ?? condition.optionClientId
+        : undefined,
+    }));
     for (const question of section.questions) {
       question.showConditions = question.showConditions.map((condition) => ({
         ...condition,
@@ -397,13 +414,14 @@ export function serializeSurveyPayload(state: SurveyBuilderState): CreateSurveyP
           questionType: item.questionType,
           isRequired: item.required,
           orderNo: item.orderNo,
-          options: isChoiceType(item.questionType)
-            ? applyOrderNo(item.options).map((option) => ({
-                clientId: option.clientId,
-                optionText: option.text.trim(),
-                orderNo: option.orderNo,
-              }))
-            : undefined,
+              options: isChoiceType(item.questionType)
+                ? applyOrderNo(item.options).map((option) => ({
+                    clientId: option.clientId,
+                    optionText: option.text.trim(),
+                    isExclusive: Boolean(option.isExclusive),
+                    orderNo: option.orderNo,
+                  }))
+                : undefined,
           questionConfig:
             isJsonType(item.questionType) && item.questionConfig && isJsonQuestionConfig(item.questionConfig)
               ? toBackendQuestionConfig(item.questionConfig)
@@ -512,6 +530,15 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
             message: "Choice questions require at least two options.",
           });
         }
+        if (question.questionType === "MULTIPLE_CHOICE") {
+          const exclusiveCount = question.options.filter((option) => Boolean(option.isExclusive)).length;
+          if (exclusiveCount > 1) {
+            issues.push({
+              path: `sections.${sectionIndex}.questions.${questionIndex}.options`,
+              message: "Only one exclusive option is allowed in a multiple-choice question.",
+            });
+          }
+        }
         question.options.forEach((option, optionIndex) => {
           if (!option.text.trim()) {
             issues.push({
@@ -571,6 +598,50 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
   }
 
   for (const [sectionIndex, section] of state.sections.entries()) {
+    for (const [conditionIndex, condition] of section.skipConditions.entries()) {
+      const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);
+      if (!parentQuestion) {
+        issues.push({
+          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}`,
+          message: "Section skip condition parent question does not exist.",
+        });
+        continue;
+      }
+
+      if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, condition.operator)) {
+        issues.push({
+          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}.operator`,
+          message: `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`,
+        });
+      }
+
+      if (isChoiceType(parentQuestion.questionType) && condition.optionClientId) {
+        const optionExists = parentQuestion.options.some(
+          (option) => option.clientId === condition.optionClientId
+        );
+        if (!optionExists) {
+          issues.push({
+            path: `sections.${sectionIndex}.skipConditions.${conditionIndex}`,
+            message: "Section skip condition option reference is invalid.",
+          });
+        }
+      }
+
+      if (isChoiceType(parentQuestion.questionType) && !condition.optionClientId) {
+        issues.push({
+          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}.optionClientId`,
+          message: "Section skip condition option is required for choice parent questions.",
+        });
+      }
+
+      if (!isChoiceType(parentQuestion.questionType) && !(condition.expectedValue ?? "").trim()) {
+        issues.push({
+          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}.expectedValue`,
+          message: "Section skip condition expected value is required for non-choice parent questions.",
+        });
+      }
+    }
+
     for (const [questionIndex, question] of section.questions.entries()) {
       for (const [conditionIndex, condition] of question.showConditions.entries()) {
         const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);

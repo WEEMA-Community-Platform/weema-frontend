@@ -8,7 +8,7 @@ export type WorkspaceQuestion = {
   questionText: string;
   questionType: string;
   questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
-  options: Array<{ id?: string; text: string }>;
+  options: Array<{ id?: string; text: string; isExclusive?: boolean }>;
 };
 
 export type AnswerDraft = {
@@ -16,7 +16,9 @@ export type AnswerDraft = {
   numberValue: string;
   dateValue: string;
   booleanValue: "true" | "false" | "";
+  singleChoiceOptionId: string;
   singleChoiceValue: string;
+  multiChoiceOptionIds: string[];
   multiChoiceValue: string;
   jsonValue: unknown;
 };

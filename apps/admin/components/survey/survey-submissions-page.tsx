@@ -242,6 +242,7 @@ export function SurveySubmissionsPage({
         options: question.options.map((option) => ({
           id: option.id,
           text: option.text,
+          isExclusive: Boolean(option.isExclusive),
         })),
       }))
     );

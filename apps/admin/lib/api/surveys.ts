@@ -19,7 +19,11 @@ import {
   type SurveyExportDetailResponse,
 } from "@/lib/api/surveys/helpers";
 
-export { serializeQuestionPayload, serializeSectionPayload } from "@/lib/api/surveys/serializers";
+export {
+  serializeQuestionPayload,
+  serializeSectionPayload,
+  serializeSectionSkipConditionsPayload,
+} from "@/lib/api/surveys/serializers";
 export type { SurveyExportDetailResponse };
 
 export type SurveysListQuery = {
@@ -175,6 +179,7 @@ export type UpsertQuestionPayload = {
   isRequired: boolean;
   options?: Array<{
     optionText: string;
+    isExclusive?: boolean;
     clientId: string;
     orderNo: number;
   }>;
@@ -203,6 +208,16 @@ export type UpsertQuestionPayload = {
     expectedValue?: string;
     logicType: "AND" | "OR";
   }>;
+};
+
+export type SectionConditionPayload = {
+  parentQuestionClientId: string;
+  parentQuestionId?: string;
+  operator: string;
+  optionClientId?: string;
+  optionId?: string;
+  expectedValue?: string;
+  logicType: "AND" | "OR";
 };
 
 export type CreateSectionPayload = Array<{
@@ -635,6 +650,18 @@ export async function updateSurveySection(
 ): Promise<BaseApiResponse> {
   const response = await fetch(`/api/survey-section/${id}`, {
     method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return parseResponse<BaseApiResponse>(response);
+}
+
+export async function updateSurveySectionSkipConditions(
+  id: string,
+  payload: SectionConditionPayload[]
+): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/survey-section/${id}/skip-conditions`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });

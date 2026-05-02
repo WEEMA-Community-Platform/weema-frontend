@@ -17,6 +17,7 @@ import type {
   GridAxisItem,
   JsonQuestionConfig,
   ShowCondition,
+  SurveyOption,
   SurveyQuestion,
   SurveySection,
 } from "@/lib/survey-builder/types";
@@ -51,7 +52,7 @@ export function QuestionEditor(props: {
   onTypeChange: (type: SurveyQuestion["questionType"]) => void;
   onDelete: () => void;
   onAddOption: () => void;
-  onUpdateOption: (optionClientId: string, patch: { text?: string; value?: string }) => void;
+  onUpdateOption: (optionClientId: string, patch: Partial<SurveyOption>) => void;
   onDeleteOption: (optionClientId: string) => void;
   onQuestionConfigChange: (questionConfig: SurveyQuestion["questionConfig"] | undefined) => void;
   onAddFollowUpQuestion: () => void;
@@ -143,7 +144,19 @@ export function QuestionEditor(props: {
           <QuestionEditorChoiceOptions
             question={props.question}
             onAddOption={props.onAddOption}
-            onUpdateOption={props.onUpdateOption}
+            onUpdateOption={(optionClientId, patch) => {
+              props.onUpdateOption(optionClientId, patch);
+              if (
+                props.question.questionType === "MULTIPLE_CHOICE" &&
+                patch.isExclusive === true
+              ) {
+                for (const option of props.question.options) {
+                  if (option.clientId !== optionClientId && option.isExclusive) {
+                    props.onUpdateOption(option.clientId, { isExclusive: false });
+                  }
+                }
+              }
+            }}
             onDeleteOption={props.onDeleteOption}
           />
         ) : null}

@@ -33,9 +33,11 @@ import {
   updateSurveySubmissionAnswer,
   updateSurvey,
   updateSurveySection,
+  updateSurveySectionSkipConditions,
   type SurveysListQuery,
   type CloneSurveyPayload,
   type CreateSectionPayload,
+  type SectionConditionPayload,
   type UpsertQuestionPayload,
   type UpsertSubmissionAnswerPayload,
   type StartSurveySubmissionPayload,
@@ -337,6 +339,22 @@ export function useUpdateSurveySectionMutation() {
       id: string;
       payload: { title: string; description: string };
     }) => updateSurveySection(id, payload),
+    onSuccess: () => {
+      invalidateSurveyQueries(queryClient);
+    },
+  });
+}
+
+export function useUpdateSurveySectionSkipConditionsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: SectionConditionPayload[];
+    }) => updateSurveySectionSkipConditions(id, payload),
     onSuccess: () => {
       invalidateSurveyQueries(queryClient);
     },

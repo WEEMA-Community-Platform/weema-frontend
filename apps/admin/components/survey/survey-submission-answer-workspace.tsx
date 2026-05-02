@@ -32,7 +32,7 @@ export type QuestionTemplate = {
   questionText: string;
   questionType: string;
   questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
-  options: Array<{ id?: string; text: string }>;
+  options: Array<{ id?: string; text: string; isExclusive?: boolean }>;
 };
 
 const ANSWERS_PAGE_SIZE = 6;
@@ -87,7 +87,11 @@ export function SurveySubmissionAnswerWorkspace({
         questionText: answer.questionText,
         questionType: answer.questionType,
         questionConfig: undefined,
-        options: answer.selectedOptions.map((option) => ({ id: option.optionId, text: option.optionText })),
+        options: answer.selectedOptions.map((option) => ({
+          id: option.optionId,
+          text: option.optionText,
+          isExclusive: false,
+        })),
       }));
     return [...baseQuestions, ...orphanAnswers];
   }, [questionTemplates, submission.answers]);

@@ -23,6 +23,15 @@ export function QuestionAnswerEditor({ question, index, draft, onDraftChange }: 
   const type = question.questionType.toUpperCase();
   const numberBounds = type === "NUMBER" ? getNumberAnswerBounds(question) : null;
   const options = question.options;
+  const exclusiveOptionIds = new Set(
+    options
+      .map((option, index) => ({
+        key: option.id ?? `${question.key}-multi-${index}`,
+        isExclusive: Boolean(option.isExclusive),
+      }))
+      .filter((entry) => entry.isExclusive)
+      .map((entry) => entry.key)
+  );
 
   return (
     <div className="rounded-xl border border-primary/10 bg-card p-4">
@@ -69,15 +78,24 @@ export function QuestionAnswerEditor({ question, index, draft, onDraftChange }: 
           ) : type === "SINGLE_CHOICE" ? (
             options.length > 0 ? (
               <Select
-                value={draft.singleChoiceValue || undefined}
-                onValueChange={(value) => onDraftChange({ singleChoiceValue: value })}
+                value={draft.singleChoiceOptionId || undefined}
+                onValueChange={(value) => {
+                  const selected = options.find((option) => option.id === value);
+                  onDraftChange({
+                    singleChoiceOptionId: value,
+                    singleChoiceValue: selected?.text ?? "",
+                  });
+                }}
               >
                 <SelectTrigger className="h-11 max-w-lg text-sm">
                   <SelectValue placeholder={t("selectOption")} />
                 </SelectTrigger>
                 <SelectContent>
                   {options.map((option, optionIndex) => (
-                    <SelectItem key={option.id ?? `${question.key}-single-${optionIndex}`} value={option.text}>
+                    <SelectItem
+                      key={option.id ?? `${question.key}-single-${optionIndex}`}
+                      value={option.id ?? `${question.key}-single-${optionIndex}`}
+                    >
                       {option.text || t("optionIndex", { index: optionIndex + 1 })}
                     </SelectItem>
                   ))}
@@ -87,7 +105,12 @@ export function QuestionAnswerEditor({ question, index, draft, onDraftChange }: 
               <Input
                 className="h-11 max-w-lg text-sm"
                 value={draft.singleChoiceValue}
-                onChange={(event) => onDraftChange({ singleChoiceValue: event.target.value })}
+                onChange={(event) =>
+                  onDraftChange({
+                    singleChoiceOptionId: "",
+                    singleChoiceValue: event.target.value,
+                  })
+                }
                 placeholder={t("enterOption")}
               />
             )
@@ -96,31 +119,58 @@ export function QuestionAnswerEditor({ question, index, draft, onDraftChange }: 
               <div className="grid max-w-xl gap-2 sm:grid-cols-2">
                 {options.map((option, optionIndex) => {
                   const text = option.text || t("optionIndex", { index: optionIndex + 1 });
-                  const selected = draft.multiChoiceValue
-                    .split(",")
-                    .map((item) => item.trim())
-                    .filter(Boolean)
-                    .includes(text);
+                  const optionId = option.id ?? `${question.key}-multi-${optionIndex}`;
+                  const selected = draft.multiChoiceOptionIds.includes(optionId);
+                  const hasSelectedExclusive = draft.multiChoiceOptionIds.some((id) =>
+                    exclusiveOptionIds.has(id)
+                  );
+                  const hasSelectedNonExclusive = draft.multiChoiceOptionIds.some(
+                    (id) => !exclusiveOptionIds.has(id)
+                  );
+                  const isDisabled =
+                    option.isExclusive
+                      ? hasSelectedNonExclusive && !selected
+                      : hasSelectedExclusive && !selected;
                   return (
                     <label
-                      key={option.id ?? `${question.key}-multi-${optionIndex}`}
-                      className="flex items-center gap-2 rounded-lg border border-primary/15 px-3 py-2 text-sm"
+                      key={optionId}
+                      className={`flex items-center gap-2 rounded-lg border border-primary/15 px-3 py-2 text-sm ${
+                        isDisabled ? "opacity-60" : ""
+                      }`}
                     >
                       <input
                         type="checkbox"
                         checked={selected}
+                        disabled={isDisabled}
                         onChange={(event) => {
-                          const current = draft.multiChoiceValue
-                            .split(",")
-                            .map((item) => item.trim())
-                            .filter(Boolean);
-                          const next = event.target.checked
-                            ? Array.from(new Set([...current, text]))
-                            : current.filter((item) => item !== text);
-                          onDraftChange({ multiChoiceValue: next.join(", ") });
+                          const current = draft.multiChoiceOptionIds;
+                          const nextSelectedIds = event.target.checked
+                            ? option.isExclusive
+                              ? [optionId]
+                              : [
+                                  ...current.filter((id) => !exclusiveOptionIds.has(id)),
+                                  optionId,
+                                ]
+                            : current.filter((id) => id !== optionId);
+                          const selectedTexts = options
+                            .map((item, idx) => ({
+                              id: item.id ?? `${question.key}-multi-${idx}`,
+                              text: item.text || t("optionIndex", { index: idx + 1 }),
+                            }))
+                            .filter((item) => nextSelectedIds.includes(item.id))
+                            .map((item) => item.text);
+                          onDraftChange({
+                            multiChoiceOptionIds: nextSelectedIds,
+                            multiChoiceValue: selectedTexts.join(", "),
+                          });
                         }}
                       />
                       <span>{text}</span>
+                      {option.isExclusive ? (
+                        <span className="rounded-md border border-amber-300/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                          Exclusive
+                        </span>
+                      ) : null}
                     </label>
                   );
                 })}

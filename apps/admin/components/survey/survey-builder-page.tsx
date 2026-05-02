@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSurveyBuilder } from "@/hooks/use-survey-builder";
 import { exportSurveyById } from "@/lib/api/surveys";
-import type { ShowCondition, SurveyValidationIssue } from "@/lib/survey-builder/types";
+import type {
+  SectionSkipCondition,
+  ShowCondition,
+  SurveyValidationIssue,
+} from "@/lib/survey-builder/types";
 import { createEmptySurvey } from "@/lib/survey-builder/utils";
 import {
   buildSurveyDetailExportCsv,
@@ -384,6 +388,64 @@ export function SurveyBuilderPage({
     );
   };
 
+  const handleAddSectionSkipCondition = (sectionClientId: string) => {
+    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
+    if (!section || section.questions.length === 0) {
+      sileo.warning({
+        title: "Add section questions first",
+        description: "Section skip rules need at least one question in the section.",
+      });
+      return;
+    }
+    const parentQuestion = section.questions[0];
+    const condition: SectionSkipCondition = {
+      parentQuestionClientId: parentQuestion.clientId,
+      operator: parentQuestion.questionType === "NUMBER" ? "GREATER_THAN" : "EQUALS",
+      optionClientId:
+        parentQuestion.questionType === "SINGLE_CHOICE" ||
+        parentQuestion.questionType === "MULTIPLE_CHOICE"
+          ? parentQuestion.options[0]?.clientId
+          : undefined,
+      expectedValue:
+        parentQuestion.questionType === "SINGLE_CHOICE" ||
+        parentQuestion.questionType === "MULTIPLE_CHOICE"
+          ? undefined
+          : "",
+      logicType: "AND",
+    };
+
+    builder.updateSection(sectionClientId, {
+      skipConditions: [...section.skipConditions, condition],
+    });
+  };
+
+  const handleUpdateSectionSkipCondition = (
+    sectionClientId: string,
+    conditionIndex: number,
+    updater: (condition: SectionSkipCondition) => SectionSkipCondition
+  ) => {
+    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
+    if (!section) return;
+    builder.updateSection(sectionClientId, {
+      skipConditions: section.skipConditions.map((condition, index) => {
+        if (index !== conditionIndex) return condition;
+        return updater(condition);
+      }),
+    });
+  };
+
+  const handleDeleteSectionSkipCondition = (sectionClientId: string, conditionIndex: number) => {
+    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
+    if (!section) return;
+    builder.updateSection(sectionClientId, {
+      skipConditions: section.skipConditions
+        .filter((_, index) => index !== conditionIndex)
+        .map((condition, index) =>
+          index === 0 ? { ...condition, logicType: "AND" } : condition
+        ),
+    });
+  };
+
   const handleToggleMultiFollowUpQuestion = (sectionClientId: string, questionClientId: string) => {
     setMultiFollowUpSelections((prev) => {
       const current = prev[sectionClientId] ?? [];
@@ -588,6 +650,9 @@ export function SurveyBuilderPage({
           onAddCondition={handleAddCondition}
           onUpdateCondition={builder.updateCondition}
           onDeleteCondition={builder.deleteCondition}
+          onAddSectionSkipCondition={handleAddSectionSkipCondition}
+          onUpdateSectionSkipCondition={handleUpdateSectionSkipCondition}
+          onDeleteSectionSkipCondition={handleDeleteSectionSkipCondition}
           surveyTitle={builder.state.title}
           surveyDescription={builder.state.description}
           surveyTargetType={builder.state.targetType}

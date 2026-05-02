@@ -93,6 +93,11 @@ export function useDeleteQuestion(
           ...prev,
           sections: nextSections.map((section) => ({
             ...section,
+            skipConditions: section.skipConditions.filter((condition) => {
+              if (!remainingQuestionIds.has(condition.parentQuestionClientId)) return false;
+              if (condition.optionClientId && removedOptionIds.has(condition.optionClientId)) return false;
+              return true;
+            }),
             questions: section.questions.map((question) => ({
               ...question,
               showConditions: question.showConditions.filter((condition) => {
@@ -289,8 +294,17 @@ export function useSurveyBuilder(initialState: SurveyBuilderState) {
           (condition) => condition.optionClientId !== optionClientId
         ),
       }));
+      setState((prev) => ({
+        ...prev,
+        sections: prev.sections.map((section) => ({
+          ...section,
+          skipConditions: section.skipConditions.filter(
+            (condition) => condition.optionClientId !== optionClientId
+          ),
+        })),
+      }));
     },
-    [updateQuestion]
+    [setState, updateQuestion]
   );
 
   const setQuestionConfig = useCallback(

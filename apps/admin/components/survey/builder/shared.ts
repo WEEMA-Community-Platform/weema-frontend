@@ -159,7 +159,42 @@ export type SaveAllEligibility = {
 // ─── Builder utilities ────────────────────────────────────────────────────────
 
 export function buildBuilderSnapshot(state: SurveyBuilderState): string {
-  return JSON.stringify(serializeSurveyPayload(state));
+  return JSON.stringify({
+    survey: serializeSurveyPayload(state),
+    sectionSkipConditions: state.sections.map((section) => ({
+      sectionClientId: section.clientId,
+      skipConditions: section.skipConditions,
+    })),
+  });
+}
+
+type BuilderSnapshot = {
+  survey: CreateSurveyPayload;
+  sectionSkipConditions: Array<{
+    sectionClientId: string;
+    skipConditions: ShowCondition[];
+  }>;
+};
+
+function parseBuilderSnapshot(snapshot: string): BuilderSnapshot {
+  const parsed = JSON.parse(snapshot) as unknown;
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "survey" in parsed &&
+    (parsed as { survey?: unknown }).survey
+  ) {
+    const payload = parsed as Partial<BuilderSnapshot>;
+    return {
+      survey: payload.survey as CreateSurveyPayload,
+      sectionSkipConditions: payload.sectionSkipConditions ?? [],
+    };
+  }
+  // Backward compatibility with snapshots created before section skip conditions.
+  return {
+    survey: parsed as CreateSurveyPayload,
+    sectionSkipConditions: [],
+  };
 }
 
 export function createFollowUpCondition(parentQuestion: SurveyQuestion): ShowCondition {
@@ -207,8 +242,10 @@ export function getSaveAllEligibility(
     };
   }
   try {
-    const current = JSON.parse(currentSnapshot) as CreateSurveyPayload;
-    const last = JSON.parse(lastSyncedSnapshot) as CreateSurveyPayload;
+    const currentParsed = parseBuilderSnapshot(currentSnapshot);
+    const lastParsed = parseBuilderSnapshot(lastSyncedSnapshot);
+    const current = currentParsed.survey;
+    const last = lastParsed.survey;
     const metadataChanged =
       current.title !== last.title ||
       current.description !== last.description ||
@@ -219,6 +256,16 @@ export function getSaveAllEligibility(
         canSaveAll: true,
         hasUnsavedChanges: true,
         reason: "Survey metadata changed. Save all will sync title, description, target type, and language.",
+      };
+    }
+    if (
+      JSON.stringify(currentParsed.sectionSkipConditions) !==
+      JSON.stringify(lastParsed.sectionSkipConditions)
+    ) {
+      return {
+        canSaveAll: true,
+        hasUnsavedChanges: true,
+        reason: "Section skip rules changed. Save all will sync section-level skip conditions.",
       };
     }
     const currentRows = current.sections.flatMap((s, si) =>
