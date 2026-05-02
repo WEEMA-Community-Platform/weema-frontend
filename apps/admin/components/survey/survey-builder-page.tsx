@@ -388,7 +388,10 @@ export function SurveyBuilderPage({
     );
   };
 
-  const handleAddSectionSkipCondition = (sectionClientId: string) => {
+  const handleAddSectionSkipCondition = (
+    sectionClientId: string,
+    preferredParentQuestionClientId?: string
+  ) => {
     const sectionIndex = builder.state.sections.findIndex((item) => item.clientId === sectionClientId);
     const section = sectionIndex >= 0 ? builder.state.sections[sectionIndex] : null;
     const parentCandidates =
@@ -404,7 +407,10 @@ export function SurveyBuilderPage({
       });
       return;
     }
-    const parentQuestion = parentCandidates[0];
+    const parentQuestion =
+      parentCandidates.find(
+        (candidate) => candidate.clientId === preferredParentQuestionClientId
+      ) ?? parentCandidates[0];
     const condition: SectionSkipCondition = {
       parentQuestionClientId: parentQuestion.clientId,
       operator: parentQuestion.questionType === "NUMBER" ? "GREATER_THAN" : "EQUALS",

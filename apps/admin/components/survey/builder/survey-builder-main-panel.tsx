@@ -42,7 +42,10 @@ type Props = {
   onAddCondition: () => void;
   onUpdateCondition: ReturnType<typeof useSurveyBuilder>["updateCondition"];
   onDeleteCondition: ReturnType<typeof useSurveyBuilder>["deleteCondition"];
-  onAddSectionSkipCondition: (sectionClientId: string) => void;
+  onAddSectionSkipCondition: (
+    sectionClientId: string,
+    preferredParentQuestionClientId?: string
+  ) => void;
   onUpdateSectionSkipCondition: (
     sectionClientId: string,
     conditionIndex: number,
@@ -128,7 +131,12 @@ export function SurveyBuilderMainPanel({
               sections={sections}
               section={selectedSection}
               questionByClientId={questionByClientId}
-              onAddCondition={() => onAddSectionSkipCondition(selectedSection.clientId)}
+              onAddCondition={(preferredParentQuestionClientId) =>
+                onAddSectionSkipCondition(
+                  selectedSection.clientId,
+                  preferredParentQuestionClientId
+                )
+              }
               onUpdateCondition={(conditionIndex, updater) =>
                 onUpdateSectionSkipCondition(selectedSection.clientId, conditionIndex, updater)
               }

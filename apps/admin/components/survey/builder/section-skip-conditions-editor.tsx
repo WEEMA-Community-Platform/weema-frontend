@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 
 import { inputClass } from "@/components/base-data/shared";
@@ -30,7 +31,7 @@ type Props = {
   sections: SurveySection[];
   section: SurveySection;
   questionByClientId: Map<string, SurveyQuestion>;
-  onAddCondition: () => void;
+  onAddCondition: (preferredParentQuestionClientId?: string) => void;
   onUpdateCondition: (
     conditionIndex: number,
     updater: (condition: SectionSkipCondition) => SectionSkipCondition
@@ -46,13 +47,44 @@ export function SectionSkipConditionsEditor({
   onUpdateCondition,
   onDeleteCondition,
 }: Props) {
+  const [sectionFilterClientId, setSectionFilterClientId] = useState("all");
+
   const selectedSectionIndex = sections.findIndex((item) => item.clientId === section.clientId);
-  const parentCandidates =
-    selectedSectionIndex <= 0
-      ? []
-      : sections
-          .slice(0, selectedSectionIndex)
-          .flatMap((candidateSection) => candidateSection.questions);
+  const priorSections = useMemo(
+    () =>
+      selectedSectionIndex <= 0
+        ? []
+        : sections.slice(0, selectedSectionIndex),
+    [sections, selectedSectionIndex]
+  );
+
+  const parentQuestionEntries = useMemo(
+    () =>
+      priorSections.flatMap((candidateSection) =>
+        candidateSection.questions.map((question) => ({
+          sectionClientId: candidateSection.clientId,
+          sectionTitle: candidateSection.title,
+          question,
+        }))
+      ),
+    [priorSections]
+  );
+
+  const allParentCandidates = parentQuestionEntries.map((entry) => entry.question);
+  const filteredParentCandidates = parentQuestionEntries
+    .filter((entry) =>
+      sectionFilterClientId === "all" ? true : entry.sectionClientId === sectionFilterClientId
+    )
+    .map((entry) => entry.question);
+
+  const getCandidateOptionsForCondition = (parentQuestionClientId: string) => {
+    if (filteredParentCandidates.some((item) => item.clientId === parentQuestionClientId)) {
+      return filteredParentCandidates;
+    }
+    const selected = allParentCandidates.find((item) => item.clientId === parentQuestionClientId);
+    if (!selected) return filteredParentCandidates;
+    return [selected, ...filteredParentCandidates];
+  };
 
   return (
     <div className="space-y-2 rounded-lg border border-primary/10 bg-primary/5 p-3">
@@ -63,27 +95,53 @@ export function SectionSkipConditionsEditor({
             Skip this entire section when these conditions match.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={onAddCondition}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onAddCondition(filteredParentCandidates[0]?.clientId)}
+        >
           <PlusIcon className="size-3.5" />
           Add rule
         </Button>
       </div>
 
-      {parentCandidates.length === 0 ? (
+      {priorSections.length > 0 ? (
+        <div className="grid gap-2">
+          <Select value={sectionFilterClientId} onValueChange={setSectionFilterClientId}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Filter by section" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All previous sections</SelectItem>
+              {priorSections.map((item, index) => (
+                <SelectItem key={item.clientId} value={item.clientId}>
+                  {item.title || `Section ${index + 1}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
+      {allParentCandidates.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No prior-section questions available. Skip rules can reference questions from sections above this one.
         </p>
       ) : null}
 
-      {parentCandidates.length > 0 && section.skipConditions.length === 0 ? (
+      {allParentCandidates.length > 0 && section.skipConditions.length === 0 ? (
         <p className="text-xs text-muted-foreground">No skip rules. This section is always shown.</p>
       ) : null}
 
-      {parentCandidates.length > 0 &&
+      {allParentCandidates.length > 0 &&
       section.skipConditions.map((condition, index) => {
         const hasMultipleConditions = section.skipConditions.length > 1;
-        const selectedParentQuestion = parentCandidates.find(
+        const selectedParentQuestion = allParentCandidates.find(
           (candidate) => candidate.clientId === condition.parentQuestionClientId
+        );
+        const conditionParentCandidates = getCandidateOptionsForCondition(
+          condition.parentQuestionClientId
         );
         const parentOptions = selectedParentQuestion?.options ?? [];
         const parentIsChoice = selectedParentQuestion
@@ -116,7 +174,7 @@ export function SectionSkipConditionsEditor({
               <Select
                 value={condition.parentQuestionClientId}
                 onValueChange={(value) => {
-                  const parentQuestion = parentCandidates.find(
+                  const parentQuestion = allParentCandidates.find(
                     (candidate) => candidate.clientId === value
                   );
                   if (!parentQuestion) return;
@@ -137,7 +195,7 @@ export function SectionSkipConditionsEditor({
                   <SelectValue placeholder="Parent question" />
                 </SelectTrigger>
                 <SelectContent>
-                  {parentCandidates.map((candidate) => (
+                  {conditionParentCandidates.map((candidate) => (
                     <SelectItem key={candidate.clientId} value={candidate.clientId}>
                       {candidate.questionText || "Untitled question"}
                     </SelectItem>
