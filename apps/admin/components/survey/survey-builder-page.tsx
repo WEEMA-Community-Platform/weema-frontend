@@ -5,8 +5,6 @@ import { type DragEndEvent } from "@dnd-kit/core";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,12 +25,12 @@ import {
 } from "@/lib/survey-export-csv";
 import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import { SurveyPreviewPanel } from "@/components/survey/survey-preview-panel";
-import { SurveySettingsForm } from "@/components/survey/survey-settings-form";
-import { QuestionCardsBoard } from "@/components/survey/builder/question-cards-board";
-import { QuestionEditor } from "@/components/survey/builder/question-editor";
 import { BuilderDialogs } from "@/components/survey/builder/builder-dialogs";
 import { BuilderHeader } from "@/components/survey/builder/builder-header";
 import { BuilderNavigator } from "@/components/survey/builder/builder-navigator";
+import { SurveyBuilderLoadingSkeleton } from "@/components/survey/builder/survey-builder-loading-skeleton";
+import { SurveyBuilderMainPanel } from "@/components/survey/builder/survey-builder-main-panel";
+import { useBuilderLeaveGuard } from "@/components/survey/builder/use-builder-leave-guard";
 import { useBuilderPersistence } from "@/components/survey/builder/use-builder-persistence";
 import {
   buildBuilderSnapshot,
@@ -52,11 +50,6 @@ export function SurveyBuilderPage({
   translationSourceSurveyId?: string | null;
   translationLanguage?: "en" | "am";
 }) {
-  type PendingLeaveAction =
-    | { type: "browser-back" }
-    | { type: "link"; href: string }
-    | null;
-
   const [initialSurveyId, setInitialSurveyId] = useState<string | null>(routeSurveyId ?? null);
   const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(
     Boolean(routeSurveyId || translationSourceSurveyId)
@@ -73,12 +66,8 @@ export function SurveyBuilderPage({
   const [multiFollowUpLogicTypeBySection, setMultiFollowUpLogicTypeBySection] = useState<
     Record<string, ShowCondition["logicType"]>
   >({});
-  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
-  const [pendingLeaveAction, setPendingLeaveAction] = useState<PendingLeaveAction>(null);
   const [exportDetailPending, setExportDetailPending] = useState(false);
   const initialDraftSnapshotRef = useRef<string | null>(null);
-  const hasHistoryGuardRef = useRef(false);
-  const bypassLeaveGuardRef = useRef(false);
 
   const tExport = useTranslations("survey.export");
   const tDetail = useTranslations("survey.export.detail");
@@ -89,8 +78,6 @@ export function SurveyBuilderPage({
   if (initialDraftSnapshotRef.current === null) {
     initialDraftSnapshotRef.current = buildBuilderSnapshot(builder.state);
   }
-
-  // ─── Derived lookups ──────────────────────────────────────────────────────
 
   const allQuestions = useMemo<SurveyQuestionWithContext[]>(
     () =>
@@ -148,8 +135,9 @@ export function SurveyBuilderPage({
     builder.state.sections.find((s) => s.clientId === selectedSectionClientId) ??
     builder.state.sections[0] ??
     null;
-  const selectedQuestion =
-    selectedSection?.questions.find((q) => q.clientId === selectedQuestionClientId) ?? null;
+  const selectedQuestion = selectedQuestionClientId
+    ? (questionByClientId.get(selectedQuestionClientId) ?? null)
+    : null;
   const isTranslationMode = Boolean(translationSourceSurveyId) || builder.state.isTranslation;
 
   useEffect(() => {
@@ -167,8 +155,6 @@ export function SurveyBuilderPage({
     setEditorMode("cards");
   }, [editorMode, selectedQuestion, selectedSection]);
 
-  // ─── Persistence hook ─────────────────────────────────────────────────────
-
   const persistence = useBuilderPersistence({
     initialSurveyId,
     translationSourceSurveyId: translationSourceSurveyId ?? null,
@@ -184,6 +170,7 @@ export function SurveyBuilderPage({
     setLastMovedSectionClientId,
     setLastMovedQuestionClientId,
   });
+
   const hasUnsavedDraftChanges = useMemo(() => {
     if (initialSurveyId) {
       return persistence.saveAllEligibility.hasUnsavedChanges;
@@ -191,7 +178,7 @@ export function SurveyBuilderPage({
     return builderSnapshot !== initialDraftSnapshotRef.current;
   }, [builderSnapshot, initialSurveyId, persistence.saveAllEligibility.hasUnsavedChanges]);
 
-  // ─── Animation clear effects ──────────────────────────────────────────────
+  const leaveGuard = useBuilderLeaveGuard(hasUnsavedDraftChanges);
 
   useEffect(() => {
     if (!lastMovedSectionClientId) return;
@@ -205,8 +192,6 @@ export function SurveyBuilderPage({
     return () => window.clearTimeout(t);
   }, [lastMovedQuestionClientId]);
 
-  // ─── Initial survey load ──────────────────────────────────────────────────
-
   useEffect(() => {
     const sourceSurveyId = translationSourceSurveyId ?? routeSurveyId;
     if (!sourceSurveyId) {
@@ -214,11 +199,14 @@ export function SurveyBuilderPage({
       setIsLoadingInitialSurvey(false);
       return;
     }
+
+    let cancelled = false;
     const load = async () => {
       try {
         setInitialSurveyId(translationSourceSurveyId ? null : sourceSurveyId);
         setIsLoadingInitialSurvey(true);
         const loaded = await persistence.reloadSurvey(sourceSurveyId);
+        if (cancelled) return;
         if (translationSourceSurveyId) {
           const nextLanguage =
             translationLanguage ?? (loaded.language === "en" ? "am" : "en");
@@ -226,19 +214,24 @@ export function SurveyBuilderPage({
         }
         setEditorMode("settings");
       } catch (error) {
+        if (cancelled) return;
         sileo.error({
           title: "Could not open survey",
           description: error instanceof Error ? error.message : "Unexpected error",
         });
       } finally {
-        setIsLoadingInitialSurvey(false);
+        if (!cancelled) setIsLoadingInitialSurvey(false);
       }
     };
+
     void load();
+    return () => {
+      cancelled = true;
+    };
+    // Keep this tied to routing inputs only; persistence/builder references are not stable
+    // and can cause repeated reload loops that keep the loading shell open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeSurveyId, translationSourceSurveyId, translationLanguage]);
-
-  // ─── Navigation handlers ──────────────────────────────────────────────────
 
   const handleCreateNew = () => {
     const fresh = createEmptySurvey();
@@ -309,8 +302,6 @@ export function SurveyBuilderPage({
       overQuestionClientId: String(over.id),
     });
   };
-
-  // ─── Follow-up helpers ────────────────────────────────────────────────────
 
   const handleAddFollowUp = () => {
     if (!selectedSection || !selectedQuestion) return;
@@ -445,87 +436,6 @@ export function SurveyBuilderPage({
     }
   };
 
-  useEffect(() => {
-    if (!hasUnsavedDraftChanges) return;
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (bypassLeaveGuardRef.current) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasUnsavedDraftChanges]);
-
-  useEffect(() => {
-    if (!hasUnsavedDraftChanges) {
-      hasHistoryGuardRef.current = false;
-      setIsLeaveDialogOpen(false);
-      setPendingLeaveAction(null);
-      return;
-    }
-
-    if (!hasHistoryGuardRef.current) {
-      window.history.pushState({ surveyBuilderGuard: true }, "", window.location.href);
-      hasHistoryGuardRef.current = true;
-    }
-
-    const handlePopState = () => {
-      window.history.pushState({ surveyBuilderGuard: true }, "", window.location.href);
-      setPendingLeaveAction({ type: "browser-back" });
-      setIsLeaveDialogOpen(true);
-    };
-
-    const handleDocumentClick = (event: MouseEvent) => {
-      if (bypassLeaveGuardRef.current) return;
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
-      if (!anchor) return;
-      if (event.defaultPrevented) return;
-      if (event.button !== 0) return;
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      if (anchor.target && anchor.target !== "_self") return;
-
-      const destination = new URL(anchor.href, window.location.href);
-      if (destination.href === window.location.href) return;
-
-      event.preventDefault();
-      setPendingLeaveAction({ type: "link", href: destination.href });
-      setIsLeaveDialogOpen(true);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    document.addEventListener("click", handleDocumentClick, true);
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-      document.removeEventListener("click", handleDocumentClick, true);
-    };
-  }, [hasUnsavedDraftChanges]);
-
-  const handleConfirmLeave = () => {
-    if (!pendingLeaveAction) {
-      setIsLeaveDialogOpen(false);
-      return;
-    }
-
-    bypassLeaveGuardRef.current = true;
-    setIsLeaveDialogOpen(false);
-    const action = pendingLeaveAction;
-    setPendingLeaveAction(null);
-
-    if (action.type === "browser-back") {
-      hasHistoryGuardRef.current = false;
-      window.history.back();
-      return;
-    }
-
-    window.location.assign(action.href);
-  };
-
-  const handleStayOnPage = () => {
-    setIsLeaveDialogOpen(false);
-    setPendingLeaveAction(null);
-  };
-
   const handleExportSurveyDetail = useCallback(async () => {
     if (!initialSurveyId) return;
     setExportDetailPending(true);
@@ -574,45 +484,9 @@ export function SurveyBuilderPage({
     }
   }, [initialSurveyId, builder.state.title, tDetail, tCommonBase, tExport, tValidation]);
 
-  // ─── Loading skeleton ─────────────────────────────────────────────────────
-
   if (initialSurveyId && isLoadingInitialSurvey) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="flex h-14 items-center justify-between border-b border-primary/10 px-4">
-          <Skeleton className="h-9 w-36" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-28" />
-            <Skeleton className="h-9 w-32" />
-          </div>
-        </header>
-        <div className="flex h-[calc(100vh-56px)]">
-          <aside className="w-[320px] shrink-0 border-r border-primary/10 bg-card/30 p-4">
-            <Skeleton className="h-8 w-40" />
-            <div className="mt-4 space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={`skeleton-section-${i}`} className="h-20 w-full rounded-xl" />
-              ))}
-            </div>
-          </aside>
-          <main className="min-w-0 flex-1 border-r border-primary/10 p-6">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="mt-3 h-4 w-72" />
-            <div className="mt-6 space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={`skeleton-card-${i}`} className="h-24 w-full rounded-xl" />
-              ))}
-            </div>
-          </main>
-          <section className="w-[360px] shrink-0 p-4">
-            <Skeleton className="h-full min-h-56 w-full rounded-xl" />
-          </section>
-        </div>
-      </div>
-    );
+    return <SurveyBuilderLoadingSkeleton />;
   }
-
-  // ─── Builder layout ───────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-background">
@@ -671,139 +545,54 @@ export function SurveyBuilderPage({
           onCreateMultiFollowUp={handleCreateMultiFollowUp}
         />
 
-        <main className="min-w-0 flex-1 overflow-y-auto border-r border-primary/10 p-6">
-          {editorMode === "settings" ? (
-            <Card className="border-primary/15">
-              <CardHeader>
-                <CardTitle>Survey settings</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SurveySettingsForm
-                  title={builder.state.title}
-                  description={builder.state.description}
-                  targetType={builder.state.targetType}
-                  language={builder.state.language}
-                  onTitleChange={(v) => builder.setHeaderField("title", v)}
-                  onDescriptionChange={(v) => builder.setHeaderField("description", v)}
-                  onTargetTypeChange={(v) => builder.setHeaderField("targetType", v)}
-                  onLanguageChange={(v) => builder.setHeaderField("language", v)}
-                  lockTargetType={isTranslationMode}
-                  lockLanguage={isTranslationMode}
-                  isTranslationMode={isTranslationMode}
-                  showSaveAction={Boolean(initialSurveyId)}
-                  onSave={() => void persistence.handleSaveSurvey()}
-                  isSaving={false}
-                  isSaveDisabled={persistence.isSavingAllChanges}
-                />
-              </CardContent>
-            </Card>
-          ) : editorMode === "cards" ? (
-            <QuestionCardsBoard
-              section={selectedSection}
-              questionByClientId={questionByClientId}
-              dependentsMap={dependentsMap}
-              onOpen={(questionClientId) => {
-                setSelectedQuestionClientId(questionClientId);
-                setEditorMode("question");
-              }}
-              onDelete={(questionClientId) => {
-                if (!selectedSection) return;
-                const q = selectedSection.questions.find((q) => q.clientId === questionClientId);
-                persistence.setPendingDelete({
-                  kind: "question",
-                  sectionClientId: selectedSection.clientId,
-                  questionClientId,
-                  questionText: q?.questionText || "Untitled question",
-                });
-              }}
-            />
-          ) : selectedSection && selectedQuestion ? (
-            <QuestionEditor
-              question={selectedQuestion}
-              section={selectedSection}
-              questionByClientId={questionByClientId}
-              dependentsMap={dependentsMap}
-              isTranslationMode={isTranslationMode}
-              onBackToCards={() => setEditorMode("cards")}
-              backToCardsLabel={initialSurveyId ? "Back to cards" : "Back to questions"}
-              onPrimaryAction={() => {
-                if (!initialSurveyId) {
-                  setSelectedQuestionClientId(null);
-                  setEditorMode("cards");
-                  return;
-                }
-                void persistence.saveQuestion(selectedSection.clientId, selectedQuestion.clientId);
-              }}
-              primaryActionLabel={
-                initialSurveyId
-                  ? selectedSection.id
-                    ? "Save question"
-                    : "Save section & question"
-                  : "Done"
-              }
-              primaryActionVariant={initialSurveyId ? "default" : "outline"}
-              isPrimaryActionPending={
-                initialSurveyId
-                  ? persistence.savingQuestionClientId === selectedQuestion.clientId ||
-                    persistence.savingSectionClientId === selectedSection.clientId ||
-                    persistence.isSavingAllChanges
-                  : false
-              }
-              isPrimaryActionDisabled={initialSurveyId ? persistence.isSavingAllChanges : false}
-              onUpdate={(patch) =>
-                builder.updateQuestion(selectedSection.clientId, selectedQuestion.clientId, (prev) => ({
-                  ...prev,
-                  ...patch,
-                }))
-              }
-              onTypeChange={(nextType) =>
-                builder.setQuestionType(selectedSection.clientId, selectedQuestion.clientId, nextType)
-              }
-              onDelete={() =>
-                persistence.setPendingDelete({
-                  kind: "question",
-                  sectionClientId: selectedSection.clientId,
-                  questionClientId: selectedQuestion.clientId,
-                  questionText: selectedQuestion.questionText || "Untitled question",
-                })
-              }
-              onAddOption={() => builder.addOption(selectedSection.clientId, selectedQuestion.clientId)}
-              onUpdateOption={(optionClientId, patch) =>
-                builder.updateOption(selectedSection.clientId, selectedQuestion.clientId, optionClientId, patch)
-              }
-              onDeleteOption={(optionClientId) =>
-                builder.deleteOption(
-                  selectedSection.clientId,
-                  selectedQuestion.clientId,
-                  optionClientId
-                )
-              }
-              onQuestionConfigChange={(config) =>
-                builder.setQuestionConfig(selectedSection.clientId, selectedQuestion.clientId, config)
-              }
-              onAddFollowUpQuestion={handleAddFollowUp}
-              onAddNestedFollowUpQuestion={handleAddNestedFollowUp}
-              onAddCondition={handleAddCondition}
-              onUpdateCondition={(idx, updater) =>
-                builder.updateCondition(selectedSection.clientId, selectedQuestion.clientId, idx, updater)
-              }
-              onDeleteCondition={(idx) =>
-                builder.deleteCondition(selectedSection.clientId, selectedQuestion.clientId, idx)
-              }
-            />
-          ) : null}
-
-          {issues.length > 0 ? (
-            <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              <p className="font-medium">Resolve these issues before saving:</p>
-              <ul className="mt-1 list-disc pl-5">
-                {issues.slice(0, 8).map((issue) => (
-                  <li key={`${issue.path}-${issue.message}`}>{issue.message}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </main>
+        <SurveyBuilderMainPanel
+          editorMode={editorMode}
+          initialSurveyId={initialSurveyId}
+          isTranslationMode={isTranslationMode}
+          selectedSection={selectedSection}
+          selectedQuestion={selectedQuestion}
+          questionByClientId={questionByClientId}
+          dependentsMap={dependentsMap}
+          issues={issues}
+          isSavingAllChanges={persistence.isSavingAllChanges}
+          savingQuestionClientId={persistence.savingQuestionClientId}
+          savingSectionClientId={persistence.savingSectionClientId}
+          onSelectCardsMode={() => setEditorMode("cards")}
+          onDoneDraftQuestion={() => {
+            setSelectedQuestionClientId(null);
+            setEditorMode("cards");
+          }}
+          onSelectQuestion={(questionClientId) => {
+            setSelectedQuestionClientId(questionClientId);
+            setEditorMode("question");
+          }}
+          onRequestDeleteQuestion={(sectionClientId, questionClientId, questionText) => {
+            persistence.setPendingDelete({
+              kind: "question",
+              sectionClientId,
+              questionClientId,
+              questionText,
+            });
+          }}
+          onUpdateSurveyHeader={builder.setHeaderField}
+          onSaveSurvey={persistence.handleSaveSurvey}
+          onSaveQuestion={persistence.saveQuestion}
+          onUpdateQuestion={builder.updateQuestion}
+          onSetQuestionType={builder.setQuestionType}
+          onAddOption={builder.addOption}
+          onUpdateOption={builder.updateOption}
+          onDeleteOption={builder.deleteOption}
+          onSetQuestionConfig={builder.setQuestionConfig}
+          onAddFollowUpQuestion={handleAddFollowUp}
+          onAddNestedFollowUpQuestion={handleAddNestedFollowUp}
+          onAddCondition={handleAddCondition}
+          onUpdateCondition={builder.updateCondition}
+          onDeleteCondition={builder.deleteCondition}
+          surveyTitle={builder.state.title}
+          surveyDescription={builder.state.description}
+          surveyTargetType={builder.state.targetType}
+          surveyLanguage={builder.state.language}
+        />
 
         <section className="w-[360px] shrink-0 overflow-y-auto p-4">
           <SurveyPreviewPanel
@@ -823,7 +612,7 @@ export function SurveyBuilderPage({
         onReorderOpenChange={(open) => { if (!open) persistence.setPendingReorder(null); }}
         onReorderConfirm={() => void persistence.confirmReorder()}
       />
-      <AlertDialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+      <AlertDialog open={leaveGuard.isLeaveDialogOpen} onOpenChange={leaveGuard.setIsLeaveDialogOpen}>
         <AlertDialogContent size="sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
@@ -832,8 +621,8 @@ export function SurveyBuilderPage({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleStayOnPage}>Stay here</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmLeave}>Leave page</AlertDialogAction>
+            <AlertDialogCancel onClick={leaveGuard.handleStayOnPage}>Stay here</AlertDialogCancel>
+            <AlertDialogAction onClick={leaveGuard.handleConfirmLeave}>Leave page</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
