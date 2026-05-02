@@ -389,15 +389,22 @@ export function SurveyBuilderPage({
   };
 
   const handleAddSectionSkipCondition = (sectionClientId: string) => {
-    const section = builder.state.sections.find((item) => item.clientId === sectionClientId);
-    if (!section || section.questions.length === 0) {
+    const sectionIndex = builder.state.sections.findIndex((item) => item.clientId === sectionClientId);
+    const section = sectionIndex >= 0 ? builder.state.sections[sectionIndex] : null;
+    const parentCandidates =
+      sectionIndex <= 0
+        ? []
+        : builder.state.sections
+            .slice(0, sectionIndex)
+            .flatMap((candidateSection) => candidateSection.questions);
+    if (!section || parentCandidates.length === 0) {
       sileo.warning({
-        title: "Add section questions first",
-        description: "Section skip rules need at least one question in the section.",
+        title: "Add prior section questions first",
+        description: "Section skip rules can reference questions from sections above this one.",
       });
       return;
     }
-    const parentQuestion = section.questions[0];
+    const parentQuestion = parentCandidates[0];
     const condition: SectionSkipCondition = {
       parentQuestionClientId: parentQuestion.clientId,
       operator: parentQuestion.questionType === "NUMBER" ? "GREATER_THAN" : "EQUALS",
@@ -611,6 +618,7 @@ export function SurveyBuilderPage({
           editorMode={editorMode}
           initialSurveyId={initialSurveyId}
           isTranslationMode={isTranslationMode}
+          sections={builder.state.sections}
           selectedSection={selectedSection}
           selectedQuestion={selectedQuestion}
           questionByClientId={questionByClientId}

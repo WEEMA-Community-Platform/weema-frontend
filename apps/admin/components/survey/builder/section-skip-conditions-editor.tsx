@@ -27,6 +27,7 @@ import {
 } from "./shared";
 
 type Props = {
+  sections: SurveySection[];
   section: SurveySection;
   questionByClientId: Map<string, SurveyQuestion>;
   onAddCondition: () => void;
@@ -38,13 +39,20 @@ type Props = {
 };
 
 export function SectionSkipConditionsEditor({
+  sections,
   section,
   questionByClientId,
   onAddCondition,
   onUpdateCondition,
   onDeleteCondition,
 }: Props) {
-  const parentCandidates = section.questions;
+  const selectedSectionIndex = sections.findIndex((item) => item.clientId === section.clientId);
+  const parentCandidates =
+    selectedSectionIndex <= 0
+      ? []
+      : sections
+          .slice(0, selectedSectionIndex)
+          .flatMap((candidateSection) => candidateSection.questions);
 
   return (
     <div className="space-y-2 rounded-lg border border-primary/10 bg-primary/5 p-3">
@@ -61,11 +69,18 @@ export function SectionSkipConditionsEditor({
         </Button>
       </div>
 
-      {section.skipConditions.length === 0 ? (
+      {parentCandidates.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No prior-section questions available. Skip rules can reference questions from sections above this one.
+        </p>
+      ) : null}
+
+      {parentCandidates.length > 0 && section.skipConditions.length === 0 ? (
         <p className="text-xs text-muted-foreground">No skip rules. This section is always shown.</p>
       ) : null}
 
-      {section.skipConditions.map((condition, index) => {
+      {parentCandidates.length > 0 &&
+      section.skipConditions.map((condition, index) => {
         const hasMultipleConditions = section.skipConditions.length > 1;
         const selectedParentQuestion = parentCandidates.find(
           (candidate) => candidate.clientId === condition.parentQuestionClientId

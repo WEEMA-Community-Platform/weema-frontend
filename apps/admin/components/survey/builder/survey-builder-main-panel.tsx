@@ -15,6 +15,7 @@ type Props = {
   editorMode: EditorMode;
   initialSurveyId: string | null;
   isTranslationMode: boolean;
+  sections: SurveySection[];
   selectedSection: SurveySection | null;
   selectedQuestion: SurveyQuestionWithContext | null;
   questionByClientId: Map<string, SurveyQuestionWithContext>;
@@ -58,6 +59,7 @@ export function SurveyBuilderMainPanel({
   editorMode,
   initialSurveyId,
   isTranslationMode,
+  sections,
   selectedSection,
   selectedQuestion,
   questionByClientId,
@@ -123,6 +125,7 @@ export function SurveyBuilderMainPanel({
         <div className="space-y-4">
           {selectedSection ? (
             <SectionSkipConditionsEditor
+              sections={sections}
               section={selectedSection}
               questionByClientId={questionByClientId}
               onAddCondition={() => onAddSectionSkipCondition(selectedSection.clientId)}
