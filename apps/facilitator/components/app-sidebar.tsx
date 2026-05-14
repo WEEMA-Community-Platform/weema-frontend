@@ -2,11 +2,11 @@
 
 import { useMemo } from "react"
 import {
-  Building2Icon,
   ClipboardListIcon,
   NetworkIcon,
 } from "lucide-react"
 import { useTranslations } from "next-intl"
+import Image from "next/image"
 import Link from "next/link"
 
 import { NavMain } from "@/components/nav-main"
@@ -62,8 +62,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           href="/?section=shg"
           className="flex items-center gap-2 rounded-md border border-primary/10 bg-card px-3 py-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:p-0"
         >
-          <div className="rounded-md bg-primary p-1.5 text-primary-foreground">
-            <Building2Icon className="size-4" />
+          <div className="relative size-7 overflow-hidden rounded-md border border-primary/10 bg-background">
+            <Image
+              src="/weemaNewLogo.png"
+              alt={tMeta("name")}
+              fill
+              sizes="28px"
+              className="object-contain p-1"
+              priority
+            />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <p className="text-sm font-semibold">{tMeta("name")}</p>

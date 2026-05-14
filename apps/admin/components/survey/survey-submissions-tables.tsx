@@ -66,6 +66,8 @@ type MemberSubmissionsTableCardProps = {
   selectedAssignmentName?: string;
   targetLabelSingular: string;
   targetLabelPlural: string;
+  titleOverride?: string;
+  emptyMessageOverride?: string;
   submissions: SurveySubmissionRecord[];
   loading: boolean;
   isError: boolean;
@@ -74,6 +76,7 @@ type MemberSubmissionsTableCardProps = {
   onPrimaryAction: (submission: SurveySubmissionRecord) => void;
   onLockSubmission: (submission: SurveySubmissionRecord) => void;
   onUnlockSubmission: (submission: SurveySubmissionRecord) => void;
+  showLockActions?: boolean;
   showSubmissionFilters?: boolean;
   hasActiveSubmissionFilters?: boolean;
   onOpenSubmissionFilters?: () => void;
@@ -87,6 +90,8 @@ export function MemberSubmissionsTableCard({
   selectedAssignmentName,
   targetLabelSingular,
   targetLabelPlural,
+  titleOverride,
+  emptyMessageOverride,
   submissions,
   loading,
   isError,
@@ -95,6 +100,7 @@ export function MemberSubmissionsTableCard({
   onPrimaryAction,
   onLockSubmission,
   onUnlockSubmission,
+  showLockActions = true,
   showSubmissionFilters = false,
   hasActiveSubmissionFilters = false,
   onOpenSubmissionFilters,
@@ -112,16 +118,19 @@ export function MemberSubmissionsTableCard({
     ? targetLabelSingular[0].toUpperCase() + targetLabelSingular.slice(1)
     : targetLabelSingular;
 
+  const columnCount = showLockActions ? 6 : 5;
+
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-primary/10 px-4 pb-4 pt-4">
         <CardTitle className="min-w-0 flex-1 text-base font-semibold leading-snug sm:text-lg">
-          {selectedAssignmentName
+          {titleOverride ||
+            (selectedAssignmentName
             ? t("titleWithAssignment", {
                 target: titleTargetLabel,
                 assignment: selectedAssignmentName,
               })
-            : t("title", { target: titleTargetLabel })}
+            : t("title", { target: titleTargetLabel }))}
         </CardTitle>
         {showSubmissionFilters || onExportSubmissions ? (
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 shrink-0">
@@ -178,21 +187,22 @@ export function MemberSubmissionsTableCard({
             t("columnStatus"),
             t("columnProgress"),
             t("columnSubmitted"),
-            t("columnLocked"),
+            ...(showLockActions ? [t("columnLocked")] : []),
             t("columnActions"),
           ]}
           loading={loading}
-          loadingColumnCount={6}
+          loadingColumnCount={columnCount}
           isError={isError}
           errorMessage={errorMessage}
           onRetry={onRetry}
           emptyState={
             <EmptyStateRow
-              colSpan={6}
+              colSpan={columnCount}
               message={
-                selectedAssignmentName
+                emptyMessageOverride ||
+                (selectedAssignmentName
                   ? t("emptyWithAssignment", { targets: targetLabelPlural })
-                  : t("empty", { targets: targetLabelPlural })
+                  : t("empty", { targets: targetLabelPlural }))
               }
             />
           }
@@ -239,9 +249,11 @@ export function MemberSubmissionsTableCard({
                 <TableCell className="text-sm text-muted-foreground">
                   {formatSubmissionDateTime(submission.submittedAt)}
                 </TableCell>
-                <TableCell>
-                  <LockedBadge locked={submission.locked ?? false} />
-                </TableCell>
+                {showLockActions ? (
+                  <TableCell>
+                    <LockedBadge locked={submission.locked ?? false} />
+                  </TableCell>
+                ) : null}
                 <TableCell className={tableActionsCellClass}>
                   <div className={tableRowActionsClass}>
                     <Button
@@ -254,7 +266,7 @@ export function MemberSubmissionsTableCard({
                     >
                       {actionLabel}
                     </Button>
-                    {submission.locked ? (
+                    {showLockActions && submission.locked ? (
                       <Button
                         type="button"
                         size="sm"
@@ -266,7 +278,7 @@ export function MemberSubmissionsTableCard({
                         <UnlockIcon className="size-3" />
                         {t("unlock")}
                       </Button>
-                    ) : (
+                    ) : showLockActions ? (
                       <Button
                         type="button"
                         size="sm"
@@ -278,7 +290,7 @@ export function MemberSubmissionsTableCard({
                         <LockIcon className="size-3" />
                         {t("lock")}
                       </Button>
-                    )}
+                    ) : null}
                   </div>
                 </TableCell>
               </TableRow>

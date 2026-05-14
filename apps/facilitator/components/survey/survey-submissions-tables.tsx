@@ -245,6 +245,8 @@ type MemberSubmissionsTableCardProps = {
   selectedAssignmentName?: string;
   targetLabelSingular: string;
   targetLabelPlural: string;
+  titleOverride?: string;
+  emptyMessageOverride?: string;
   submissions: SurveySubmissionRecord[];
   loading: boolean;
   isError: boolean;
@@ -257,6 +259,8 @@ export function MemberSubmissionsTableCard({
   selectedAssignmentName,
   targetLabelSingular,
   targetLabelPlural,
+  titleOverride,
+  emptyMessageOverride,
   submissions,
   loading,
   isError,
@@ -276,12 +280,13 @@ export function MemberSubmissionsTableCard({
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-primary/10 px-4 pb-4 pt-4">
         <CardTitle>
-          {selectedAssignmentName
+          {titleOverride ||
+            (selectedAssignmentName
             ? t("titleWithAssignment", {
                 target: titleTargetLabel,
                 assignment: selectedAssignmentName,
               })
-            : t("title", { target: titleTargetLabel })}
+            : t("title", { target: titleTargetLabel }))}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0 pb-0 pt-0">
@@ -303,9 +308,10 @@ export function MemberSubmissionsTableCard({
             <EmptyStateRow
               colSpan={5}
               message={
-                selectedAssignmentName
+                emptyMessageOverride ||
+                (selectedAssignmentName
                   ? t("emptyWithAssignment", { targets: targetLabelPlural })
-                  : t("empty", { targets: targetLabelPlural })
+                  : t("empty", { targets: targetLabelPlural }))
               }
             />
           }

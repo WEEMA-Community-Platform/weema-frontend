@@ -93,6 +93,21 @@ export type SurveySubmissionsBySurveyResponse = BaseApiResponse & {
   submissions: SurveySubmissionRecord[];
 };
 
+export type SurveyPendingTargetsResponse = BaseApiResponse & {
+  submissions: SurveySubmissionRecord[];
+};
+
+type SurveyPendingTargetRow = {
+  targetId: string;
+  targetName: string;
+  targetType: string;
+  assigneeId?: string | null;
+  assigneeName?: string | null;
+  location?: string | null;
+  contactInfo?: string | null;
+  status?: string | null;
+};
+
 export type SurveySubmissionsBySurveyQuery = {
   /** Backend query param: `shg-id` */
   shgId?: string;
@@ -384,6 +399,62 @@ export async function getSurveySubmissionsBySurveyId(
     message: payload.message,
     statusCode: payload.statusCode,
     submissions: normalizeAll(rows),
+  };
+}
+
+export async function getSurveyPendingTargetsBySurveyAssignee(
+  surveyId: string,
+  assigneeId: string
+): Promise<SurveyPendingTargetsResponse> {
+  const response = await fetch(
+    `/api/survey-submissions/survey/${surveyId}/assignee/${assigneeId}/pending-targets`,
+    {
+      cache: "no-store",
+    }
+  );
+  const payload = await parseResponse<
+    | SurveyPendingTargetsResponse
+    | (BaseApiResponse & { targets?: SurveySubmissionRecord[]; data?: SurveySubmissionRecord[] })
+  >(response);
+  if ("submissions" in payload && Array.isArray(payload.submissions)) {
+    return payload as SurveyPendingTargetsResponse;
+  }
+
+  const rows = Array.isArray((payload as { targets?: unknown[] }).targets)
+    ? ((payload as { targets: SurveyPendingTargetRow[] }).targets ?? [])
+    : Array.isArray((payload as { data?: unknown[] }).data)
+      ? ((payload as { data: SurveyPendingTargetRow[] }).data ?? [])
+      : [];
+
+  const mapped: SurveySubmissionRecord[] = rows.map((row) => ({
+    id: "",
+    surveyAssignmentId: row.assigneeId ?? "",
+    surveyId,
+    surveyTitle: "",
+    memberId: row.targetId,
+    memberName: row.targetName,
+    selfHelpGroupId: row.assigneeId ?? null,
+    selfHelpGroupName: row.assigneeName ?? null,
+    clusterId: null,
+    clusterName: null,
+    submissionStatus: "NOT_STARTED",
+    startedAt: null,
+    submittedAt: null,
+    totalQuestions: 0,
+    answeredQuestions: 0,
+    answers: [],
+    locked: false,
+    targetId: row.targetId,
+    targetName: row.targetName,
+    targetType: row.targetType,
+    createdAt: undefined,
+    updatedAt: undefined,
+  }));
+
+  return {
+    message: payload.message,
+    statusCode: payload.statusCode,
+    submissions: mapped,
   };
 }
 

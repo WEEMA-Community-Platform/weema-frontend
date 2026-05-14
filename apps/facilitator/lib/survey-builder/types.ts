@@ -76,6 +76,7 @@ export type SurveyOption = {
   clientId: string;
   text: string;
   value?: string;
+  isExclusive?: boolean;
   orderNo: number;
 };
 
@@ -87,6 +88,8 @@ export type ShowCondition = {
   expectedValue?: string;
   logicType: ConditionLogicType;
 };
+
+export type SectionSkipCondition = ShowCondition;
 
 export type SurveyQuestion = {
   id?: string;
@@ -107,6 +110,7 @@ export type SurveySection = {
   description: string;
   orderNo: number;
   questions: SurveyQuestion[];
+  skipConditions: SectionSkipCondition[];
 };
 
 export type SurveyBuilderState = {

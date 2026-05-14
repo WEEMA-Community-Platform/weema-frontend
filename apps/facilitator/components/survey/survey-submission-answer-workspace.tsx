@@ -13,7 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { SurveySubmissionAnswer, SurveySubmissionRecord } from "@/lib/api/surveys";
-import type { JsonQuestionConfig, NumberQuestionConfig } from "@/lib/survey-builder/types";
+import type {
+  ConditionOperator,
+  JsonQuestionConfig,
+  NumberQuestionConfig,
+} from "@/lib/survey-builder/types";
 import { isJsonQuestionConfig, isNumberQuestionConfig } from "@/lib/survey-builder/types";
 import {
   useSaveSurveySubmissionAnswerMutation,
@@ -24,20 +28,43 @@ import {
 export type QuestionTemplate = {
   key: string;
   questionId?: string;
+  questionClientId: string;
+  sectionKey: string;
   questionText: string;
   questionType: string;
   questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
-  options: Array<{ id?: string; text: string }>;
+  options: Array<{ id?: string; clientId: string; text: string; isExclusive?: boolean }>;
+  showConditions: Array<{
+    parentQuestionRef: string;
+    operator: ConditionOperator;
+    optionRef?: string;
+    expectedValue?: string;
+    logicType: "AND" | "OR";
+  }>;
+};
+
+export type SectionTemplate = {
+  key: string;
+  skipConditions: Array<{
+    parentQuestionRef: string;
+    operator: ConditionOperator;
+    optionRef?: string;
+    expectedValue?: string;
+    logicType: "AND" | "OR";
+  }>;
 };
 
 type WorkspaceQuestion = {
   key: string;
   answer?: SurveySubmissionAnswer;
   questionId?: string;
+  questionClientId: string;
+  sectionKey: string;
   questionText: string;
   questionType: string;
   questionConfig?: JsonQuestionConfig | NumberQuestionConfig;
-  options: Array<{ id?: string; text: string }>;
+  options: Array<{ id?: string; clientId: string; text: string; isExclusive?: boolean }>;
+  showConditions: QuestionTemplate["showConditions"];
 };
 
 type AnswerDraft = {
@@ -45,7 +72,9 @@ type AnswerDraft = {
   numberValue: string;
   dateValue: string;
   booleanValue: "true" | "false" | "";
+  singleChoiceOptionId: string;
   singleChoiceValue: string;
+  multiChoiceOptionIds: string[];
   multiChoiceValue: string;
   jsonValue: unknown;
 };
@@ -162,7 +191,11 @@ function getInitialDraft(answer: SurveySubmissionAnswer): AnswerDraft {
         : answer.answerBoolean
           ? "true"
           : "false",
+    singleChoiceOptionId: answer.selectedOptions[0]?.optionId ?? "",
     singleChoiceValue: answer.selectedOptions[0]?.optionText ?? "",
+    multiChoiceOptionIds: answer.selectedOptions
+      .map((option) => option.optionId)
+      .filter((optionId): optionId is string => Boolean(optionId)),
     multiChoiceValue: answer.selectedOptions.map((option) => option.optionText).join(", "),
     jsonValue:
       answer.answerJson !== null && answer.answerJson !== undefined ? deepClone(answer.answerJson) : null,
@@ -194,10 +227,194 @@ function getInitialDraftFromQuestion(question: WorkspaceQuestion): AnswerDraft {
     numberValue: "",
     dateValue: "",
     booleanValue: "",
+    singleChoiceOptionId: "",
     singleChoiceValue: "",
+    multiChoiceOptionIds: [],
     multiChoiceValue: "",
     jsonValue,
   };
+}
+
+function toNormalized(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function resolveQuestionByRef(
+  questions: WorkspaceQuestion[],
+  questionRef: string
+): WorkspaceQuestion | undefined {
+  const ref = questionRef.trim();
+  if (!ref) return undefined;
+  return questions.find(
+    (question) =>
+      question.questionId === ref || question.questionClientId === ref || question.key === ref
+  );
+}
+
+function resolveOptionKeysByRef(question: WorkspaceQuestion, optionRef: string): string[] {
+  const ref = optionRef.trim();
+  if (!ref) return [];
+  const option = question.options.find(
+    (entry) => entry.id === ref || entry.clientId === ref
+  );
+  if (!option) return [];
+  const keys = [option.id, option.clientId, option.text].filter(
+    (value): value is string => Boolean(value && value.trim())
+  );
+  return Array.from(new Set(keys.map((key) => toNormalized(key))));
+}
+
+function getSelectedOptionKeys(question: WorkspaceQuestion, draft: AnswerDraft): Set<string> {
+  const keys = new Set<string>();
+  const add = (value?: string) => {
+    if (!value) return;
+    const normalized = toNormalized(value);
+    if (normalized) keys.add(normalized);
+  };
+
+  if (question.questionType.toUpperCase() === "SINGLE_CHOICE") {
+    if (draft.singleChoiceOptionId) add(draft.singleChoiceOptionId);
+    if (draft.singleChoiceValue.trim()) add(draft.singleChoiceValue);
+    const matched = question.options.find(
+      (option) =>
+        option.id === draft.singleChoiceOptionId ||
+        option.clientId === draft.singleChoiceOptionId ||
+        toNormalized(option.text) === toNormalized(draft.singleChoiceValue)
+    );
+    if (matched) {
+      add(matched.id);
+      add(matched.clientId);
+      add(matched.text);
+    }
+    return keys;
+  }
+
+  if (question.questionType.toUpperCase() === "MULTIPLE_CHOICE") {
+    for (const optionId of draft.multiChoiceOptionIds) {
+      add(optionId);
+      const matched = question.options.find(
+        (option) => option.id === optionId || option.clientId === optionId
+      );
+      if (matched) {
+        add(matched.id);
+        add(matched.clientId);
+        add(matched.text);
+      }
+    }
+    for (const value of draft.multiChoiceValue.split(",")) {
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      add(trimmed);
+      const matched = question.options.find((option) => toNormalized(option.text) === toNormalized(trimmed));
+      if (matched) {
+        add(matched.id);
+        add(matched.clientId);
+      }
+    }
+  }
+
+  return keys;
+}
+
+function evaluateSingleCondition(
+  condition: {
+    parentQuestionRef: string;
+    operator: ConditionOperator;
+    optionRef?: string;
+    expectedValue?: string;
+  },
+  questions: WorkspaceQuestion[],
+  getDraft: (question: WorkspaceQuestion) => AnswerDraft
+): boolean {
+  const parentQuestion = resolveQuestionByRef(questions, condition.parentQuestionRef);
+  if (!parentQuestion) return false;
+  const draft = getDraft(parentQuestion);
+  const operator = condition.operator;
+  const expected = condition.expectedValue;
+
+  if (condition.optionRef) {
+    const selected = getSelectedOptionKeys(parentQuestion, draft);
+    const optionKeys = resolveOptionKeysByRef(parentQuestion, condition.optionRef);
+    const matched = optionKeys.some((optionKey) => selected.has(optionKey));
+    if (operator === "NOT_EQUALS") return !matched;
+    return matched;
+  }
+
+  const type = parentQuestion.questionType.toUpperCase();
+  if (type === "BOOLEAN") {
+    const actual = draft.booleanValue;
+    const target = toNormalized(expected);
+    const eq = toNormalized(actual) === target;
+    if (operator === "NOT_EQUALS") return !eq;
+    return eq;
+  }
+
+  if (type === "NUMBER") {
+    const actual = Number(draft.numberValue);
+    const target = Number(expected);
+    if (!Number.isFinite(actual) || !Number.isFinite(target)) return false;
+    if (operator === "GREATER_THAN") return actual > target;
+    if (operator === "LESS_THAN") return actual < target;
+    if (operator === "NOT_EQUALS") return actual !== target;
+    return actual === target;
+  }
+
+  if (type === "MULTIPLE_CHOICE") {
+    const selected = getSelectedOptionKeys(parentQuestion, draft);
+    const target = toNormalized(expected);
+    if (!target) {
+      if (operator === "NOT_EQUALS") return selected.size === 0;
+      return selected.size > 0;
+    }
+    const contains = selected.has(target);
+    if (operator === "CONTAINS") return contains;
+    if (operator === "NOT_EQUALS") return !contains;
+    return contains;
+  }
+
+  if (type === "SINGLE_CHOICE") {
+    const selected = getSelectedOptionKeys(parentQuestion, draft);
+    const target = toNormalized(expected);
+    if (!target) {
+      if (operator === "NOT_EQUALS") return selected.size === 0;
+      return selected.size > 0;
+    }
+    const contains = selected.has(target);
+    if (operator === "NOT_EQUALS") return !contains;
+    return contains;
+  }
+
+  const actualText =
+    type === "DATE"
+      ? draft.dateValue.trim()
+      : draft.textValue.trim();
+  const actual = toNormalized(actualText);
+  const target = toNormalized(expected);
+
+  if (operator === "CONTAINS") return actual.includes(target);
+  if (operator === "NOT_EQUALS") return actual !== target;
+  return actual === target;
+}
+
+function evaluateConditionGroup(
+  conditions: Array<{
+    parentQuestionRef: string;
+    operator: ConditionOperator;
+    optionRef?: string;
+    expectedValue?: string;
+    logicType: "AND" | "OR";
+  }>,
+  questions: WorkspaceQuestion[],
+  getDraft: (question: WorkspaceQuestion) => AnswerDraft
+): boolean {
+  if (conditions.length === 0) return true;
+  let current = evaluateSingleCondition(conditions[0], questions, getDraft);
+  for (let i = 1; i < conditions.length; i += 1) {
+    const condition = conditions[i];
+    const next = evaluateSingleCondition(condition, questions, getDraft);
+    current = condition.logicType === "OR" ? current || next : current && next;
+  }
+  return current;
 }
 
 function SubmissionStatusBadge({ status }: { status: string }) {
@@ -514,6 +731,15 @@ function QuestionAnswerEditor({
   const numberHintId = useId();
   const numberErrorId = useId();
   const options = question.options;
+  const exclusiveOptionIds = new Set(
+    options
+      .map((option, optionIndex) => ({
+        optionId: option.id ?? option.clientId ?? `${question.key}-multi-${optionIndex}`,
+        isExclusive: Boolean(option.isExclusive),
+      }))
+      .filter((entry) => entry.isExclusive)
+      .map((entry) => entry.optionId)
+  );
   return (
     <div className="rounded-xl border border-primary/10 bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -609,8 +835,17 @@ function QuestionAnswerEditor({
           ) : type === "SINGLE_CHOICE" ? (
             options.length > 0 ? (
               <Select
-                value={draft.singleChoiceValue || undefined}
-                onValueChange={(value) => onDraftChange({ singleChoiceValue: value })}
+                value={draft.singleChoiceOptionId || undefined}
+                onValueChange={(value) => {
+                  const selected = options.find(
+                    (option, optionIndex) =>
+                      (option.id ?? option.clientId ?? `${question.key}-single-${optionIndex}`) === value
+                  );
+                  onDraftChange({
+                    singleChoiceOptionId: value,
+                    singleChoiceValue: selected?.text ?? "",
+                  });
+                }}
               >
                 <SelectTrigger className="h-11 max-w-lg text-sm">
                   <SelectValue placeholder={t("selectOption")} />
@@ -618,8 +853,8 @@ function QuestionAnswerEditor({
                 <SelectContent>
                   {options.map((option, optionIndex) => (
                     <SelectItem
-                      key={option.id ?? `${question.key}-single-${optionIndex}`}
-                      value={option.text}
+                      key={option.id ?? option.clientId ?? `${question.key}-single-${optionIndex}`}
+                      value={option.id ?? option.clientId ?? `${question.key}-single-${optionIndex}`}
                     >
                       {option.text || t("optionIndex", { index: optionIndex + 1 })}
                     </SelectItem>
@@ -630,7 +865,12 @@ function QuestionAnswerEditor({
               <Input
                 className="h-11 max-w-lg text-sm"
                 value={draft.singleChoiceValue}
-                onChange={(event) => onDraftChange({ singleChoiceValue: event.target.value })}
+                onChange={(event) =>
+                  onDraftChange({
+                    singleChoiceOptionId: "",
+                    singleChoiceValue: event.target.value,
+                  })
+                }
                 placeholder={t("enterOption")}
               />
             )
@@ -638,33 +878,55 @@ function QuestionAnswerEditor({
             options.length > 0 ? (
               <div className="grid max-w-xl gap-2 sm:grid-cols-2">
                 {options.map((option, optionIndex) => {
-                  const text =
-                    option.text || t("optionIndex", { index: optionIndex + 1 });
-                  const selected = draft.multiChoiceValue
-                    .split(",")
-                    .map((item) => item.trim())
-                    .filter(Boolean)
-                    .includes(text);
+                  const optionId = option.id ?? option.clientId ?? `${question.key}-multi-${optionIndex}`;
+                  const text = option.text || t("optionIndex", { index: optionIndex + 1 });
+                  const selected = draft.multiChoiceOptionIds.includes(optionId);
+                  const hasSelectedExclusive = draft.multiChoiceOptionIds.some((id) =>
+                    exclusiveOptionIds.has(id)
+                  );
+                  const hasSelectedNonExclusive = draft.multiChoiceOptionIds.some(
+                    (id) => !exclusiveOptionIds.has(id)
+                  );
+                  const isDisabled = option.isExclusive
+                    ? hasSelectedNonExclusive && !selected
+                    : hasSelectedExclusive && !selected;
                   return (
                     <label
-                      key={option.id ?? `${question.key}-multi-${optionIndex}`}
-                      className="flex items-center gap-2 rounded-lg border border-primary/15 px-3 py-2 text-sm"
+                      key={optionId}
+                      className={`flex items-center gap-2 rounded-lg border border-primary/15 px-3 py-2 text-sm ${
+                        isDisabled ? "opacity-60" : ""
+                      }`}
                     >
                       <input
                         type="checkbox"
                         checked={selected}
+                        disabled={isDisabled}
                         onChange={(event) => {
-                          const current = draft.multiChoiceValue
-                            .split(",")
-                            .map((item) => item.trim())
-                            .filter(Boolean);
-                          const next = event.target.checked
-                            ? Array.from(new Set([...current, text]))
-                            : current.filter((item) => item !== text);
-                          onDraftChange({ multiChoiceValue: next.join(", ") });
+                          const current = draft.multiChoiceOptionIds;
+                          const nextSelectedIds = event.target.checked
+                            ? option.isExclusive
+                              ? [optionId]
+                              : [...current.filter((id) => !exclusiveOptionIds.has(id)), optionId]
+                            : current.filter((id) => id !== optionId);
+                          const selectedTexts = options
+                            .map((item, idx) => ({
+                              optionId: item.id ?? item.clientId ?? `${question.key}-multi-${idx}`,
+                              text: item.text || t("optionIndex", { index: idx + 1 }),
+                            }))
+                            .filter((item) => nextSelectedIds.includes(item.optionId))
+                            .map((item) => item.text);
+                          onDraftChange({
+                            multiChoiceOptionIds: nextSelectedIds,
+                            multiChoiceValue: selectedTexts.join(", "),
+                          });
                         }}
                       />
                       <span>{text}</span>
+                      {option.isExclusive ? (
+                        <span className="rounded-md border border-amber-300/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                          Exclusive
+                        </span>
+                      ) : null}
                     </label>
                   );
                 })}
@@ -719,12 +981,16 @@ function isQuestionAnswered(question: WorkspaceQuestion, draft: AnswerDraft): bo
   }
   if (type === "DATE") return draft.dateValue.trim() !== "";
   if (type === "BOOLEAN") return draft.booleanValue !== "";
-  if (type === "SINGLE_CHOICE") return draft.singleChoiceValue.trim() !== "";
-  if (type === "MULTIPLE_CHOICE")
+  if (type === "SINGLE_CHOICE") {
+    return Boolean(draft.singleChoiceOptionId || draft.singleChoiceValue.trim());
+  }
+  if (type === "MULTIPLE_CHOICE") {
+    if (draft.multiChoiceOptionIds.length > 0) return true;
     return draft.multiChoiceValue
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean).length > 0;
+  }
   if (type === "JSON") {
     if (Array.isArray(draft.jsonValue)) return draft.jsonValue.length > 0;
     if (isRecord(draft.jsonValue)) return Object.keys(draft.jsonValue).length > 0;
@@ -769,6 +1035,13 @@ function buildSubmissionAnswerPayload(question: WorkspaceQuestion, draft: Answer
   }
 
   if (type === "SINGLE_CHOICE") {
+    if (draft.singleChoiceOptionId) {
+      const selectedById = question.options.find(
+        (option) => option.id === draft.singleChoiceOptionId || option.clientId === draft.singleChoiceOptionId
+      );
+      payload.selectedOptionIds = selectedById?.id ? [selectedById.id] : [];
+      return payload;
+    }
     const selected = question.options.find(
       (option) => option.text.trim().toLowerCase() === draft.singleChoiceValue.trim().toLowerCase()
     );
@@ -777,6 +1050,16 @@ function buildSubmissionAnswerPayload(question: WorkspaceQuestion, draft: Answer
   }
 
   if (type === "MULTIPLE_CHOICE") {
+    if (draft.multiChoiceOptionIds.length > 0) {
+      payload.selectedOptionIds = question.options
+        .filter(
+          (option) =>
+            option.id &&
+            draft.multiChoiceOptionIds.some((selectedId) => selectedId === option.id || selectedId === option.clientId)
+        )
+        .map((option) => option.id as string);
+      return payload;
+    }
     const selectedTexts = draft.multiChoiceValue
       .split(",")
       .map((item) => item.trim().toLowerCase())
@@ -799,12 +1082,14 @@ function buildSubmissionAnswerPayload(question: WorkspaceQuestion, draft: Answer
 export function SurveySubmissionAnswerWorkspace({
   submission,
   targetLabelSingular,
+  sectionTemplates,
   questionTemplates,
   onBackToTable,
   onSubmissionUpdated,
 }: {
   submission: SurveySubmissionRecord;
   targetLabelSingular?: string;
+  sectionTemplates: SectionTemplate[];
   questionTemplates: QuestionTemplate[];
   onBackToTable: () => void;
   onSubmissionUpdated?: () => Promise<unknown> | void;
@@ -830,10 +1115,13 @@ export function SurveySubmissionAnswerWorkspace({
       key: template.key,
       answer: template.questionId ? answerByQuestionId.get(template.questionId) : undefined,
       questionId: template.questionId,
+      questionClientId: template.questionClientId,
+      sectionKey: template.sectionKey,
       questionText: template.questionText,
       questionType: template.questionType,
       questionConfig: template.questionConfig,
       options: template.options,
+      showConditions: template.showConditions,
     }));
     const knownQuestionIds = new Set(
       questionTemplates.map((template) => template.questionId).filter((id): id is string => Boolean(id))
@@ -844,19 +1132,21 @@ export function SurveySubmissionAnswerWorkspace({
         key: answer.id,
         answer,
         questionId: answer.questionId,
+        questionClientId: answer.questionId,
+        sectionKey: "__orphans__",
         questionText: answer.questionText,
         questionType: answer.questionType,
         questionConfig: undefined,
-        options: answer.selectedOptions.map((option) => ({ id: option.optionId, text: option.optionText })),
+        options: answer.selectedOptions.map((option) => ({
+          id: option.optionId,
+          clientId: option.optionId || option.optionText,
+          text: option.optionText,
+          isExclusive: false,
+        })),
+        showConditions: [],
       }));
     return [...baseQuestions, ...orphanAnswers];
   }, [questionTemplates, submission.answers]);
-
-  const totalQuestions = questions.length;
-  const totalPages = Math.max(1, Math.ceil(totalQuestions / ANSWERS_PAGE_SIZE));
-  const currentPage = Math.min(answersPage, totalPages);
-  const startIndex = (currentPage - 1) * ANSWERS_PAGE_SIZE;
-  const pageQuestions = questions.slice(startIndex, startIndex + ANSWERS_PAGE_SIZE);
 
   const getDraft = (question: WorkspaceQuestion): AnswerDraft => {
     return {
@@ -879,6 +1169,41 @@ export function SurveySubmissionAnswerWorkspace({
     }));
   };
 
+  const sectionByKey = useMemo(() => {
+    return new Map(sectionTemplates.map((section) => [section.key, section] as const));
+  }, [sectionTemplates]);
+
+  const visibleQuestions = useMemo(() => {
+    const resolveDraft = (question: WorkspaceQuestion): AnswerDraft => ({
+      ...getInitialDraftFromQuestion(question),
+      ...(draftOverrides[question.key] ?? {}),
+    });
+    const isQuestionVisible = (question: WorkspaceQuestion) => {
+      return question.showConditions.length === 0
+        ? true
+        : evaluateConditionGroup(question.showConditions, questions, resolveDraft);
+    };
+
+    const isSectionVisible = (sectionKey: string) => {
+      const section = sectionByKey.get(sectionKey);
+      if (!section || section.skipConditions.length === 0) return true;
+      const shouldSkip = evaluateConditionGroup(section.skipConditions, questions, resolveDraft);
+      return !shouldSkip;
+    };
+
+    return questions.filter((question) => {
+      if (!isSectionVisible(question.sectionKey)) return false;
+      if (!isQuestionVisible(question)) return false;
+      return true;
+    });
+  }, [questions, draftOverrides, sectionByKey]);
+
+  const totalQuestions = visibleQuestions.length;
+  const totalPages = Math.max(1, Math.ceil(totalQuestions / ANSWERS_PAGE_SIZE));
+  const currentPage = Math.min(answersPage, totalPages);
+  const startIndex = (currentPage - 1) * ANSWERS_PAGE_SIZE;
+  const pageQuestions = visibleQuestions.slice(startIndex, startIndex + ANSWERS_PAGE_SIZE);
+
   const isSaving = saveAnswerMutation.isPending || updateAnswerMutation.isPending;
   const isSubmitting = submitSubmissionMutation.isPending;
   const dirtyCount = Object.keys(dirtyQuestionKeys).length;
@@ -886,7 +1211,7 @@ export function SurveySubmissionAnswerWorkspace({
     submission.targetName ||
     submission.memberName ||
     t("unknownTarget", { target: resolvedTargetLabel });
-  const allQuestionsCompleted = questions.every((question) =>
+  const allQuestionsCompleted = visibleQuestions.every((question) =>
     isQuestionAnswered(question, getDraft(question))
   );
 

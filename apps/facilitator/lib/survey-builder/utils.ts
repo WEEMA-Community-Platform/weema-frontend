@@ -90,6 +90,7 @@ export function createEmptySection(orderNo = 1): SurveySection {
     description: "",
     orderNo,
     questions: [],
+    skipConditions: [],
   };
 }
 

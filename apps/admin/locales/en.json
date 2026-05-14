@@ -998,6 +998,17 @@
     "submissions": {
       "backToSurveys": "Back to surveys",
       "loadError": "Failed to load pending targets.",
+      "tabs": {
+        "submissions": "Submissions",
+        "startSubmission": "Start submission"
+      },
+      "pending": {
+        "title": "Pending start submissions",
+        "loadError": "Failed to load pending start targets.",
+        "empty": "No pending targets to start.",
+        "selectAssignee": "No assigned self-help group found for this survey.",
+        "assigneePlaceholder": "Select self-help group"
+      },
       "filters": {
         "title": "Filter submissions",
         "description": "Narrow submissions by self-help group. Changes apply when you click Apply filters.",

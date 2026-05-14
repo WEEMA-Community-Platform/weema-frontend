@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   SurveySubmissionAnswerWorkspace,
+  type SectionTemplate,
   type QuestionTemplate,
 } from "@/components/survey/survey-submission-answer-workspace";
 import type { SurveySubmissionRecord } from "@/lib/api/surveys";
@@ -19,6 +20,7 @@ type SubmissionWorkspacePanelProps = {
   errorMessage?: string;
   targetLabelSingular?: string;
   selectedSubmission: SurveySubmissionRecord | null;
+  sectionTemplates: SectionTemplate[];
   questionTemplates: QuestionTemplate[];
   onRetry: () => void;
   onBackToTable: () => void;
@@ -32,6 +34,7 @@ export function SubmissionWorkspacePanel({
   errorMessage,
   targetLabelSingular,
   selectedSubmission,
+  sectionTemplates,
   questionTemplates,
   onRetry,
   onBackToTable,
@@ -110,6 +113,7 @@ export function SubmissionWorkspacePanel({
       key={selectedSubmission.id}
       submission={selectedSubmission}
       targetLabelSingular={resolvedTarget}
+      sectionTemplates={sectionTemplates}
       questionTemplates={questionTemplates}
       onBackToTable={onBackToTable}
       onSubmissionUpdated={onSubmissionUpdated}

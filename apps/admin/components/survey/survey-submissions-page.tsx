@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
@@ -22,11 +22,8 @@ import { type QuestionTemplate } from "@/components/survey/survey-submission-ans
 import { SubmissionWorkspacePanel } from "@/components/survey/survey-submission-workspace-panel";
 import { MemberSubmissionsTableCard } from "@/components/survey/survey-submissions-tables";
 import {
-  SurveySubmissionsFiltersDialog,
-  type SurveySubmissionsAppliedFilters,
-} from "@/components/survey/survey-submissions-filters-dialog";
-import {
   useLockSurveySubmissionMutation,
+  useSurveyPendingTargetsByAssigneeQuery,
   useStartSurveySubmissionMutation,
   useUnlockSurveySubmissionMutation,
   useSurveyAssignmentTargetsQuery,
@@ -194,26 +191,49 @@ export function SurveySubmissionsPage({
   const tCommonBase = useTranslations("basedata.common");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
-  const filterShgId = searchParams.get("shgId") ?? "";
+  const activeTab = searchParams.get("tab") === "start" ? "start" : "submissions";
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
-  const [isSubmissionFilterOpen, setIsSubmissionFilterOpen] = useState(false);
   const [exportSubmissionsPending, setExportSubmissionsPending] = useState(false);
 
   const surveyDetailQuery = useSurveyDetailQuery(surveyId);
   const surveyTargetTypeFromDetail = surveyDetailQuery.data?.survey?.targetType;
   const submissionFiltersEligible = surveyTargetType.trim().toUpperCase() === "MEMBER";
 
-  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId, {
-    shgId: submissionFiltersEligible ? filterShgId.trim() || undefined : undefined,
-  });
+  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
   const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(
     surveyId,
     {},
     { enabled: Boolean(surveyId) && !selectedSubmissionId }
   );
+  const assigneeOptions = useMemo(() => {
+    if (!submissionFiltersEligible) return [];
+    const byId = new Map<string, string>();
+    const ad = assignmentTargetsQuery.data?.assignmentData;
+    const assigned = ad?.assignedTargets ?? [];
+    for (const row of assigned) {
+      byId.set(row.id, row.name);
+    }
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [assignmentTargetsQuery.data?.assignmentData, submissionFiltersEligible]);
+  const resolvedAssigneeId = assigneeOptions[0]?.id ?? null;
+  const pendingTargetsQuery = useSurveyPendingTargetsByAssigneeQuery(
+    surveyId,
+    submissionFiltersEligible ? resolvedAssigneeId : null,
+    {
+      enabled:
+        Boolean(surveyId) &&
+        !selectedSubmissionId &&
+        activeTab === "start" &&
+        submissionFiltersEligible &&
+        Boolean(resolvedAssigneeId),
+    }
+  );
 
   const submissions = submissionsQuery.data?.submissions ?? [];
+  const pendingSubmissions = pendingTargetsQuery.data?.submissions ?? [];
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
@@ -253,55 +273,14 @@ export function SurveySubmissionsPage({
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const shgFilterOptions = useMemo(() => {
-    if (!submissionFiltersEligible) return [];
-    const byId = new Map<string, string>();
-    const ad = assignmentTargetsQuery.data?.assignmentData;
-    const assigned =
-      ad?.assignedTargets && ad.assignedTargets.length > 0
-        ? ad.assignedTargets
-        : ad?.assignedSelfHelpGroups && ad.assignedSelfHelpGroups.length > 0
-          ? ad.assignedSelfHelpGroups
-          : [];
-    for (const row of assigned) {
-      byId.set(row.id, row.name);
-    }
-    const rows = submissionsQuery.data?.submissions ?? [];
-    for (const s of rows) {
-      const id = s.selfHelpGroupId;
-      if (id) byId.set(id, s.selfHelpGroupName || id);
-    }
-    if (filterShgId && !byId.has(filterShgId)) {
-      byId.set(filterShgId, filterShgId);
-    }
-    return [...byId.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [assignmentTargetsQuery.data?.assignmentData, submissionFiltersEligible, submissionsQuery.data?.submissions, filterShgId]);
-
-  const setShgFilter = (nextId: string) => {
+  const setActiveTab = (nextTab: "submissions" | "start") => {
     const next = new URLSearchParams(searchParams.toString());
-    if (nextId) next.set("shgId", nextId);
-    else next.delete("shgId");
+    next.set("tab", nextTab);
+    next.delete("submissionId");
+    next.delete("targetName");
+    next.delete("memberName");
+    next.delete("view");
     setRouteSearch(next);
-  };
-
-  useEffect(() => {
-    if (!submissionFiltersEligible) {
-      if (filterShgId) setShgFilter("");
-      setIsSubmissionFilterOpen(false);
-    }
-  }, [submissionFiltersEligible, filterShgId]);
-
-  const hasActiveSubmissionFilters = submissionFiltersEligible && Boolean(filterShgId);
-  const appliedSubmissionFilters: SurveySubmissionsAppliedFilters = useMemo(
-    () => ({ shgId: filterShgId }),
-    [filterShgId]
-  );
-
-  const applySubmissionFilters = (filters: SurveySubmissionsAppliedFilters) => {
-    setShgFilter(filters.shgId);
-    setIsSubmissionFilterOpen(false);
   };
 
   const submissionExportHeaders = useMemo(
@@ -334,9 +313,7 @@ export function SurveySubmissionsPage({
   const handleExportSubmissions = async () => {
     setExportSubmissionsPending(true);
     try {
-      const { data } = await exportSurveySubmissionsBySurveyId(surveyId, {
-        shgId: submissionFiltersEligible ? filterShgId.trim() || undefined : undefined,
-      });
+      const { data } = await exportSurveySubmissionsBySurveyId(surveyId);
       if (data.length === 0) {
         sileo.warning({
           title: tExportSubmissions("emptyTitle"),
@@ -436,17 +413,39 @@ export function SurveySubmissionsPage({
           <ArrowLeftIcon className="size-4" />
           {tPage("backToSurveys")}
         </Button>
+        {submissionFiltersEligible && !selectedSubmissionId ? (
+          <div className="inline-flex items-center rounded-xl border border-primary/20 bg-background p-1">
+            <div className="inline-flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className={`h-9 rounded-lg px-3 text-sm font-medium transition-colors ${
+                  activeTab === "submissions"
+                    ? "border border-primary/25 bg-primary/12 text-primary"
+                    : "border border-transparent text-muted-foreground hover:bg-primary/8 hover:text-primary"
+                }`}
+                onClick={() => setActiveTab("submissions")}
+              >
+                {tPage("tabs.submissions")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className={`h-9 rounded-lg px-3 text-sm font-medium transition-colors ${
+                  activeTab === "start"
+                    ? "border border-primary/25 bg-primary/12 text-primary"
+                    : "border border-transparent text-muted-foreground hover:bg-primary/8 hover:text-primary"
+                }`}
+                onClick={() => setActiveTab("start")}
+              >
+                {tPage("tabs.startSubmission")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
-
-      {submissionFiltersEligible ? (
-        <SurveySubmissionsFiltersDialog
-          open={isSubmissionFilterOpen}
-          onOpenChange={setIsSubmissionFilterOpen}
-          applied={appliedSubmissionFilters}
-          onApply={applySubmissionFilters}
-          shgOptions={shgFilterOptions}
-        />
-      ) : null}
 
       {selectedSubmissionId ? (
         <SubmissionWorkspacePanel
@@ -460,8 +459,40 @@ export function SurveySubmissionsPage({
           onRetry={() => detailQuery.refetch()}
           onBackToTable={backToTable}
           onSubmissionUpdated={async () => {
-            await Promise.all([detailQuery.refetch(), submissionsQuery.refetch()]);
+            await Promise.all([
+              detailQuery.refetch(),
+              submissionsQuery.refetch(),
+              pendingTargetsQuery.refetch(),
+            ]);
           }}
+        />
+      ) : activeTab === "start" ? (
+        <MemberSubmissionsTableCard
+          titleOverride={tPage("pending.title")}
+          emptyMessageOverride={
+            resolvedAssigneeId
+              ? tPage("pending.empty")
+              : tPage("pending.selectAssignee")
+          }
+          targetLabelSingular={targetLabelSingular}
+          targetLabelPlural={targetLabelPlural}
+          submissions={pendingSubmissions}
+          loading={pendingTargetsQuery.isLoading}
+          isError={pendingTargetsQuery.isError}
+          errorMessage={
+            pendingTargetsQuery.error instanceof Error
+              ? pendingTargetsQuery.error.message
+              : tPage("pending.loadError")
+          }
+          onRetry={() => pendingTargetsQuery.refetch()}
+          onPrimaryAction={(submission) => void handlePrimaryAction(submission)}
+          onLockSubmission={() => undefined}
+          onUnlockSubmission={() => undefined}
+          showLockActions={false}
+          exportSubmissionsLabel={undefined}
+          exportSubmissionsPendingLabel={undefined}
+          exportSubmissionsPending={false}
+          onExportSubmissions={undefined}
         />
       ) : (
         <>
@@ -484,9 +515,6 @@ export function SurveySubmissionsPage({
             onUnlockSubmission={(submission) =>
               setPendingSubmissionLock({ submission, action: "unlock" })
             }
-            showSubmissionFilters={submissionFiltersEligible && shgFilterOptions.length > 0}
-            hasActiveSubmissionFilters={hasActiveSubmissionFilters}
-            onOpenSubmissionFilters={() => setIsSubmissionFilterOpen(true)}
             exportSubmissionsLabel={tExportSubmissions("button")}
             exportSubmissionsPendingLabel={tExportSubmissions("exporting")}
             exportSubmissionsPending={exportSubmissionsPending}

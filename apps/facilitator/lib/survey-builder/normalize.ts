@@ -3,6 +3,7 @@ import type {
   JsonQuestionConfig,
   NumberQuestionConfig,
   QuestionType,
+  SectionSkipCondition,
   ShowCondition,
   SurveyBuilderState,
   SurveyQuestion,
@@ -37,6 +38,7 @@ type BackendSurveyOption = {
   text?: string;
   optionText?: string;
   value?: string;
+  isExclusive?: boolean;
   orderNo?: number;
 };
 
@@ -88,6 +90,7 @@ type BackendSurveySection = {
   description?: string;
   orderNo?: number;
   questions?: BackendSurveyQuestion[];
+  skipConditions?: BackendSurveyCondition[];
 };
 
 export type BackendSurveyRecord = {
@@ -285,6 +288,7 @@ function normalizeQuestion(question: BackendSurveyQuestion, index: number): Surv
         clientId: option.clientId ?? option.optionClientId ?? createClientId(),
         text: option.text ?? option.optionText ?? "",
         value: option.value ?? "",
+        isExclusive: Boolean(option.isExclusive),
         orderNo: option.orderNo ?? optionIndex + 1,
       })),
       questionConfig: normalizeQuestionConfig(question.questionConfig),
@@ -316,6 +320,9 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
         description: section.description ?? "",
         orderNo: section.orderNo ?? index + 1,
         questions: applyOrderNo((section.questions ?? []).map(normalizeQuestion)),
+        skipConditions: (section.skipConditions ?? [])
+          .map(toCondition)
+          .filter((item): item is SectionSkipCondition => item !== null),
       }))
     ),
   };
@@ -337,6 +344,15 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
   }
 
   for (const section of normalized.sections) {
+    section.skipConditions = section.skipConditions.map((condition) => ({
+      ...condition,
+      parentQuestionClientId:
+        questionIdToClientId.get(condition.parentQuestionClientId) ??
+        condition.parentQuestionClientId,
+      optionClientId: condition.optionClientId
+        ? optionIdToClientId.get(condition.optionClientId) ?? condition.optionClientId
+        : undefined,
+    }));
     for (const question of section.questions) {
       question.showConditions = question.showConditions.map((condition) => ({
         ...condition,

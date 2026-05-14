@@ -998,6 +998,17 @@
     "submissions": {
       "backToSurveys": "ወደ ዳሰሳዎች ተመለስ",
       "loadError": "በመጠባበቅ ያሉ ዒላማዎችን መጫን አልተቻለም።",
+      "tabs": {
+        "submissions": "ገቢዎች",
+        "startSubmission": "ገቢ ጀምር"
+      },
+      "pending": {
+        "title": "ጀመር የሚጠብቁ ገቢዎች",
+        "loadError": "ጀመር የሚጠብቁ ዒላማዎችን መጫን አልተቻለም።",
+        "empty": "ለመጀመር የሚጠብቁ ዒላማዎች የሉም።",
+        "selectAssignee": "የሚጠብቁ ዒላማዎችን ለማየት የራስ አገዝ ቡድን ይምረጡ።",
+        "assigneePlaceholder": "የራስ አገዝ ቡድን ይምረጡ"
+      },
       "filters": {
         "title": "ገቢዎችን ማጣራት",
         "description": "ገቢዎችን በራስ አገዝ ቡድን ይበትኑ። ሲጫኑ «ማጣሪያዎችን ይተግብሩ» እንዲሰራ ይደረጋል።",

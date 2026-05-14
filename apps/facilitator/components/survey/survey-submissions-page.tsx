@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
@@ -7,11 +8,14 @@ import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { type QuestionTemplate } from "@/components/survey/survey-submission-answer-workspace";
+import { type SectionTemplate } from "@/components/survey/survey-submission-answer-workspace";
 import { SubmissionWorkspacePanel } from "@/components/survey/survey-submission-workspace-panel";
 import {
   MemberSubmissionsTableCard,
 } from "@/components/survey/survey-submissions-tables";
 import {
+  useSurveyAssignmentTargetsQuery,
+  useSurveyPendingTargetsByAssigneeQuery,
   useStartSurveySubmissionMutation,
   useSurveyDetailQuery,
   useSurveySubmissionDetailQuery,
@@ -53,9 +57,40 @@ export function SurveySubmissionsPage({
   const tPage = useTranslations("survey.submissions");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
+  const activeTab = searchParams.get("tab") === "start" ? "start" : "submissions";
 
   const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
+  const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(surveyId, {
+    enabled: Boolean(surveyId) && !selectedSubmissionId,
+  });
+  const submissionFiltersEligible = surveyTargetType.trim().toUpperCase() === "MEMBER";
+  const assigneeOptions = useMemo(() => {
+    if (!submissionFiltersEligible) return [];
+    const byId = new Map<string, string>();
+    const ad = assignmentTargetsQuery.data?.assignmentData;
+    const assigned = ad?.assignedTargets ?? [];
+    for (const row of assigned) {
+      byId.set(row.id, row.name);
+    }
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [assignmentTargetsQuery.data?.assignmentData, submissionFiltersEligible]);
+  const resolvedAssigneeId = assigneeOptions[0]?.id ?? null;
+  const pendingTargetsQuery = useSurveyPendingTargetsByAssigneeQuery(
+    surveyId,
+    submissionFiltersEligible ? resolvedAssigneeId : null,
+    {
+      enabled:
+        Boolean(surveyId) &&
+        !selectedSubmissionId &&
+        activeTab === "start" &&
+        submissionFiltersEligible &&
+        Boolean(resolvedAssigneeId),
+    }
+  );
   const submissions = submissionsQuery.data?.submissions ?? [];
+  const pendingSubmissions = pendingTargetsQuery.data?.submissions ?? [];
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
@@ -69,6 +104,22 @@ export function SurveySubmissionsPage({
   const targetLabelPlural = targetLabels.plural;
   const startSubmissionMutation = useStartSurveySubmissionMutation();
 
+  const sectionTemplates: SectionTemplate[] = (() => {
+    const backendSurvey = surveyDetailQuery.data?.survey;
+    if (!backendSurvey) return [];
+    const normalized = normalizeSurveyResponse(backendSurvey);
+    return normalized.sections.map((section) => ({
+      key: section.id ?? section.clientId,
+      skipConditions: section.skipConditions.map((condition) => ({
+        parentQuestionRef: condition.parentQuestionClientId,
+        operator: condition.operator,
+        optionRef: condition.optionClientId,
+        expectedValue: condition.expectedValue,
+        logicType: condition.logicType,
+      })),
+    }));
+  })();
+
   const questionTemplates: QuestionTemplate[] = (() => {
     const backendSurvey = surveyDetailQuery.data?.survey;
     if (!backendSurvey) return [];
@@ -77,12 +128,23 @@ export function SurveySubmissionsPage({
       section.questions.map((question) => ({
         key: question.id ?? question.clientId,
         questionId: question.id,
+        questionClientId: question.clientId,
+        sectionKey: section.id ?? section.clientId,
         questionText: question.questionText,
         questionType: question.questionType,
         questionConfig: question.questionConfig,
         options: question.options.map((option) => ({
           id: option.id,
+          clientId: option.clientId,
           text: option.text,
+          isExclusive: Boolean(option.isExclusive),
+        })),
+        showConditions: question.showConditions.map((condition) => ({
+          parentQuestionRef: condition.parentQuestionClientId,
+          operator: condition.operator,
+          optionRef: condition.optionClientId,
+          expectedValue: condition.expectedValue,
+          logicType: condition.logicType,
         })),
       }))
     );
@@ -91,6 +153,16 @@ export function SurveySubmissionsPage({
   const setRouteSearch = (next: URLSearchParams) => {
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const setActiveTab = (nextTab: "submissions" | "start") => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("tab", nextTab);
+    next.delete("submissionId");
+    next.delete("targetName");
+    next.delete("memberName");
+    next.delete("view");
+    setRouteSearch(next);
   };
 
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
@@ -135,6 +207,38 @@ export function SurveySubmissionsPage({
           <ArrowLeftIcon className="size-4" />
           {tPage("backToSurveys")}
         </Button>
+        {submissionFiltersEligible && !selectedSubmissionId ? (
+          <div className="inline-flex items-center rounded-xl border border-primary/20 bg-background p-1">
+            <div className="inline-flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className={`h-9 rounded-lg px-3 text-sm font-medium transition-colors ${
+                  activeTab === "submissions"
+                    ? "border border-primary/25 bg-primary/12 text-primary"
+                    : "border border-transparent text-muted-foreground hover:bg-primary/8 hover:text-primary"
+                }`}
+                onClick={() => setActiveTab("submissions")}
+              >
+                {tPage("tabs.submissions")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className={`h-9 rounded-lg px-3 text-sm font-medium transition-colors ${
+                  activeTab === "start"
+                    ? "border border-primary/25 bg-primary/12 text-primary"
+                    : "border border-transparent text-muted-foreground hover:bg-primary/8 hover:text-primary"
+                }`}
+                onClick={() => setActiveTab("start")}
+              >
+                {tPage("tabs.startSubmission")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {selectedSubmissionId ? (
@@ -145,12 +249,38 @@ export function SurveySubmissionsPage({
           errorMessage={detailQuery.error instanceof Error ? detailQuery.error.message : undefined}
           targetLabelSingular={targetLabelSingular}
           selectedSubmission={selectedSubmission}
+          sectionTemplates={sectionTemplates}
           questionTemplates={questionTemplates}
           onRetry={() => detailQuery.refetch()}
           onBackToTable={backToTable}
           onSubmissionUpdated={async () => {
-            await Promise.all([detailQuery.refetch(), submissionsQuery.refetch()]);
+            await Promise.all([
+              detailQuery.refetch(),
+              submissionsQuery.refetch(),
+              pendingTargetsQuery.refetch(),
+            ]);
           }}
+        />
+      ) : activeTab === "start" ? (
+        <MemberSubmissionsTableCard
+          titleOverride={tPage("pending.title")}
+          emptyMessageOverride={
+            resolvedAssigneeId
+              ? tPage("pending.empty")
+              : tPage("pending.selectAssignee")
+          }
+          targetLabelSingular={targetLabelSingular}
+          targetLabelPlural={targetLabelPlural}
+          submissions={pendingSubmissions}
+          loading={pendingTargetsQuery.isLoading}
+          isError={pendingTargetsQuery.isError}
+          errorMessage={
+            pendingTargetsQuery.error instanceof Error
+              ? pendingTargetsQuery.error.message
+              : tPage("pending.loadError")
+          }
+          onRetry={() => pendingTargetsQuery.refetch()}
+          onPrimaryAction={(submission) => void handlePrimaryAction(submission)}
         />
       ) : (
         <>

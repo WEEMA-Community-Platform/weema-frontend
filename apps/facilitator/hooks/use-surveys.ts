@@ -13,6 +13,7 @@ import {
   deleteSurvey,
   getSurveyAssignmentTargets,
   getSurveyById,
+  getSurveyPendingTargetsBySurveyAssignee,
   getSurveySubmissionById,
   getSurveySubmissionsByAssignmentId,
   getSurveySubmissionsBySurveyId,
@@ -75,6 +76,19 @@ export function useSurveySubmissionsByAssignmentQuery(
   return useQuery({
     queryKey: ["survey-assignment", assignmentId, "submissions"],
     queryFn: () => getSurveySubmissionsByAssignmentId(assignmentId!),
+    enabled,
+  });
+}
+
+export function useSurveyPendingTargetsByAssigneeQuery(
+  surveyId: string | null,
+  assigneeId: string | null,
+  options?: { enabled?: boolean }
+) {
+  const enabled = (options?.enabled ?? true) && !!surveyId && !!assigneeId;
+  return useQuery({
+    queryKey: ["survey", surveyId, "pending-targets", assigneeId ?? "none"],
+    queryFn: () => getSurveyPendingTargetsBySurveyAssignee(surveyId!, assigneeId!),
     enabled,
   });
 }
