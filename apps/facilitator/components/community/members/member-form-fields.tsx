@@ -80,7 +80,7 @@ export function MemberFormFields({
   religionOptions,
   shgOptions,
   showReligionField = true,
-  nationalIdSection,
+  //nationalIdSection,
 }: MemberFormFieldsProps) {
   const t = useTranslations("community.members");
   const tGender = useTranslations("community.members.options.gender");
@@ -263,7 +263,7 @@ export function MemberFormFields({
           </div>
         </div>
       </div>
-      {nationalIdSection}
+      {/* {nationalIdSection} */}
     </>
   );
 }
