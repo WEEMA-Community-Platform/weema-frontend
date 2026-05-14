@@ -217,17 +217,17 @@ export function MemberCreateDialog({
               setSelfHelpGroupId={setSelfHelpGroupId}
               shgOptions={shgOptions}
               showReligionField={false}
-              nationalIdSection={
-                <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-4">
-                  <Label className="text-foreground">{t("fields.nationalIdOptional")}</Label>
-                  <NationalIdDropzone
-                    mode="pick"
-                    variant="compact"
-                    onFileChange={setNationalIdFile}
-                    disabled={isSubmitting}
-                  />
-                </div>
-              }
+              // nationalIdSection={
+              //   <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-4">
+              //     <Label className="text-foreground">{t("fields.nationalIdOptional")}</Label>
+              //     <NationalIdDropzone
+              //       mode="pick"
+              //       variant="compact"
+              //       onFileChange={setNationalIdFile}
+              //       disabled={isSubmitting}
+              //     />
+              //   </div>
+              // }
             />
           </div>
           <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">
