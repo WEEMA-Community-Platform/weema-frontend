@@ -69,9 +69,9 @@ export function QuestionEditor(props: {
 
   return (
     <Card className="border-primary/15">
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center">
         <CardTitle>Question editor</CardTitle>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
           <Button type="button" variant="outline" onClick={props.onBackToCards}>
             {props.backToCardsLabel ?? "Back to cards"}
           </Button>

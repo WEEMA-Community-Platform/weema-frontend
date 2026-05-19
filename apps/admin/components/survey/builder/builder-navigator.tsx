@@ -161,7 +161,7 @@ export function BuilderNavigator({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-r border-primary/10 bg-card/30">
+    <aside className="flex w-full shrink-0 flex-col border-b border-primary/10 bg-card/30 lg:w-[280px] lg:border-b-0 lg:border-r xl:w-[320px]">
       {/* Fixed top: notice + settings button */}
       <div className="shrink-0 px-4 pb-0 pt-4">
         {isTranslationMode ? (
@@ -207,7 +207,7 @@ export function BuilderNavigator({
       </div>
 
       {/* Scrollable sections list */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3">
+      <div className="max-h-[52vh] overflow-y-auto px-4 pb-4 pt-3 lg:min-h-0 lg:max-h-none lg:flex-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onSectionDragEnd}>
           <SortableContext
             items={builder.state.sections.map((s) => s.clientId)}

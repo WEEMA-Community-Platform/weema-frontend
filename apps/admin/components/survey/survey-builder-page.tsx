@@ -581,7 +581,7 @@ export function SurveyBuilderPage({
         exportDetailPendingLabel={tExport("exporting")}
       />
 
-      <div className="flex h-[calc(100vh-56px)]">
+      <div className="flex flex-col lg:h-[calc(100vh-56px)] lg:flex-row">
         <BuilderNavigator
           builder={builder}
           initialSurveyId={initialSurveyId}
@@ -673,7 +673,7 @@ export function SurveyBuilderPage({
           surveyLanguage={builder.state.language}
         />
 
-        <section className="w-[360px] shrink-0 overflow-y-auto p-4">
+        <section className="w-full shrink-0 border-t border-primary/10 p-4 lg:w-[300px] lg:overflow-y-auto lg:border-l lg:border-t-0 xl:w-[360px]">
           <SurveyPreviewPanel
             question={selectedQuestion}
             questionByClientId={questionByClientId}

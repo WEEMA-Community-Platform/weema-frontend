@@ -40,13 +40,13 @@ export function BuilderHeader({
   exportDetailPendingLabel,
 }: BuilderHeaderProps) {
   return (
-    <header className="flex h-14 items-center justify-between border-b border-primary/10 px-4">
+    <header className="flex min-h-14 flex-wrap items-center justify-between gap-2 border-b border-primary/10 px-4 py-2 sm:flex-nowrap sm:py-0">
       <Button type="button" variant="ghost" render={<Link href="/survey" />}>
         <ArrowLeftIcon className="size-4" />
         Back to surveys
       </Button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-normal">
         {isTranslationMode ? (
           <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-xs text-primary">
             Translation mode

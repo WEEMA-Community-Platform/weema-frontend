@@ -98,7 +98,7 @@ export function SurveyBuilderMainPanel({
   surveyLanguage,
 }: Props) {
   return (
-    <main className="min-w-0 flex-1 overflow-y-auto border-r border-primary/10 p-6">
+    <main className="min-w-0 flex-1 overflow-y-auto border-primary/10 p-4 lg:border-r lg:p-6">
       {editorMode === "settings" ? (
         <Card className="border-primary/15">
           <CardHeader>
