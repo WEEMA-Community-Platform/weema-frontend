@@ -10,3 +10,27 @@ export async function GET(
     path: `/api/self-help-group/${id}`,
   });
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const body = await request.json().catch(() => null);
+  return forwardAuthorizedRequest({
+    method: "PATCH",
+    path: `/api/self-help-group/${id}`,
+    body,
+  });
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  return forwardAuthorizedRequest({
+    method: "DELETE",
+    path: `/api/self-help-group/${id}`,
+  });
+}

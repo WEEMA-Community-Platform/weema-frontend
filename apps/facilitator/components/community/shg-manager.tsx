@@ -10,6 +10,7 @@ import {
   useSHGsQuery,
 } from "@/hooks/use-community";
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
+import { useCurrentUser } from "@/hooks/use-user";
 import type { SHG } from "@/lib/api/community";
 import { extractLatLngFromMapsUrl } from "@/lib/maps-coordinates";
 import {
@@ -49,9 +50,11 @@ export function SHGManager() {
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "">("");
   const [woredaId, setWoredaId] = useState("none");
   const [kebeleId, setKebeleId] = useState("none");
+  const [dateEstablished, setDateEstablished] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [mapsUrl, setMapsUrl] = useState("");
@@ -62,6 +65,7 @@ export function SHGManager() {
   const shgsQuery = useSHGsQuery({ page, pageSize: 12, searchQuery });
   const { data: woredaData } = useWoredasQuery({ page: 1, pageSize: 200, searchQuery: "" });
   const { data: kebeleData } = useKebelesQuery({ page: 1, pageSize: 200, searchQuery: "" });
+  const { data: currentUserData } = useCurrentUser();
 
   const createMutation = useCreateSHGMutation();
 
@@ -83,9 +87,11 @@ export function SHGManager() {
   const resetForm = () => {
     setName("");
     setDescription("");
+    setLocation("");
     setStatus("");
     setWoredaId("none");
     setKebeleId("none");
+    setDateEstablished("");
     setLatitude("");
     setLongitude("");
     setMapsUrl("");
@@ -175,17 +181,55 @@ export function SHGManager() {
       });
       return;
     }
-    const resolvedWoredaId = woredaId && woredaId !== "none" ? woredaId : undefined;
-    const resolvedKebeleId = kebeleId && kebeleId !== "none" ? kebeleId : undefined;
-    const lat = latitude ? parseFloat(latitude) : undefined;
-    const lng = longitude ? parseFloat(longitude) : undefined;
+    if (!location.trim()) {
+      sileo.warning({
+        title: tToasts("missingLocationTitle"),
+        description: tToasts("missingLocationMessage"),
+      });
+      return;
+    }
+    if (!woredaId || woredaId === "none") {
+      sileo.warning({
+        title: tToasts("missingWoredaTitle"),
+        description: tToasts("missingWoredaMessage"),
+      });
+      return;
+    }
+    if (!kebeleId || kebeleId === "none") {
+      sileo.warning({
+        title: tToasts("missingKebeleTitle"),
+        description: tToasts("missingKebeleMessage"),
+      });
+      return;
+    }
+    if (!dateEstablished) {
+      sileo.warning({
+        title: tToasts("missingDateEstablishedTitle"),
+        description: tToasts("missingDateEstablishedMessage"),
+      });
+      return;
+    }
+    const facilitatorId = currentUserData?.user?.id;
+    if (!facilitatorId) {
+      sileo.warning({
+        title: tToasts("missingFacilitatorTitle"),
+        description: tToasts("missingFacilitatorMessage"),
+      });
+      return;
+    }
+    const lat = latitude ? parseFloat(latitude) : null;
+    const lng = longitude ? parseFloat(longitude) : null;
     try {
       const result = await createMutation.mutateAsync({
         name: name.trim(),
         description: description.trim(),
+        location: location.trim(),
         status,
-        woredaId: resolvedWoredaId,
-        kebeleId: resolvedKebeleId,
+        woredaId,
+        kebeleId,
+        facilitatorId,
+        establishedByType: "FACILITATOR",
+        dateEstablished,
         latitude: lat,
         longitude: lng,
       });
@@ -300,24 +344,25 @@ export function SHGManager() {
         editingSHG={null}
         name={name}
         description={description}
+        location={location}
+        dateEstablished={dateEstablished}
         status={status}
         woredaId={woredaId}
         kebeleId={kebeleId}
-        clusterId="none"
         latitude={latitude}
         longitude={longitude}
         mapsUrl={mapsUrl}
         coordinateMode={coordinateMode}
         woredaOptions={woredaOptions}
         kebeleOptions={kebeleOptions}
-        clusterFormOptions={[]}
         statusOptions={STATUS_OPTIONS}
         setName={setName}
         setDescription={setDescription}
+        setLocation={setLocation}
+        setDateEstablished={setDateEstablished}
         setStatus={setStatus}
         setWoredaId={setWoredaId}
         setKebeleId={setKebeleId}
-        setClusterId={() => {}}
         handleMapsUrlChange={handleMapsUrlChange}
         handleMapsUrlBlur={handleMapsUrlBlur}
         handleMapsPaste={handleMapsPaste}

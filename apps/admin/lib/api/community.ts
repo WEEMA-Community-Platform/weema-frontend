@@ -106,7 +106,7 @@ export type SHG = {
   id: string;
   name: string;
   description: string;
-  location: string;
+  location: string | null;
   latitude: number | null;
   longitude: number | null;
   status: EntityStatus;
@@ -118,26 +118,27 @@ export type SHG = {
   clusterName: string | null;
   facilitatorId: string | null;
   facilitatorName: string | null;
+  establishedByType: string | null;
+  dateEstablished: string | null;
   memberCount: number;
   locked: boolean;
 };
 
 export type SHGPayload = {
   name: string;
-  description?: string;
-  location?: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  status?: EntityStatus;
-  woredaId?: string | null;
-  kebeleId?: string | null;
-  clusterId?: string | null;
-  facilitatorId?: string | null;
+  description: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  status: EntityStatus;
+  woredaId: string;
+  kebeleId: string;
+  facilitatorId: string;
+  establishedByType: string;
+  dateEstablished: string;
 };
 
-export type SHGUpdatePayload = SHGPayload & {
-  clusterId?: string | null;
-};
+export type SHGUpdatePayload = Partial<SHGPayload>;
 
 export type SHGListQuery = {
   page?: number;

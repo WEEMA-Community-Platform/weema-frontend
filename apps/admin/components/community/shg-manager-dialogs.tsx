@@ -49,6 +49,7 @@ function DetailField({ label, value }: { label: string; value: React.ReactNode }
 export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
   const tDetail = useTranslations("community.shg.detail");
   const tActions = useTranslations("common.actions");
+  const tCommonBase = useTranslations("basedata.common");
   const [activeId, setActiveId] = useState<string | null>(id);
   const [syncedId, setSyncedId] = useState<string | null>(id);
 
@@ -82,14 +83,28 @@ export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open
             </div>
           ) : shg ? (
             <dl className="grid grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 ">
+              <DetailField label={tDetail("fields.id")} value={shg.id} />
               <DetailField label={tDetail("fields.name")} value={shg.name} />
               <DetailField label={tDetail("fields.status")} value={<StatusBadge status={shg.status} />} />
               <DetailField label={tDetail("fields.cluster")} value={shg.clusterName} />
+              <DetailField label={tDetail("fields.clusterId")} value={shg.clusterId} />
               <DetailField label={tDetail("fields.woreda")} value={shg.woredaName} />
+              <DetailField label={tDetail("fields.woredaId")} value={shg.woredaId} />
               <DetailField label={tDetail("fields.kebele")} value={shg.kebeleName} />
+              <DetailField label={tDetail("fields.kebeleId")} value={shg.kebeleId} />
               <DetailField label={tDetail("fields.facilitator")} value={shg.facilitatorName} />
+              <DetailField label={tDetail("fields.facilitatorId")} value={shg.facilitatorId} />
               <DetailField label={tDetail("fields.members")} value={shg.memberCount} />
+              <DetailField
+                label={tDetail("fields.locked")}
+                value={shg.locked ? tCommonBase("yes") : tCommonBase("no")}
+              />
+              <DetailField label={tDetail("fields.location")} value={shg.location} />
               <DetailField label={tDetail("fields.gps")} value={shg.latitude != null && shg.longitude != null ? `${shg.latitude}, ${shg.longitude}` : null} />
+              <DetailField label={tDetail("fields.latitude")} value={shg.latitude} />
+              <DetailField label={tDetail("fields.longitude")} value={shg.longitude} />
+              <DetailField label={tDetail("fields.establishedByType")} value={shg.establishedByType} />
+              <DetailField label={tDetail("fields.dateEstablished")} value={shg.dateEstablished} />
               <DetailField label={tDetail("fields.description")} value={shg.description} />
             </dl>
           ) : null}
@@ -105,11 +120,13 @@ type SHGFormDialogProps = {
   editingSHG: SHG | null;
   name: string;
   description: string;
+  location: string;
   status: EntityStatus | "";
   woredaId: string;
   kebeleId: string;
-  clusterId: string;
   facilitatorId: string;
+  establishedByType: string;
+  dateEstablished: string;
   facilitatorSearchQuery?: string;
   latitude: string;
   longitude: string;
@@ -117,16 +134,18 @@ type SHGFormDialogProps = {
   coordinateMode: "idle" | "map" | "manual";
   woredaOptions: Array<{ value: string; label: string }>;
   kebeleOptions: Array<{ value: string; label: string }>;
-  clusterFormOptions: Array<{ value: string; label: string }>;
   facilitatorOptions: Array<{ value: string; label: string }>;
+  establishedByTypeOptions: Array<{ value: string; label: string }>;
   statusOptions: Array<{ value: string; label: string }>;
   setName: (value: string) => void;
   setDescription: (value: string) => void;
+  setLocation: (value: string) => void;
   setStatus: (value: EntityStatus | "") => void;
   setWoredaId: (value: string) => void;
   setKebeleId: (value: string) => void;
-  setClusterId: (value: string) => void;
   setFacilitatorId: (value: string) => void;
+  setEstablishedByType: (value: string) => void;
+  setDateEstablished: (value: string) => void;
   setFacilitatorSearchQuery?: (value: string) => void;
   handleMapsUrlChange: (value: string) => void;
   handleMapsUrlBlur: () => void;
@@ -146,27 +165,31 @@ export function SHGFormDialog({
   editingSHG,
   name,
   description,
+  location,
   status,
   woredaId,
   kebeleId,
-  clusterId,
   facilitatorId,
+  establishedByType,
+  dateEstablished,
   latitude,
   longitude,
   mapsUrl,
   coordinateMode,
   woredaOptions,
   kebeleOptions,
-  clusterFormOptions,
   facilitatorOptions,
+  establishedByTypeOptions,
   statusOptions,
   setName,
   setDescription,
+  setLocation,
   setStatus,
   setWoredaId,
   setKebeleId,
-  setClusterId,
   setFacilitatorId,
+  setEstablishedByType,
+  setDateEstablished,
   handleMapsUrlChange,
   handleMapsUrlBlur,
   handleMapsPaste,
@@ -203,20 +226,17 @@ export function SHGFormDialog({
                   autoComplete="off"
                 />
               </div>
-              {editingSHG ? (
-                <div className="space-y-1.5">
-                  <Label htmlFor="shg-cluster">{tForm("cluster")}</Label>
-                  <p className="text-xs text-muted-foreground">{tForm("clusterHint")}</p>
-                  <SelectField
-                    id="shg-cluster"
-                    value={clusterId || "none"}
-                    onValueChange={setClusterId}
-                    options={clusterFormOptions}
-                    placeholder={tForm("clusterPlaceholder")}
-                    className="h-11"
-                  />
-                </div>
-              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="shg-location">{tForm("locationLabel")}</Label>
+                <Input
+                  id="shg-location"
+                  placeholder={tForm("locationPlaceholder")}
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className={inputClass}
+                  autoComplete="off"
+                />
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="shg-facilitator">{tForm("facilitator")}</Label>
                 <SelectField
@@ -245,6 +265,19 @@ export function SHGFormDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <Label htmlFor="shg-kebele">{tForm("kebele")}</Label>
+                  <SelectField
+                    id="shg-kebele"
+                    value={kebeleId || "none"}
+                    onValueChange={setKebeleId}
+                    options={kebeleOptions}
+                    placeholder={tForm("kebelePlaceholder")}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="shg-status">{tForm("status")}</Label>
                   <SelectField
                     id="shg-status"
@@ -255,16 +288,26 @@ export function SHGFormDialog({
                     className="h-11"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="shg-established-by-type">{tForm("establishedByTypeLabel")}</Label>
+                  <SelectField
+                    id="shg-established-by-type"
+                    value={establishedByType}
+                    onValueChange={setEstablishedByType}
+                    options={establishedByTypeOptions}
+                    placeholder={tForm("establishedByTypePlaceholder")}
+                    className="h-11"
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-kebele">{tForm("kebele")}</Label>
-                <SelectField
-                  id="shg-kebele"
-                  value={kebeleId || "none"}
-                  onValueChange={setKebeleId}
-                  options={kebeleOptions}
-                  placeholder={tForm("kebelePlaceholder")}
-                  className="h-11"
+                <Label htmlFor="shg-date-established">{tForm("dateEstablishedLabel")}</Label>
+                <Input
+                  id="shg-date-established"
+                  type="date"
+                  value={dateEstablished}
+                  onChange={(e) => setDateEstablished(e.target.value)}
+                  className={inputClass}
                 />
               </div>
             </div>

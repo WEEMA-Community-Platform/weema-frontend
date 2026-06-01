@@ -89,12 +89,13 @@ export function SHGManager() {
   const [page, setPage] = useState(1);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const [status, setStatus] = useState<EntityStatus | "">("");
   const [woredaId, setWoredaId] = useState("none");
   const [kebeleId, setKebeleId] = useState("none");
-  /** Edit form only — new SHGs are created without a cluster; assign via Edit SHG. */
-  const [clusterId, setClusterId] = useState("none");
   const [facilitatorId, setFacilitatorId] = useState("none");
+  const [establishedByType, setEstablishedByType] = useState("");
+  const [dateEstablished, setDateEstablished] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   /** Helper field — not submitted; used to paste maps links and fill lat/lng. */
@@ -194,13 +195,6 @@ export function SHGManager() {
       (clustersData?.clusters ?? []).map((c) => ({ value: c.id, label: c.name })),
     [clustersData?.clusters]
   );
-  const clusterFormOptions = useMemo(
-    () => [
-      { value: "none", label: tForm("noCluster") },
-      ...(clustersData?.clusters ?? []).map((c) => ({ value: c.id, label: c.name })),
-    ],
-    [clustersData?.clusters, tForm]
-  );
   const facilitatorOptions = useMemo(
     () => [
       { value: "none", label: tForm("noFacilitator") },
@@ -214,14 +208,24 @@ export function SHGManager() {
     ],
     [facilitatorsQuery.data?.users, tForm]
   );
+  const establishedByTypeOptions = useMemo(
+    () => [
+      { value: "FACILITATOR", label: tForm("establishedByTypeOptions.facilitator") },
+      { value: "CLUSTER_ADMIN", label: tForm("establishedByTypeOptions.clusterAdmin") },
+      { value: "ADMIN", label: tForm("establishedByTypeOptions.admin") },
+    ],
+    [tForm]
+  );
   const resetForm = () => {
     setName("");
     setDescription("");
+    setLocation("");
     setStatus("");
     setWoredaId("none");
     setKebeleId("none");
-    setClusterId("none");
     setFacilitatorId("none");
+    setEstablishedByType("");
+    setDateEstablished("");
     setLatitude("");
     setLongitude("");
     setMapsUrl("");
@@ -233,11 +237,13 @@ export function SHGManager() {
     setEditingSHG(s);
     setName(s.name);
     setDescription(s.description || "");
+    setLocation(s.location || "");
     setStatus(s.status);
     setWoredaId(s.woredaId || "none");
     setKebeleId(s.kebeleId || "none");
-    setClusterId(s.clusterId || "none");
     setFacilitatorId(s.facilitatorId || "none");
+    setEstablishedByType(s.establishedByType || "");
+    setDateEstablished(s.dateEstablished || "");
     const latStr = s.latitude != null ? String(s.latitude) : "";
     const lngStr = s.longitude != null ? String(s.longitude) : "";
     setLatitude(latStr);
@@ -315,12 +321,13 @@ export function SHGManager() {
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) { sileo.warning({ title: tToasts("missingNameTitle"), description: tToasts("missingNameMessage") }); return; }
+    if (!location.trim()) { sileo.warning({ title: tToasts("missingLocationTitle"), description: tToasts("missingLocationMessage") }); return; }
     if (!status) { sileo.warning({ title: tToasts("missingStatusTitle"), description: tToasts("missingStatusMessage") }); return; }
-    const resolvedWoredaId = woredaId && woredaId !== "none" ? woredaId : undefined;
-    const resolvedKebeleId = kebeleId && kebeleId !== "none" ? kebeleId : undefined;
-    const resolvedClusterId = clusterId && clusterId !== "none" ? clusterId : undefined;
-    const resolvedFacilitatorId =
-      facilitatorId && facilitatorId !== "none" ? facilitatorId : null;
+    if (!woredaId || woredaId === "none") { sileo.warning({ title: tToasts("missingWoredaTitle"), description: tToasts("missingWoredaMessage") }); return; }
+    if (!kebeleId || kebeleId === "none") { sileo.warning({ title: tToasts("missingKebeleTitle"), description: tToasts("missingKebeleMessage") }); return; }
+    if (!facilitatorId || facilitatorId === "none") { sileo.warning({ title: tToasts("missingFacilitatorTitle"), description: tToasts("missingFacilitatorMessage") }); return; }
+    if (!establishedByType) { sileo.warning({ title: tToasts("missingEstablishedByTypeTitle"), description: tToasts("missingEstablishedByTypeMessage") }); return; }
+    if (!dateEstablished) { sileo.warning({ title: tToasts("missingDateEstablishedTitle"), description: tToasts("missingDateEstablishedMessage") }); return; }
     const lat = latitude ? parseFloat(latitude) : undefined;
     const lng = longitude ? parseFloat(longitude) : undefined;
     try {
@@ -330,13 +337,15 @@ export function SHGManager() {
           payload: {
             name: name.trim(),
             description: description.trim(),
+            location: location.trim(),
             status,
-            woredaId: resolvedWoredaId,
-            kebeleId: resolvedKebeleId,
-            clusterId: resolvedClusterId,
-            facilitatorId: resolvedFacilitatorId,
-            latitude: lat,
-            longitude: lng,
+            woredaId,
+            kebeleId,
+            facilitatorId,
+            establishedByType,
+            dateEstablished,
+            latitude: lat ?? null,
+            longitude: lng ?? null,
           },
         });
         sileo.success({ title: tToasts("updatedTitle"), description: result.message });
@@ -344,12 +353,15 @@ export function SHGManager() {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
           description: description.trim(),
+          location: location.trim(),
           status,
-          woredaId: resolvedWoredaId,
-          kebeleId: resolvedKebeleId,
-          facilitatorId: resolvedFacilitatorId,
-          latitude: lat,
-          longitude: lng,
+          woredaId,
+          kebeleId,
+          facilitatorId,
+          establishedByType,
+          dateEstablished,
+          latitude: lat ?? null,
+          longitude: lng ?? null,
         });
         sileo.success({ title: tToasts("addedTitle"), description: result.message });
       }
@@ -639,27 +651,31 @@ export function SHGManager() {
         editingSHG={editingSHG}
         name={name}
         description={description}
+        location={location}
         status={status}
         woredaId={woredaId}
         kebeleId={kebeleId}
-        clusterId={clusterId}
         facilitatorId={facilitatorId}
+        establishedByType={establishedByType}
+        dateEstablished={dateEstablished}
         latitude={latitude}
         longitude={longitude}
         mapsUrl={mapsUrl}
         coordinateMode={coordinateMode}
         woredaOptions={woredaOptions}
         kebeleOptions={kebeleOptions}
-        clusterFormOptions={clusterFormOptions}
         facilitatorOptions={facilitatorOptions}
+        establishedByTypeOptions={establishedByTypeOptions}
         statusOptions={STATUS_OPTIONS}
         setName={setName}
         setDescription={setDescription}
+        setLocation={setLocation}
         setStatus={setStatus}
         setWoredaId={setWoredaId}
         setKebeleId={setKebeleId}
-        setClusterId={setClusterId}
         setFacilitatorId={setFacilitatorId}
+        setEstablishedByType={setEstablishedByType}
+        setDateEstablished={setDateEstablished}
         handleMapsUrlChange={handleMapsUrlChange}
         handleMapsUrlBlur={handleMapsUrlBlur}
         handleMapsPaste={handleMapsPaste}
