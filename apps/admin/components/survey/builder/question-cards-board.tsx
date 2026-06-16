@@ -116,7 +116,8 @@ export function QuestionCardsBoard(props: {
                         key={`${question.clientId}-condition-${conditionIndex}`}
                         className="wrap-break-word whitespace-normal"
                       >
-                        - {describeCondition(condition, props.questionByClientId)}
+                        - {conditionIndex > 0 ? `${condition.logicType} ` : ""}
+                        {describeCondition(condition, props.questionByClientId)}
                       </li>
                     ))}
                   </ul>

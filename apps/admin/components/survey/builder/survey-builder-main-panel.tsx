@@ -234,11 +234,19 @@ export function SurveyBuilderMainPanel({
       {issues.length > 0 ? (
         <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           <p className="font-medium">Resolve these issues before saving:</p>
+          <p className="mt-0.5 text-xs text-destructive/80">
+            Each item names the section, question, or rule that needs attention.
+          </p>
           <ul className="mt-1 list-disc pl-5">
             {issues.slice(0, 8).map((issue) => (
               <li key={`${issue.path}-${issue.message}`}>{issue.message}</li>
             ))}
           </ul>
+          {issues.length > 8 ? (
+            <p className="mt-1 text-xs text-destructive/80">
+              Showing 8 of {issues.length} issues. Fix these first, then save again to reveal the rest.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </main>

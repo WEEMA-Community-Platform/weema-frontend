@@ -484,6 +484,28 @@ export function serializeSurveyTranslationPayload(state: SurveyBuilderState): Tr
   };
 }
 
+function sectionLabel(section: SurveyBuilderState["sections"][number], sectionIndex: number) {
+  return `Section ${sectionIndex + 1}: ${section.title.trim() || "Untitled section"}`;
+}
+
+function questionLabel(
+  section: SurveyBuilderState["sections"][number],
+  sectionIndex: number,
+  question: SurveyQuestion,
+  questionIndex: number
+) {
+  return `${sectionLabel(section, sectionIndex)} / Q${questionIndex + 1}: ${
+    question.questionText.trim() || "Untitled question"
+  }`;
+}
+
+function issue(path: string, context: string, message: string): SurveyValidationIssue {
+  return {
+    path,
+    message: context ? `${context} - ${message}` : message,
+  };
+}
+
 export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyValidationIssue[] {
   const issues: SurveyValidationIssue[] = [];
   if (!state.title.trim()) {
@@ -500,82 +522,106 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
   }
 
   const questionByClientId = new Map<string, SurveyQuestion>();
+  const questionContextByClientId = new Map<string, string>();
   for (const [sectionIndex, section] of state.sections.entries()) {
+    const currentSectionLabel = sectionLabel(section, sectionIndex);
     if (!section.title.trim()) {
-      issues.push({
-        path: `sections.${sectionIndex}.title`,
-        message: `Section ${sectionIndex + 1} title is required.`,
-      });
+      issues.push(issue(`sections.${sectionIndex}.title`, currentSectionLabel, "Section title is required."));
     }
     if (section.questions.length === 0) {
-      issues.push({
-        path: `sections.${sectionIndex}.questions`,
-        message: `Section ${sectionIndex + 1} needs at least one question.`,
-      });
+      issues.push(
+        issue(`sections.${sectionIndex}.questions`, currentSectionLabel, "Add at least one question.")
+      );
     }
 
     for (const [questionIndex, question] of section.questions.entries()) {
+      const currentQuestionLabel = questionLabel(section, sectionIndex, question, questionIndex);
       questionByClientId.set(question.clientId, question);
+      questionContextByClientId.set(question.clientId, currentQuestionLabel);
       if (!question.questionText.trim()) {
-        issues.push({
-          path: `sections.${sectionIndex}.questions.${questionIndex}.questionText`,
-          message: "Question text is required.",
-        });
+        issues.push(
+          issue(
+            `sections.${sectionIndex}.questions.${questionIndex}.questionText`,
+            currentQuestionLabel,
+            "Question text is required."
+          )
+        );
       }
 
       if (isChoiceType(question.questionType)) {
         if (question.options.length < 2) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.options`,
-            message: "Choice questions require at least two options.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.options`,
+              currentQuestionLabel,
+              "Choice questions require at least two options."
+            )
+          );
         }
         if (question.questionType === "MULTIPLE_CHOICE") {
           const exclusiveCount = question.options.filter((option) => Boolean(option.isExclusive)).length;
           if (exclusiveCount > 1) {
-            issues.push({
-              path: `sections.${sectionIndex}.questions.${questionIndex}.options`,
-              message: "Only one exclusive option is allowed in a multiple-choice question.",
-            });
+            issues.push(
+              issue(
+                `sections.${sectionIndex}.questions.${questionIndex}.options`,
+                currentQuestionLabel,
+                "Only one exclusive option is allowed in a multiple-choice question."
+              )
+            );
           }
         }
         question.options.forEach((option, optionIndex) => {
           if (!option.text.trim()) {
-            issues.push({
-              path: `sections.${sectionIndex}.questions.${questionIndex}.options.${optionIndex}`,
-              message: "Option text is required.",
-            });
+            issues.push(
+              issue(
+                `sections.${sectionIndex}.questions.${questionIndex}.options.${optionIndex}`,
+                currentQuestionLabel,
+                `Option ${optionIndex + 1} text is required.`
+              )
+            );
           }
         });
       }
 
       if (isJsonType(question.questionType)) {
         if (!question.questionConfig || !isJsonQuestionConfig(question.questionConfig)) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig`,
-            message: "JSON configuration is required for JSON question type.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.questionConfig`,
+              currentQuestionLabel,
+              "JSON configuration is required for JSON question type."
+            )
+          );
         } else if (question.questionConfig.jsonType === "REPEATABLE_TABLE") {
           if (question.questionConfig.columns.length === 0) {
-            issues.push({
-              path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.columns`,
-              message: "Repeatable table requires at least one column.",
-            });
+            issues.push(
+              issue(
+                `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.columns`,
+                currentQuestionLabel,
+                "Repeatable table requires at least one column."
+              )
+            );
           }
           if (question.questionConfig.maxRows < question.questionConfig.minRows) {
-            issues.push({
-              path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.maxRows`,
-              message: "Max rows must be greater than or equal to min rows.",
-            });
+            issues.push(
+              issue(
+                `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.maxRows`,
+                currentQuestionLabel,
+                "Max rows must be greater than or equal to min rows."
+              )
+            );
           }
         } else if (
           question.questionConfig.rows.length === 0 ||
           question.questionConfig.columns.length === 0
         ) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig`,
-            message: "Grid requires at least one row and one column.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.questionConfig`,
+              currentQuestionLabel,
+              "Grid requires at least one row and one column."
+            )
+          );
         }
       }
 
@@ -588,31 +634,46 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
           Number.isFinite(maxValue) &&
           maxValue < minValue
         ) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.maxValue`,
-            message: "Maximum value must be greater than or equal to minimum value.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.questionConfig.maxValue`,
+              currentQuestionLabel,
+              "Maximum value must be greater than or equal to minimum value."
+            )
+          );
         }
       }
     }
   }
 
   for (const [sectionIndex, section] of state.sections.entries()) {
+    const currentSectionLabel = sectionLabel(section, sectionIndex);
     for (const [conditionIndex, condition] of section.skipConditions.entries()) {
+      const ruleLabel = `${currentSectionLabel} / Section skip rule ${conditionIndex + 1}`;
       const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);
       if (!parentQuestion) {
-        issues.push({
-          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}`,
-          message: "Section skip condition parent question does not exist.",
-        });
+        issues.push(
+          issue(
+            `sections.${sectionIndex}.skipConditions.${conditionIndex}`,
+            ruleLabel,
+            "Parent question does not exist."
+          )
+        );
         continue;
       }
+      const parentLabel =
+        questionContextByClientId.get(parentQuestion.clientId) ??
+        (parentQuestion.questionText.trim() || "Untitled question");
+      const ruleWithParentLabel = `${ruleLabel} triggered by ${parentLabel}`;
 
       if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, condition.operator)) {
-        issues.push({
-          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}.operator`,
-          message: `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`,
-        });
+        issues.push(
+          issue(
+            `sections.${sectionIndex}.skipConditions.${conditionIndex}.operator`,
+            ruleWithParentLabel,
+            `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`
+          )
+        );
       }
 
       if (isChoiceType(parentQuestion.questionType) && condition.optionClientId) {
@@ -620,51 +681,75 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
           (option) => option.clientId === condition.optionClientId
         );
         if (!optionExists) {
-          issues.push({
-            path: `sections.${sectionIndex}.skipConditions.${conditionIndex}`,
-            message: "Section skip condition option reference is invalid.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.skipConditions.${conditionIndex}`,
+              ruleWithParentLabel,
+              "Selected option no longer exists."
+            )
+          );
         }
       }
 
       if (isChoiceType(parentQuestion.questionType) && !condition.optionClientId) {
-        issues.push({
-          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}.optionClientId`,
-          message: "Section skip condition option is required for choice parent questions.",
-        });
+        issues.push(
+          issue(
+            `sections.${sectionIndex}.skipConditions.${conditionIndex}.optionClientId`,
+            ruleWithParentLabel,
+            "Choose the expected option for this choice question."
+          )
+        );
       }
 
       if (!isChoiceType(parentQuestion.questionType) && !(condition.expectedValue ?? "").trim()) {
-        issues.push({
-          path: `sections.${sectionIndex}.skipConditions.${conditionIndex}.expectedValue`,
-          message: "Section skip condition expected value is required for non-choice parent questions.",
-        });
+        issues.push(
+          issue(
+            `sections.${sectionIndex}.skipConditions.${conditionIndex}.expectedValue`,
+            ruleWithParentLabel,
+            "Enter the expected answer value."
+          )
+        );
       }
     }
 
     for (const [questionIndex, question] of section.questions.entries()) {
+      const currentQuestionLabel = questionLabel(section, sectionIndex, question, questionIndex);
       for (const [conditionIndex, condition] of question.showConditions.entries()) {
+        const ruleLabel = `${currentQuestionLabel} / Follow-up rule ${conditionIndex + 1}`;
         const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);
         if (!parentQuestion) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}`,
-            message: "Condition parent question does not exist.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}`,
+              ruleLabel,
+              "Parent question does not exist."
+            )
+          );
           continue;
         }
+        const parentLabel =
+          questionContextByClientId.get(parentQuestion.clientId) ??
+          (parentQuestion.questionText.trim() || "Untitled question");
+        const ruleWithParentLabel = `${ruleLabel} triggered by ${parentLabel}`;
 
         if (parentQuestion.clientId === question.clientId) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}`,
-            message: "Question cannot depend on itself.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}`,
+              ruleLabel,
+              "A question cannot depend on itself."
+            )
+          );
         }
 
         if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, condition.operator)) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.operator`,
-            message: `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`,
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.operator`,
+              ruleWithParentLabel,
+              `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`
+            )
+          );
         }
 
         if (isChoiceType(parentQuestion.questionType) && condition.optionClientId) {
@@ -672,28 +757,37 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
             (option) => option.clientId === condition.optionClientId
           );
           if (!optionExists) {
-            issues.push({
-              path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}`,
-              message: "Condition option reference is invalid.",
-            });
+            issues.push(
+              issue(
+                `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}`,
+                ruleWithParentLabel,
+                "Selected option no longer exists."
+              )
+            );
           }
         }
 
         if (isChoiceType(parentQuestion.questionType) && !condition.optionClientId) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.optionClientId`,
-            message: "Condition option is required for choice parent questions.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.optionClientId`,
+              ruleWithParentLabel,
+              "Choose the expected option for this choice question."
+            )
+          );
         }
 
         if (
           !isChoiceType(parentQuestion.questionType) &&
           !(condition.expectedValue ?? "").trim()
         ) {
-          issues.push({
-            path: `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.expectedValue`,
-            message: "Condition expected value is required for non-choice parent questions.",
-          });
+          issues.push(
+            issue(
+              `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.expectedValue`,
+              ruleWithParentLabel,
+              "Enter the expected answer value."
+            )
+          );
         }
       }
     }

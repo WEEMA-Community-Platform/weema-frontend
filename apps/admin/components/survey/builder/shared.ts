@@ -69,6 +69,13 @@ export function getOperatorOptionsForQuestionType(questionType: QuestionType) {
   );
 }
 
+export function getDefaultConditionOperator(questionType: QuestionType): ShowCondition["operator"] {
+  if (questionType === "SHORT_TEXT" || questionType === "LONG_TEXT") {
+    return "CONTAINS";
+  }
+  return getOperatorOptionsForQuestionType(questionType)[0]?.value ?? "EQUALS";
+}
+
 export const LOGIC_TYPE_OPTIONS: Array<{ value: ShowCondition["logicType"]; label: string }> = [
   { value: "AND", label: "AND" },
   { value: "OR", label: "OR" },
@@ -200,7 +207,7 @@ function parseBuilderSnapshot(snapshot: string): BuilderSnapshot {
 export function createFollowUpCondition(parentQuestion: SurveyQuestion): ShowCondition {
   return {
     parentQuestionClientId: parentQuestion.clientId,
-    operator: isChoiceType(parentQuestion.questionType) ? "EQUALS" : "CONTAINS",
+    operator: getDefaultConditionOperator(parentQuestion.questionType),
     optionClientId: isChoiceType(parentQuestion.questionType)
       ? parentQuestion.options[0]?.clientId
       : undefined,

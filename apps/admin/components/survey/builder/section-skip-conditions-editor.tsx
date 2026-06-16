@@ -24,6 +24,7 @@ import {
   LOGIC_TYPE_OPTIONS,
   OPERATOR_OPTIONS,
   describeCondition,
+  getDefaultConditionOperator,
   getOperatorOptionsForQuestionType,
 } from "./shared";
 
@@ -92,7 +93,8 @@ export function SectionSkipConditionsEditor({
         <div>
           <p className="text-sm font-medium">Section skip rules</p>
           <p className="text-xs text-muted-foreground">
-            Skip this entire section when these conditions match.
+            Skip this entire section when these rules match. Use AND when every rule must match,
+            or OR when any one rule can match.
           </p>
         </div>
         <Button
@@ -181,9 +183,7 @@ export function SectionSkipConditionsEditor({
                   onUpdateCondition(index, (prev) => ({
                     ...prev,
                     parentQuestionClientId: parentQuestion.clientId,
-                    operator:
-                      getOperatorOptionsForQuestionType(parentQuestion.questionType)[0]?.value ??
-                      "EQUALS",
+                    operator: getDefaultConditionOperator(parentQuestion.questionType),
                     optionClientId: isChoiceType(parentQuestion.questionType)
                       ? parentQuestion.options[0]?.clientId
                       : undefined,
@@ -315,7 +315,8 @@ export function SectionSkipConditionsEditor({
 
             {hasMultipleConditions && index === 0 ? (
               <p className="text-[11px] text-muted-foreground">
-                First rule has no join operator. AND/OR applies from the second row.
+                The first rule starts the sentence. AND/OR is chosen from the second rule onward
+                because it connects back to the rule above.
               </p>
             ) : null}
           </div>
