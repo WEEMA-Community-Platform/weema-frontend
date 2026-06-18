@@ -219,15 +219,17 @@ export function createFollowUpCondition(parentQuestion: SurveyQuestion): ShowCon
 export function getIdMapsFromState(state: SurveyBuilderState) {
   const questionIdByClientId = new Map<string, string>();
   const optionIdByClientId = new Map<string, string>();
+  const questionByClientId = new Map<string, SurveyQuestion>();
   for (const section of state.sections) {
     for (const question of section.questions) {
+      questionByClientId.set(question.clientId, question);
       if (question.id) questionIdByClientId.set(question.clientId, question.id);
       for (const option of question.options) {
         if (option.id) optionIdByClientId.set(option.clientId, option.id);
       }
     }
   }
-  return { questionIdByClientId, optionIdByClientId };
+  return { questionIdByClientId, optionIdByClientId, questionByClientId };
 }
 
 export function getSaveAllEligibility(

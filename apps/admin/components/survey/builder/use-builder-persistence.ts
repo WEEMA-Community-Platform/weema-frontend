@@ -25,12 +25,15 @@ import {
   serializeSectionSkipConditionsPayload,
 } from "@/lib/api/surveys";
 import {
+  getValidConditionOperatorForQuestionType,
   normalizeSurveyResponse,
   serializeSurveyPayload,
   serializeSurveyTranslationPayload,
   validateSurveyBuilderState,
+  type BackendSurveyRecord,
+  type CreateSurveyPayload,
 } from "@/lib/survey-builder/normalize";
-import type { SurveyBuilderState, SurveyValidationIssue } from "@/lib/survey-builder/types";
+import type { SurveyBuilderState, SurveyQuestion, SurveyValidationIssue } from "@/lib/survey-builder/types";
 import type { useSurveyBuilder } from "@/hooks/use-survey-builder";
 
 import {
@@ -41,13 +44,140 @@ import {
   type PendingReorder,
 } from "./shared";
 
+type BuilderSnapshot = {
+  survey: CreateSurveyPayload;
+  sectionSkipConditions?: Array<{
+    sectionClientId: string;
+    skipConditions: SurveyBuilderState["sections"][number]["skipConditions"];
+  }>;
+};
+
+function parseSnapshot(snapshot: string | null): BuilderSnapshot | null {
+  if (!snapshot) return null;
+  try {
+    const parsed = JSON.parse(snapshot) as Partial<BuilderSnapshot>;
+    if (!parsed || typeof parsed !== "object" || !parsed.survey) return null;
+    return {
+      survey: parsed.survey,
+      sectionSkipConditions: parsed.sectionSkipConditions ?? [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getChangedQuestionClientIds(
+  state: SurveyBuilderState,
+  lastSnapshot: string | null
+) {
+  const parsed = parseSnapshot(lastSnapshot);
+  if (!parsed) {
+    return new Set(state.sections.flatMap((section) => section.questions.map((question) => question.clientId)));
+  }
+  const currentQuestions = serializeSurveyPayload(state).sections.flatMap((section) => section.questions);
+  const lastQuestions = parsed.survey.sections.flatMap((section) => section.questions);
+  const lastByClientId = new Map(lastQuestions.map((question) => [question.clientId, question]));
+  const changed = new Set<string>();
+
+  for (const question of currentQuestions) {
+    const previous = lastByClientId.get(question.clientId);
+    if (!previous || JSON.stringify(previous) !== JSON.stringify(question)) {
+      changed.add(question.clientId);
+    }
+  }
+
+  return changed;
+}
+
+function getChangedSectionClientIds(
+  state: SurveyBuilderState,
+  lastSnapshot: string | null
+) {
+  const parsed = parseSnapshot(lastSnapshot);
+  if (!parsed) {
+    return new Set(state.sections.map((section) => section.clientId));
+  }
+  const currentSurvey = serializeSurveyPayload(state);
+  const changed = new Set<string>();
+
+  state.sections.forEach((section, index) => {
+    const previous = parsed.survey.sections[index];
+    const current = currentSurvey.sections[index];
+    if (!previous || !current) {
+      changed.add(section.clientId);
+      return;
+    }
+    if (previous.title !== current.title || previous.description !== current.description) {
+      changed.add(section.clientId);
+    }
+  });
+
+  const previousSkipBySection = new Map(
+    (parsed.sectionSkipConditions ?? []).map((item) => [
+      item.sectionClientId,
+      item.skipConditions,
+    ])
+  );
+  for (const section of state.sections) {
+    if (
+      JSON.stringify(previousSkipBySection.get(section.clientId) ?? []) !==
+      JSON.stringify(section.skipConditions ?? [])
+    ) {
+      changed.add(section.clientId);
+    }
+  }
+
+  return changed;
+}
+
+function getConditionRepairQuestionClientIds(
+  record: BackendSurveyRecord,
+  normalized: SurveyBuilderState
+) {
+  const normalizedQuestionById = new Map<string, SurveyQuestion>();
+  for (const section of normalized.sections) {
+    for (const question of section.questions) {
+      if (question.id) normalizedQuestionById.set(question.id, question);
+    }
+  }
+
+  const rawQuestionTypeById = new Map<string, SurveyQuestion["questionType"]>();
+  for (const section of record.sections ?? []) {
+    for (const question of section.questions ?? []) {
+      if (question.id && question.questionType) {
+        rawQuestionTypeById.set(question.id, question.questionType);
+      }
+    }
+  }
+
+  const repaired = new Set<string>();
+  for (const section of record.sections ?? []) {
+    for (const question of section.questions ?? []) {
+      const normalizedQuestion = question.id ? normalizedQuestionById.get(question.id) : null;
+      if (!normalizedQuestion) continue;
+      for (const condition of question.showConditions ?? question.conditions ?? []) {
+        const parentQuestionId = condition.parentQuestionId ?? condition.parentQuestionClientId;
+        const parentQuestionType = parentQuestionId ? rawQuestionTypeById.get(parentQuestionId) : undefined;
+        if (!condition.operator || !parentQuestionType) continue;
+        const effectiveOperator = getValidConditionOperatorForQuestionType(
+          parentQuestionType,
+          condition.operator
+        );
+        if (effectiveOperator !== condition.operator) {
+          repaired.add(normalizedQuestion.clientId);
+        }
+      }
+    }
+  }
+
+  return repaired;
+}
+
 type Params = {
   initialSurveyId: string | null;
   translationSourceSurveyId: string | null;
   setInitialSurveyId: React.Dispatch<React.SetStateAction<string | null>>;
   builder: ReturnType<typeof useSurveyBuilder>;
-  questionIdByClientId: Map<string, string>;
-  optionIdByClientId: Map<string, string>;
   totalQuestionCount: number;
   builderSnapshot: string;
   setIssues: React.Dispatch<React.SetStateAction<SurveyValidationIssue[]>>;
@@ -62,8 +192,6 @@ export function useBuilderPersistence({
   translationSourceSurveyId,
   setInitialSurveyId,
   builder,
-  questionIdByClientId,
-  optionIdByClientId,
   totalQuestionCount,
   builderSnapshot,
   setIssues,
@@ -112,6 +240,9 @@ export function useBuilderPersistence({
   const [pendingReorder, setPendingReorder] = useState<PendingReorder | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [lastSyncedSnapshot, setLastSyncedSnapshot] = useState<string | null>(null);
+  const [pendingConditionRepairQuestionIds, setPendingConditionRepairQuestionIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   const saveAllEligibility = useMemo(() => {
     if (!initialSurveyId) {
@@ -121,8 +252,16 @@ export function useBuilderPersistence({
         reason: "Save all changes is only for existing surveys.",
       };
     }
-    return getSaveAllEligibility(builderSnapshot, lastSyncedSnapshot);
-  }, [builderSnapshot, initialSurveyId, lastSyncedSnapshot]);
+    const baseEligibility = getSaveAllEligibility(builderSnapshot, lastSyncedSnapshot);
+    if (baseEligibility.hasUnsavedChanges || pendingConditionRepairQuestionIds.size === 0) {
+      return baseEligibility;
+    }
+    return {
+      canSaveAll: true,
+      hasUnsavedChanges: true,
+      reason: "Save all will repair legacy follow-up conditions for this survey.",
+    };
+  }, [builderSnapshot, initialSurveyId, lastSyncedSnapshot, pendingConditionRepairQuestionIds]);
 
   // ─── Core reload ───────────────────────────────────────────────────────────
 
@@ -132,8 +271,10 @@ export function useBuilderPersistence({
       queryFn: () => getSurveyById(surveyId),
     });
     const normalized = normalizeSurveyResponse(detail.survey);
+    const repairedQuestionIds = getConditionRepairQuestionClientIds(detail.survey, normalized);
     builder.setState(normalized);
     setLastSyncedSnapshot(buildBuilderSnapshot(normalized));
+    setPendingConditionRepairQuestionIds(repairedQuestionIds);
     setSelectedSectionClientId((prev) =>
       normalized.sections.some((s) => s.clientId === prev)
         ? prev
@@ -297,6 +438,10 @@ export function useBuilderPersistence({
     setIsSavingAllChanges(true);
     try {
       const draftState = JSON.parse(JSON.stringify(builder.state)) as SurveyBuilderState;
+      let workingState = draftState;
+      const changedSectionClientIds = getChangedSectionClientIds(draftState, lastSyncedSnapshot);
+      const changedQuestionClientIds = getChangedQuestionClientIds(draftState, lastSyncedSnapshot);
+      const conditionRepairQuestionIds = new Set(pendingConditionRepairQuestionIds);
       const draftSectionByClientId = new Map(
         draftState.sections.map((section) => [section.clientId, section])
       );
@@ -315,28 +460,34 @@ export function useBuilderPersistence({
           language: builder.state.language,
         },
       });
-      const unsyncedSections = builder.state.sections.filter((s) => !s.id);
+      const unsyncedSections = draftState.sections.filter((s) => !s.id);
+      const hadUnsyncedSections = unsyncedSections.length > 0;
       if (unsyncedSections.length > 0) {
         await createSectionsMutation.mutateAsync({
           surveyId: initialSurveyId,
           payload: unsyncedSections.map((s) =>
-            serializeSectionPayload(s, getIdMapsFromState(builder.state))
+            serializeSectionPayload(s, getIdMapsFromState(draftState))
           ),
         });
-        await reloadSurvey(initialSurveyId);
+        workingState = await reloadSurvey(initialSurveyId);
       }
-      for (const section of builder.state.sections) {
+      let hadUnsyncedQuestions = false;
+      for (const section of draftState.sections) {
         if (!section.id) continue;
         const unsynced = section.questions.filter((q) => !q.id);
         if (unsynced.length === 0) continue;
+        hadUnsyncedQuestions = true;
         await createQuestionMutation.mutateAsync({
           sectionId: section.id,
-          payload: unsynced.map((q) => serializeQuestionPayload(q, getIdMapsFromState(builder.state))),
+          payload: unsynced.map((q) => serializeQuestionPayload(q, getIdMapsFromState(draftState))),
         });
       }
-      await reloadSurvey(initialSurveyId);
-      for (const section of builder.state.sections) {
+      if (hadUnsyncedQuestions) {
+        workingState = await reloadSurvey(initialSurveyId);
+      }
+      for (const section of workingState.sections) {
         if (!section.id) continue;
+        if (!changedSectionClientIds.has(section.clientId)) continue;
         const draftSection = draftSectionByClientId.get(section.clientId) ?? section;
         await updateSectionMutation.mutateAsync({
           id: section.id,
@@ -349,33 +500,52 @@ export function useBuilderPersistence({
           id: section.id,
           payload: serializeSectionSkipConditionsPayload(
             draftSection.skipConditions ?? [],
-            getIdMapsFromState(builder.state)
+            getIdMapsFromState(workingState)
           ),
         });
       }
-      let idMaps = getIdMapsFromState(builder.state);
-      for (const section of builder.state.sections) {
+      let idMaps = getIdMapsFromState(workingState);
+      for (const section of workingState.sections) {
         for (const question of section.questions) {
           if (!question.id) continue;
           const draftQuestion = draftQuestionByClientId.get(question.clientId) ?? question;
+          if (!draftQuestion.id) continue;
+          if (
+            !changedQuestionClientIds.has(question.clientId) &&
+            !conditionRepairQuestionIds.has(question.clientId)
+          ) {
+            continue;
+          }
           await updateQuestionMutation.mutateAsync({
             id: question.id,
             payload: serializeQuestionPayload(draftQuestion, idMaps),
           });
         }
       }
-      // Follow-up conditions can reference parent questions/options that only get
-      // finalized IDs after the first update pass. Reload and sync conditions
-      // again so nested follow-ups keep stable backend references.
-      await reloadSurvey(initialSurveyId);
-      idMaps = getIdMapsFromState(builder.state);
-      for (const section of builder.state.sections) {
-        for (const question of section.questions) {
-          if (!question.id || question.showConditions.length === 0) continue;
-          await updateQuestionMutation.mutateAsync({
-            id: question.id,
-            payload: serializeQuestionPayload(question, idMaps),
-          });
+      const shouldResyncFollowUps =
+        hadUnsyncedSections || hadUnsyncedQuestions || conditionRepairQuestionIds.size > 0;
+      if (shouldResyncFollowUps) {
+        // Follow-up conditions can reference parent questions/options that only get
+        // finalized IDs after create/update passes. Reload and sync affected
+        // follow-ups so legacy repairs and new nested references persist.
+        workingState = await reloadSurvey(initialSurveyId);
+        idMaps = getIdMapsFromState(workingState);
+        const syncAllFollowUps = hadUnsyncedSections || hadUnsyncedQuestions;
+        for (const section of workingState.sections) {
+          for (const question of section.questions) {
+            if (!question.id || question.showConditions.length === 0) continue;
+            if (
+              !syncAllFollowUps &&
+              !changedQuestionClientIds.has(question.clientId) &&
+              !conditionRepairQuestionIds.has(question.clientId)
+            ) {
+              continue;
+            }
+            await updateQuestionMutation.mutateAsync({
+              id: question.id,
+              payload: serializeQuestionPayload(question, idMaps),
+            });
+          }
         }
       }
       await reloadSurvey(initialSurveyId);
@@ -402,6 +572,7 @@ export function useBuilderPersistence({
     }
     const section = builder.state.sections.find((s) => s.clientId === sectionClientId);
     if (!section) return;
+    const stateMaps = getIdMapsFromState(builder.state);
     setSavingSectionClientId(sectionClientId);
     try {
       if (section.id) {
@@ -413,7 +584,7 @@ export function useBuilderPersistence({
           id: section.id,
           payload: serializeSectionSkipConditionsPayload(
             section.skipConditions ?? [],
-            { questionIdByClientId, optionIdByClientId }
+            stateMaps
           ),
         });
         sileo.success({ title: "Section saved", description: result.message ?? "Section has been updated." });
@@ -421,7 +592,7 @@ export function useBuilderPersistence({
         const draftSection = section;
         const result = await createSectionsMutation.mutateAsync({
           surveyId: initialSurveyId,
-          payload: [serializeSectionPayload(section, { questionIdByClientId, optionIdByClientId })],
+          payload: [serializeSectionPayload(section, stateMaps)],
         });
         const refreshed = await reloadSurvey(initialSurveyId);
         const createdSection = refreshed.sections.find((s) => s.clientId === draftSection.clientId);
@@ -460,7 +631,7 @@ export function useBuilderPersistence({
     setSavingQuestionClientId(questionClientId);
     try {
       let resolvedSectionId: string | null = section.id ?? null;
-      let idMaps = { questionIdByClientId, optionIdByClientId };
+      let idMaps = getIdMapsFromState(builder.state);
 
       if (!resolvedSectionId) {
         setSavingSectionClientId(sectionClientId);

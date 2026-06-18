@@ -99,25 +99,6 @@ export function SurveyBuilderPage({
     () => new Map(allQuestions.map((q) => [q.clientId, q])),
     [allQuestions]
   );
-  const questionIdByClientId = useMemo(
-    () =>
-      new Map(
-        allQuestions
-          .filter((q) => Boolean(q.id))
-          .map((q) => [q.clientId, q.id as string])
-      ),
-    [allQuestions]
-  );
-  const optionIdByClientId = useMemo(() => {
-    const entries: Array<[string, string]> = [];
-    for (const q of allQuestions) {
-      for (const opt of q.options) {
-        if (opt.id) entries.push([opt.clientId, opt.id]);
-      }
-    }
-    return new Map(entries);
-  }, [allQuestions]);
-
   const dependentsMap = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const q of allQuestions) {
@@ -164,8 +145,6 @@ export function SurveyBuilderPage({
     translationSourceSurveyId: translationSourceSurveyId ?? null,
     setInitialSurveyId,
     builder,
-    questionIdByClientId,
-    optionIdByClientId,
     totalQuestionCount,
     builderSnapshot,
     setIssues,

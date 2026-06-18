@@ -52,6 +52,19 @@ function isOperatorAllowedForQuestionType(questionType: QuestionType, operator: 
   return operator === "EQUALS" || operator === "NOT_EQUALS";
 }
 
+export function getValidConditionOperatorForQuestionType(
+  questionType: QuestionType,
+  operator: ConditionOperator
+): ConditionOperator {
+  if (isOperatorAllowedForQuestionType(questionType, operator)) {
+    return operator;
+  }
+  if (questionType === "SHORT_TEXT" || questionType === "LONG_TEXT") {
+    return "CONTAINS";
+  }
+  return "EQUALS";
+}
+
 type BackendSurveyOption = {
   id?: string;
   clientId?: string;
@@ -356,9 +369,11 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
 
   const questionIdToClientId = new Map<string, string>();
   const optionIdToClientId = new Map<string, string>();
+  const questionByClientId = new Map<string, SurveyQuestion>();
 
   for (const section of normalized.sections) {
     for (const question of section.questions) {
+      questionByClientId.set(question.clientId, question);
       if (question.id) {
         questionIdToClientId.set(question.id, question.clientId);
       }
@@ -379,7 +394,18 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
       optionClientId: condition.optionClientId
         ? optionIdToClientId.get(condition.optionClientId) ?? condition.optionClientId
         : undefined,
-    }));
+    })).map((condition) => {
+      const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);
+      return parentQuestion
+        ? {
+            ...condition,
+            operator: getValidConditionOperatorForQuestionType(
+              parentQuestion.questionType,
+              condition.operator
+            ),
+          }
+        : condition;
+    });
     for (const question of section.questions) {
       question.showConditions = question.showConditions.map((condition) => ({
         ...condition,
@@ -389,7 +415,18 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
         optionClientId: condition.optionClientId
           ? optionIdToClientId.get(condition.optionClientId) ?? condition.optionClientId
           : undefined,
-      }));
+      })).map((condition) => {
+        const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);
+        return parentQuestion
+          ? {
+              ...condition,
+              operator: getValidConditionOperatorForQuestionType(
+                parentQuestion.questionType,
+                condition.operator
+              ),
+            }
+          : condition;
+      });
     }
   }
 
@@ -397,6 +434,11 @@ export function normalizeSurveyResponse(record: BackendSurveyRecord): SurveyBuil
 }
 
 export function serializeSurveyPayload(state: SurveyBuilderState): CreateSurveyPayload {
+  const questionByClientId = new Map(
+    state.sections.flatMap((section) =>
+      section.questions.map((question) => [question.clientId, question] as const)
+    )
+  );
   return {
     title: state.title.trim(),
     description: state.description.trim(),
@@ -430,13 +472,21 @@ export function serializeSurveyPayload(state: SurveyBuilderState): CreateSurveyP
                 : undefined,
           showConditions:
             item.showConditions.length > 0
-              ? item.showConditions.map((condition, index) => ({
-                  parentQuestionClientId: condition.parentQuestionClientId,
-                  operator: condition.operator,
-                  optionClientId: condition.optionClientId || undefined,
-                  expectedValue: condition.expectedValue?.trim() || undefined,
-                  logicType: index === 0 ? "AND" : condition.logicType,
-                }))
+              ? item.showConditions.map((condition, index) => {
+                  const parentQuestion = questionByClientId.get(condition.parentQuestionClientId);
+                  return {
+                    parentQuestionClientId: condition.parentQuestionClientId,
+                    operator: parentQuestion
+                      ? getValidConditionOperatorForQuestionType(
+                          parentQuestion.questionType,
+                          condition.operator
+                        )
+                      : condition.operator,
+                    optionClientId: condition.optionClientId || undefined,
+                    expectedValue: condition.expectedValue?.trim() || undefined,
+                    logicType: index === 0 ? "AND" : condition.logicType,
+                  };
+                })
               : undefined,
         };
       }),
@@ -665,13 +715,17 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
         questionContextByClientId.get(parentQuestion.clientId) ??
         (parentQuestion.questionText.trim() || "Untitled question");
       const ruleWithParentLabel = `${ruleLabel} triggered by ${parentLabel}`;
+      const effectiveOperator = getValidConditionOperatorForQuestionType(
+        parentQuestion.questionType,
+        condition.operator
+      );
 
-      if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, condition.operator)) {
+      if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, effectiveOperator)) {
         issues.push(
           issue(
             `sections.${sectionIndex}.skipConditions.${conditionIndex}.operator`,
             ruleWithParentLabel,
-            `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`
+            `Operator ${effectiveOperator} is not valid for ${parentQuestion.questionType}.`
           )
         );
       }
@@ -731,6 +785,10 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
           questionContextByClientId.get(parentQuestion.clientId) ??
           (parentQuestion.questionText.trim() || "Untitled question");
         const ruleWithParentLabel = `${ruleLabel} triggered by ${parentLabel}`;
+        const effectiveOperator = getValidConditionOperatorForQuestionType(
+          parentQuestion.questionType,
+          condition.operator
+        );
 
         if (parentQuestion.clientId === question.clientId) {
           issues.push(
@@ -742,12 +800,12 @@ export function validateSurveyBuilderState(state: SurveyBuilderState): SurveyVal
           );
         }
 
-        if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, condition.operator)) {
+        if (!isOperatorAllowedForQuestionType(parentQuestion.questionType, effectiveOperator)) {
           issues.push(
             issue(
               `sections.${sectionIndex}.questions.${questionIndex}.showConditions.${conditionIndex}.operator`,
               ruleWithParentLabel,
-              `Operator ${condition.operator} is not valid for ${parentQuestion.questionType}.`
+              `Operator ${effectiveOperator} is not valid for ${parentQuestion.questionType}.`
             )
           );
         }

@@ -6,6 +6,7 @@ import {
   serializeSurveyPayload,
   type BackendSurveyRecord,
 } from "@/lib/survey-builder/normalize";
+import { serializeQuestionPayload } from "@/lib/api/surveys/serializers";
 import type { SurveyBuilderState } from "@/lib/survey-builder/types";
 
 test("serializeSurveyPayload keeps all mixed-parent follow-up conditions", () => {
@@ -122,6 +123,96 @@ test("serializeSurveyPayload keeps all mixed-parent follow-up conditions", () =>
       },
     ]
   );
+});
+
+test("normalizeSurveyResponse repairs legacy boolean CONTAINS follow-up operators", () => {
+  const backendRecord: BackendSurveyRecord = {
+    id: "survey-1",
+    title: "Survey",
+    targetType: "MEMBER",
+    language: "en",
+    sections: [
+      {
+        id: "section-1",
+        clientId: "section-client-1",
+        title: "Section",
+        orderNo: 1,
+        questions: [
+          {
+            id: "parent-id",
+            clientId: "parent",
+            questionText: "Boolean parent",
+            questionType: "BOOLEAN",
+            orderNo: 1,
+            options: [],
+          },
+          {
+            id: "follow-up-id",
+            clientId: "follow-up",
+            questionText: "Follow-up",
+            questionType: "NUMBER",
+            orderNo: 2,
+            options: [],
+            conditions: [
+              {
+                parentQuestionId: "parent-id",
+                operator: "CONTAINS",
+                expectedValue: "true",
+                logicType: "AND",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  const normalized = normalizeSurveyResponse(backendRecord);
+  const followUp = normalized.sections[0]?.questions.find(
+    (question) => question.clientId === "follow-up"
+  );
+
+  assert.equal(followUp?.showConditions[0]?.operator, "EQUALS");
+  assert.equal(followUp?.showConditions[0]?.expectedValue, "true");
+});
+
+test("serializeQuestionPayload sends repaired conditions for update endpoints", () => {
+  const parent = {
+    id: "parent-id",
+    clientId: "parent",
+    questionText: "Boolean parent",
+    questionType: "BOOLEAN" as const,
+    required: true,
+    orderNo: 1,
+    options: [],
+    showConditions: [],
+  };
+  const followUp = {
+    id: "follow-up-id",
+    clientId: "follow-up",
+    questionText: "Follow-up",
+    questionType: "NUMBER" as const,
+    required: true,
+    orderNo: 2,
+    options: [],
+    showConditions: [
+      {
+        parentQuestionClientId: "parent",
+        operator: "CONTAINS" as const,
+        expectedValue: "true",
+        logicType: "AND" as const,
+      },
+    ],
+  };
+
+  const payload = serializeQuestionPayload(followUp, {
+    questionIdByClientId: new Map([["parent", "parent-id"]]),
+    questionByClientId: new Map([["parent", parent]]),
+  });
+
+  assert.equal(payload.showConditions?.[0]?.operator, "EQUALS");
+  assert.equal(payload.conditions?.[0]?.operator, "EQUALS");
+  assert.equal(payload.conditions?.[0]?.parentQuestionId, "parent-id");
 });
 
 test("normalizeSurveyResponse remaps parent and option IDs for multi-parent follow-ups", () => {

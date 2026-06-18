@@ -208,6 +208,15 @@ export type UpsertQuestionPayload = {
     expectedValue?: string;
     logicType: "AND" | "OR";
   }>;
+  conditions?: Array<{
+    parentQuestionClientId: string;
+    parentQuestionId?: string;
+    operator: string;
+    optionClientId?: string;
+    optionId?: string;
+    expectedValue?: string;
+    logicType: "AND" | "OR";
+  }>;
 };
 
 export type SectionConditionPayload = {
