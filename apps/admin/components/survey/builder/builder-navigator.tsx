@@ -163,7 +163,7 @@ export function BuilderNavigator({
   return (
     <aside className="flex w-full shrink-0 flex-col border-b border-primary/10 bg-card/30 lg:w-[280px] lg:border-b-0 lg:border-r xl:w-[320px]">
       {/* Fixed top: notice + settings button */}
-      <div className="shrink-0 px-4 pb-0 pt-4">
+      <div className="shrink-0 px-4 pb-0 pt-2 ">
         {isTranslationMode ? (
           <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
             <span className="font-medium text-primary">Translation mode</span> — draft in the target
@@ -192,10 +192,10 @@ export function BuilderNavigator({
         {isLoadingInitialSurvey ? (
           <p className="mb-3 text-xs text-muted-foreground">Loading survey...</p>
         ) : null}
-        <div className="mt-4 space-y-2">
+        <div className="pt-4 space-y-2">
           <button
             type="button"
-            className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm ${
+            className={`flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm ${
               editorMode === "settings" ? "bg-primary/10 text-primary" : "hover:bg-primary/5"
             }`}
             onClick={onSelectSettings}

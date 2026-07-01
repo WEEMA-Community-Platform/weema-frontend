@@ -61,8 +61,9 @@ export function SurveySubmissionAnswerWorkspace({
   const submitSubmissionMutation = useSubmitSurveySubmissionMutation();
 
   const questions: WorkspaceQuestion[] = useMemo(() => {
+    const submissionAnswers = submission.answers ?? [];
     const answerByQuestionId = new Map(
-      submission.answers
+      submissionAnswers
         .filter((answer) => Boolean(answer.questionId))
         .map((answer) => [answer.questionId, answer] as const)
     );
@@ -78,7 +79,7 @@ export function SurveySubmissionAnswerWorkspace({
     const knownQuestionIds = new Set(
       questionTemplates.map((template) => template.questionId).filter((id): id is string => Boolean(id))
     );
-    const orphanAnswers = submission.answers
+    const orphanAnswers = submissionAnswers
       .filter((answer) => !knownQuestionIds.has(answer.questionId))
       .map((answer: SurveySubmissionAnswer) => ({
         key: answer.id,

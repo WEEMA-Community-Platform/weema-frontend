@@ -99,7 +99,7 @@ export type SurveySubmissionRecord = {
   submittedAt: string | null;
   totalQuestions: number;
   answeredQuestions: number;
-  answers: SurveySubmissionAnswer[];
+  answers?: SurveySubmissionAnswer[];
   locked?: boolean;
   targetId?: string;
   targetName?: string;
@@ -110,6 +110,10 @@ export type SurveySubmissionRecord = {
 
 export type SurveySubmissionsBySurveyResponse = BaseApiResponse & {
   submissions: SurveySubmissionRecord[];
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
 };
 
 export type SurveyPendingTargetsResponse = BaseApiResponse & {
@@ -552,6 +556,9 @@ export async function startSurveySubmission(
 export type SurveySubmissionsBySurveyQuery = {
   /** Backend query param: `shg-id` */
   shgId?: string;
+  /** Page number is 1-indexed. */
+  page?: number;
+  pageSize?: number;
 };
 
 
@@ -561,6 +568,8 @@ export async function getSurveySubmissionsBySurveyId(
 ): Promise<SurveySubmissionsBySurveyResponse> {
   const qs = buildQueryString({
     "shg-id": query.shgId?.trim() || undefined,
+    page: query.page ?? 1,
+    "page-size": query.pageSize ?? 10,
   });
   const url = `/api/survey-submissions/survey/${surveyId}${qs ? `?${qs}` : ""}`;
   const response = await fetch(url, { cache: "no-store" });
@@ -573,21 +582,35 @@ export async function getSurveySubmissionsBySurveyId(
     rows.map((row) => normalizeSurveySubmissionFromSurveyListApi(row, surveyId));
 
   if ("submissions" in payload && Array.isArray(payload.submissions)) {
+    const submissions = normalizeAll(payload.submissions as Record<string, unknown>[]);
     return {
       message: payload.message,
       statusCode: payload.statusCode,
-      submissions: normalizeAll(payload.submissions as Record<string, unknown>[]),
+      submissions,
+      pageSize: Number((payload as { pageSize?: number }).pageSize ?? submissions.length),
+      totalElements: Number(
+        (payload as { totalElements?: number }).totalElements ?? submissions.length
+      ),
+      totalPages: Number((payload as { totalPages?: number }).totalPages ?? 1),
+      currentPage: Number((payload as { currentPage?: number }).currentPage ?? query.page ?? 1),
     };
   }
 
   const rows = Array.isArray((payload as { data?: unknown[] }).data)
     ? ((payload as { data: Record<string, unknown>[] }).data ?? [])
     : [];
+  const submissions = normalizeAll(rows);
 
   return {
     message: payload.message,
     statusCode: payload.statusCode,
-    submissions: normalizeAll(rows),
+    submissions,
+    pageSize: Number((payload as { pageSize?: number }).pageSize ?? query.pageSize ?? 10),
+    totalElements: Number(
+      (payload as { totalElements?: number }).totalElements ?? submissions.length
+    ),
+    totalPages: Number((payload as { totalPages?: number }).totalPages ?? 1),
+    currentPage: Number((payload as { currentPage?: number }).currentPage ?? query.page ?? 1),
   };
 }
 

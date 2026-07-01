@@ -82,7 +82,7 @@ export type SurveySubmissionRecord = {
   submittedAt: string | null;
   totalQuestions: number;
   answeredQuestions: number;
-  answers: SurveySubmissionAnswer[];
+  answers?: SurveySubmissionAnswer[];
   locked?: boolean;
   targetId?: string;
   targetName?: string;

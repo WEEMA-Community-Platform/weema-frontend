@@ -241,7 +241,6 @@ function FollowUpVisibilityPreview(props: {
           <p className="font-medium">{t("followUpVisibility")}</p>
           {isMulti ? (
             <p className="mt-0.5 text-[10px] text-muted-foreground">
-              {/* Don’t add new i18n keys yet; keep this simple. */}
               Multi-question follow-up — rules join left-to-right.
             </p>
           ) : null}

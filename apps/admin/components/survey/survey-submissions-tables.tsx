@@ -7,7 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   EmptyStateRow,
+  PaginationRow,
   TableShell,
   tableActionsCellClass,
   tableRowActionsClass,
@@ -62,6 +70,8 @@ function isNotStartedStatus(status?: string | null) {
   return normalized === "NOT_STARTED" || normalized === "NOT STARTED" || normalized === "PENDING";
 }
 
+const SUBMISSIONS_PAGE_SIZE_OPTIONS = [10, 20, 40, 50, 100];
+
 type MemberSubmissionsTableCardProps = {
   selectedAssignmentName?: string;
   targetLabelSingular: string;
@@ -84,6 +94,12 @@ type MemberSubmissionsTableCardProps = {
   exportSubmissionsPendingLabel?: string;
   exportSubmissionsPending?: boolean;
   onExportSubmissions?: () => void;
+  currentPage?: number;
+  totalPages?: number;
+  totalElements?: number;
+  onPageChange?: (page: number) => void;
+  pageSize?: number;
+  onPageSizeChange?: (pageSize: number) => void;
 };
 
 export function MemberSubmissionsTableCard({
@@ -108,6 +124,12 @@ export function MemberSubmissionsTableCard({
   exportSubmissionsPendingLabel,
   exportSubmissionsPending = false,
   onExportSubmissions,
+  currentPage,
+  totalPages,
+  totalElements,
+  onPageChange,
+  pageSize,
+  onPageSizeChange,
 }: MemberSubmissionsTableCardProps) {
   const t = useTranslations("survey.submissions.memberTable");
   const tTable = useTranslations("community.members.table");
@@ -132,7 +154,7 @@ export function MemberSubmissionsTableCard({
               })
             : t("title", { target: titleTargetLabel }))}
         </CardTitle>
-        {showSubmissionFilters || onExportSubmissions ? (
+        {showSubmissionFilters || onExportSubmissions || (onPageSizeChange && pageSize !== undefined) ? (
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 shrink-0">
             {showSubmissionFilters && onOpenSubmissionFilters ? (
               <Button
@@ -151,6 +173,26 @@ export function MemberSubmissionsTableCard({
                   />
                 ) : null}
               </Button>
+            ) : null}
+            {onPageSizeChange && pageSize !== undefined ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Rows</span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(value) => onPageSizeChange(Number(value))}
+                >
+                  <SelectTrigger className="h-9 w-[88px] border-primary/30 text-xs">
+                    <SelectValue placeholder="Rows" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBMISSIONS_PAGE_SIZE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={String(option)}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : null}
             {onExportSubmissions &&
             exportSubmissionsLabel &&
@@ -297,6 +339,21 @@ export function MemberSubmissionsTableCard({
             );
           })}
         </TableShell>
+        {onPageChange &&
+        currentPage !== undefined &&
+        totalPages !== undefined &&
+        totalElements !== undefined &&
+        totalElements > 0 ? (
+          <div className="px-4">
+            <PaginationRow
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              onPrev={() => onPageChange(Math.max(1, currentPage - 1))}
+              onNext={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

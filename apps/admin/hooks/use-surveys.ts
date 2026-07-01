@@ -66,13 +66,15 @@ export function useSurveyDetailQuery(id: string | null, options?: { enabled?: bo
 
 export function useSurveySubmissionsBySurveyQuery(
   surveyId: string | null,
-  options?: { enabled?: boolean; shgId?: string }
+  options?: { enabled?: boolean; shgId?: string; page?: number; pageSize?: number }
 ) {
   const enabled = (options?.enabled ?? true) && !!surveyId;
   const shgId = options?.shgId?.trim() || undefined;
+  const page = options?.page ?? 1;
+  const pageSize = options?.pageSize ?? 10;
   return useQuery({
-    queryKey: ["survey", surveyId, "submissions", shgId ?? "all"],
-    queryFn: () => getSurveySubmissionsBySurveyId(surveyId!, { shgId }),
+    queryKey: ["survey", surveyId, "submissions", shgId ?? "all", page, pageSize],
+    queryFn: () => getSurveySubmissionsBySurveyId(surveyId!, { shgId, page, pageSize }),
     enabled,
   });
 }

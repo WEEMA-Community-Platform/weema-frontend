@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, LockIcon, UnlockIcon } from "lucide-react";
@@ -40,6 +40,7 @@ import { buildSurveySubmissionsExportCsv } from "@/lib/survey-submissions-export
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
 type PendingSubmissionLock = { submission: SurveySubmissionRecord; action: "lock" | "unlock" };
+const DEFAULT_SUBMISSIONS_PAGE_SIZE = 10;
 
 function useLabelsForTargetType() {
   const t = useTranslations("survey.submissions.targetLabels");
@@ -195,16 +196,26 @@ export function SurveySubmissionsPage({
 
   const [pendingSubmissionLock, setPendingSubmissionLock] = useState<PendingSubmissionLock | null>(null);
   const [exportSubmissionsPending, setExportSubmissionsPending] = useState(false);
+  const [submissionsPage, setSubmissionsPage] = useState(1);
+  const [submissionsPageSize, setSubmissionsPageSize] = useState(DEFAULT_SUBMISSIONS_PAGE_SIZE);
 
   const surveyDetailQuery = useSurveyDetailQuery(surveyId);
   const surveyTargetTypeFromDetail = surveyDetailQuery.data?.survey?.targetType;
   const submissionFiltersEligible = surveyTargetType.trim().toUpperCase() === "MEMBER";
+  const shouldFetchAssignmentTargets =
+    Boolean(surveyId) &&
+    !selectedSubmissionId &&
+    activeTab === "start" &&
+    submissionFiltersEligible;
 
-  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId);
+  const submissionsQuery = useSurveySubmissionsBySurveyQuery(surveyId, {
+    page: submissionsPage,
+    pageSize: submissionsPageSize,
+  });
   const assignmentTargetsQuery = useSurveyAssignmentTargetsQuery(
     surveyId,
     {},
-    { enabled: Boolean(surveyId) && !selectedSubmissionId }
+    { enabled: shouldFetchAssignmentTargets }
   );
   const assigneeOptions = useMemo(() => {
     if (!submissionFiltersEligible) return [];
@@ -234,6 +245,16 @@ export function SurveySubmissionsPage({
 
   const submissions = submissionsQuery.data?.submissions ?? [];
   const pendingSubmissions = pendingTargetsQuery.data?.submissions ?? [];
+
+  useEffect(() => {
+    setSubmissionsPage(1);
+  }, [surveyId]);
+
+  useEffect(() => {
+    const totalPages = submissionsQuery.data?.totalPages;
+    if (!totalPages || submissionsPage <= totalPages) return;
+    setSubmissionsPage(Math.max(1, totalPages));
+  }, [submissionsPage, submissionsQuery.data?.totalPages]);
 
   const detailQuery = useSurveySubmissionDetailQuery(selectedSubmissionId, { enabled: !!selectedSubmissionId });
   const selectedSubmission = detailQuery.data?.submission ?? null;
@@ -519,6 +540,15 @@ export function SurveySubmissionsPage({
             exportSubmissionsPendingLabel={tExportSubmissions("exporting")}
             exportSubmissionsPending={exportSubmissionsPending}
             onExportSubmissions={() => void handleExportSubmissions()}
+            currentPage={submissionsQuery.data?.currentPage ?? submissionsPage}
+            totalPages={submissionsQuery.data?.totalPages ?? 1}
+            totalElements={submissionsQuery.data?.totalElements ?? submissions.length}
+            onPageChange={setSubmissionsPage}
+            pageSize={submissionsQuery.data?.pageSize ?? submissionsPageSize}
+            onPageSizeChange={(pageSize) => {
+              setSubmissionsPageSize(pageSize);
+              setSubmissionsPage(1);
+            }}
           />
         </>
       )}
