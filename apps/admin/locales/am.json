@@ -886,17 +886,8 @@
       },
       "list": {
         "columns": {
-          "title": "ርዕስ",
-          "description": "መግለጫ",
-          "targetType": "የዒላማ ዓይነት",
-          "status": "ሁኔታ",
-          "version": "ስሪት",
-          "language": "ቋንቋ",
-          "isActive": "ንቁ",
-          "isDeleted": "ተሰርዟል",
-          "parentSurveyTitle": "የወላጅ ዳሰሳ",
-          "totalSections": "ክፍሎች",
-          "totalQuestions": "ጥያቄዎች",
+          "id": "መለያ",
+          "memberName": "ስም",
           "createdAt": "ተፈጥሯል",
           "updatedAt": "የተዘመነ"
         }
@@ -934,27 +925,10 @@
         "emptyTitle": "ለማውጣት የለም",
         "emptyDescription": "በፋይል ውስጥ ለማካተት ገቢ የለም።",
         "columns": {
-          "surveyTitle": "የዳሰሳ ርዕስ",
-          "targetType": "የዒላማ ዓይነት",
-          "submissionStatus": "የገባ ሁኔታ",
-          "startedAt": "የተጀመረበት",
-          "submittedAt": "የገባበት",
-          "memberName": "የአባል ስም",
-          "memberPhone": "የአባል ስልክ",
-          "memberFan": "Member FAN",
-          "selfHelpGroupName": "የራስ አገዝ ቡድን",
-          "clusterName": "ክላስተር",
-          "federationName": "ፌዴሬሽን",
-          "locked": "ተቆልፏል",
-          "sectionTitle": "ክፍል",
-          "questionText": "ጥያቄ",
-          "questionType": "የጥያቄ አይነት",
-          "answerText": "መልስ (ጽሑፍ)",
-          "answerNumber": "መልስ (ቁጥር)",
-          "answerDate": "መልስ (ቀን)",
-          "answerBoolean": "መልስ (አዎ/አይደለም)",
-          "answerJson": "መልስ (JSON)",
-          "selectedOptions": "የተመረጡ አማራጮች"
+          "id": "መለያ",
+          "memberName": "ስም",
+          "createdAt": "ተፈጥሯል",
+          "updatedAt": "የተዘመነ"
         }
       }
     },

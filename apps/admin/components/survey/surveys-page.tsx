@@ -50,12 +50,12 @@ import {
   usePublishSurveyMutation,
   useSurveysQuery,
 } from "@/hooks/use-surveys";
-import { exportSurveysList, type SurveyListItem } from "@/lib/api/surveys";
-import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import {
-  buildSurveyListExportCsv,
-  surveyListItemToExportRow,
-} from "@/lib/survey-list-export-csv";
+  exportSurveySubmissionsBySurveyId,
+  type SurveyListItem,
+} from "@/lib/api/surveys";
+import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
+import { buildSurveySubmissionsExportCsv } from "@/lib/survey-submissions-export-csv";
 
 const PAGE_SIZE = 10;
 
@@ -90,7 +90,6 @@ export function SurveysPage() {
   const tListEmptyEntity = useTranslations("listEmpty.entity");
   const tExport = useTranslations("survey.export");
   const tListCol = useTranslations("survey.export.list.columns");
-  const tCommonBase = useTranslations("basedata.common");
   const tDelete = useTranslations("survey.list.delete");
   const tPublish = useTranslations("survey.list.publish");
   const tListActions = useTranslations("survey.list.actions");
@@ -206,19 +205,10 @@ export function SurveysPage() {
     return tList("emptyCatalogHint");
   })();
 
-  const listExportHeaders = useMemo(
+  const submissionsExportHeaders = useMemo(
     () => ({
-      title: tListCol("title"),
-      description: tListCol("description"),
-      targetType: tListCol("targetType"),
-      status: tListCol("status"),
-      version: tListCol("version"),
-      language: tListCol("language"),
-      isActive: tListCol("isActive"),
-      isDeleted: tListCol("isDeleted"),
-      parentSurveyTitle: tListCol("parentSurveyTitle"),
-      totalSections: tListCol("totalSections"),
-      totalQuestions: tListCol("totalQuestions"),
+      id: tListCol("id"),
+      memberName: tListCol("memberName"),
       createdAt: tListCol("createdAt"),
       updatedAt: tListCol("updatedAt"),
     }),
@@ -228,24 +218,31 @@ export function SurveysPage() {
   const exportAllSurveysCsv = async () => {
     setExportAllPending(true);
     try {
-      const { data } = await exportSurveysList();
-      if (data.length === 0) {
+      const allData: Record<string, unknown>[] = [];
+      for (const survey of surveys) {
+        try {
+          const { data } = await exportSurveySubmissionsBySurveyId(survey.id);
+          allData.push(...data);
+        } catch {
+          // skip surveys that fail to export
+        }
+      }
+      if (allData.length === 0) {
         sileo.warning({
           title: tExport("emptyTitle"),
           description: tExport("emptyDescription"),
         });
         return;
       }
-      const csv = buildSurveyListExportCsv(
-        data,
-        listExportHeaders,
-        tCommonBase("yes"),
-        tCommonBase("no")
+      const { csv, rowCount } = buildSurveySubmissionsExportCsv(
+        allData,
+        submissionsExportHeaders,
+        { groupBySurvey: true }
       );
-      downloadBaseDataCsv(csv, exportFilename("surveys"));
+      downloadBaseDataCsv(csv, exportFilename("surveys-submissions"));
       sileo.success({
         title: tExport("successTitle"),
-        description: tExport("successDescription", { count: data.length }),
+        description: tExport("successDescription", { count: rowCount }),
       });
     } catch (error) {
       sileo.error({
@@ -258,19 +255,33 @@ export function SurveysPage() {
     }
   };
 
-  const exportSurveySummaryCsv = (survey: SurveyListItem) => {
-    const csv = buildSurveyListExportCsv(
-      [surveyListItemToExportRow(survey)],
-      listExportHeaders,
-      tCommonBase("yes"),
-      tCommonBase("no")
-    );
-    const nameSlug = slugifyForFilename(survey.title) || "survey";
-    downloadBaseDataCsv(csv, exportFilename(`survey-summary-${nameSlug}`));
-    sileo.success({
-      title: tExport("detailSuccessTitle"),
-      description: tExport("summarySuccessDescription"),
-    });
+  const exportSurveySubmissionsCsv = async (survey: SurveyListItem) => {
+    try {
+      const { data } = await exportSurveySubmissionsBySurveyId(survey.id);
+      if (data.length === 0) {
+        sileo.warning({
+          title: tExport("emptyTitle"),
+          description: tExport("emptyDescription"),
+        });
+        return;
+      }
+      const { csv, rowCount } = buildSurveySubmissionsExportCsv(
+        data,
+        submissionsExportHeaders,
+      );
+      const nameSlug = slugifyForFilename(survey.title) || "survey";
+      downloadBaseDataCsv(csv, exportFilename(`survey-submissions-${nameSlug}`));
+      sileo.success({
+        title: tExport("detailSuccessTitle"),
+        description: tExport("successDescription", { count: rowCount }),
+      });
+    } catch (error) {
+      sileo.error({
+        title: tExport("errorTitle"),
+        description:
+          error instanceof Error ? error.message : tValidation("unexpectedError"),
+      });
+    }
   };
 
   /** After delete, refetch and clamp page so we never sit past the last page or on an empty page. */
@@ -353,7 +364,7 @@ export function SurveysPage() {
                 ) : null}
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
-                  onClick={() => exportSurveySummaryCsv(survey)}
+                  onClick={() => void exportSurveySubmissionsCsv(survey)}
                 >
                   <DownloadIcon className="size-4" />
                   {tExport("actions.exportSummary")}

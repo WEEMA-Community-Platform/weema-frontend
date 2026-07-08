@@ -189,7 +189,6 @@ export function SurveySubmissionsPage({
   const tToasts = useTranslations("survey.submissions.lock.toasts");
   const tValidation = useTranslations("common.validation");
   const tExportSubmissions = useTranslations("survey.export.submissions");
-  const tCommonBase = useTranslations("basedata.common");
   const labelsForTargetType = useLabelsForTargetType();
   const selectedSubmissionId = searchParams.get("submissionId");
   const activeTab = searchParams.get("tab") === "start" ? "start" : "submissions";
@@ -306,17 +305,10 @@ export function SurveySubmissionsPage({
 
   const submissionExportHeaders = useMemo(
     () => ({
-      surveyTitle: tExportSubmissions("columns.surveyTitle"),
-      submissionStatus: tExportSubmissions("columns.submissionStatus"),
-      startedAt: tExportSubmissions("columns.startedAt"),
-      submittedAt: tExportSubmissions("columns.submittedAt"),
+      id: tExportSubmissions("columns.id"),
       memberName: tExportSubmissions("columns.memberName"),
-      memberPhone: tExportSubmissions("columns.memberPhone"),
-      memberFan: tExportSubmissions("columns.memberFan"),
-      selfHelpGroupName: tExportSubmissions("columns.selfHelpGroupName"),
-      clusterName: tExportSubmissions("columns.clusterName"),
-      federationName: tExportSubmissions("columns.federationName"),
-      locked: tExportSubmissions("columns.locked"),
+      createdAt: tExportSubmissions("columns.createdAt"),
+      updatedAt: tExportSubmissions("columns.updatedAt"),
     }),
     [tExportSubmissions]
   );
@@ -335,8 +327,6 @@ export function SurveySubmissionsPage({
       const { csv, rowCount } = buildSurveySubmissionsExportCsv(
         data,
         submissionExportHeaders,
-        tCommonBase("yes"),
-        tCommonBase("no")
       );
       const titleFromDetail = surveyDetailQuery.data?.survey?.title;
       const first = data[0];

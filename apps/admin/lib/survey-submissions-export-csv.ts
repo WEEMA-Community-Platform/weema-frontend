@@ -4,27 +4,14 @@ import {
 } from "@/lib/base-data-csv";
 
 export type SurveySubmissionsExportHeaders = {
-  surveyTitle: string;
-  submissionStatus: string;
-  startedAt: string;
-  submittedAt: string;
+  id: string;
   memberName: string;
-  memberPhone: string;
-  memberFan: string;
-  selfHelpGroupName: string;
-  clusterName: string;
-  federationName: string;
-  locked: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 function csvStr(v: unknown): string {
   return v == null ? "" : String(v);
-}
-
-function csvBool(v: unknown, yes: string, no: string): string {
-  if (v === true || v === "true") return yes;
-  if (v === false || v === "false") return no;
-  return "";
 }
 
 function formatSelectedOptions(v: unknown): string {
@@ -54,13 +41,15 @@ function resolveAnswerValue(ans: Record<string, unknown>): string {
 
 /**
  * Builds a pivoted CSV: one row per submission, questions as columns.
- * Columns: metadata fields first, then one column per unique question (ordered by first appearance).
+ * Columns: ID, Member Name, Created At, Updated At, then one column per unique question.
+ *
+ * When `groupBySurvey` is true and data contains multiple surveys, an empty divider row
+ * is inserted between each survey group.
  */
 export function buildSurveySubmissionsExportCsv(
   apiData: Record<string, unknown>[],
   headers: SurveySubmissionsExportHeaders,
-  yes: string,
-  no: string
+  options: { groupBySurvey?: boolean } = {}
 ): { csv: string; rowCount: number } {
   const questionColumns: string[] = [];
   const questionColumnSet = new Set<string>();
@@ -76,21 +65,35 @@ export function buildSurveySubmissionsExportCsv(
     }
   }
 
+  const columns: BaseDataCsvColumn[] = [
+    { header: headers.id, cell: (r) => csvStr(r._id) },
+    { header: headers.memberName, cell: (r) => csvStr(r._memberName) },
+    { header: headers.createdAt, cell: (r) => csvStr(r._createdAt) },
+    { header: headers.updatedAt, cell: (r) => csvStr(r._updatedAt) },
+    ...questionColumns.map((qText): BaseDataCsvColumn => ({
+      header: qText,
+      cell: (r) => csvStr(r[`q__${qText}`]),
+    })),
+  ];
+
   const pivotedRows: Record<string, unknown>[] = [];
+  let lastSurveyId: string | null = null;
 
   for (const sub of apiData) {
+    if (options.groupBySurvey) {
+      const sid = csvStr(sub.surveyId || sub.id);
+      if (lastSurveyId !== null && sid !== lastSurveyId) {
+        const divider: Record<string, unknown> = { _id: "", _memberName: "", _createdAt: "", _updatedAt: "" };
+        pivotedRows.push(divider);
+      }
+      lastSurveyId = sid;
+    }
+
     const row: Record<string, unknown> = {
-      surveyTitle: sub.surveyTitle,
-      submissionStatus: sub.submissionStatus,
-      startedAt: sub.startedAt,
-      submittedAt: sub.submittedAt,
-      memberName: sub.memberName,
-      memberPhone: sub.memberPhone,
-      memberFan: sub.memberFan,
-      selfHelpGroupName: sub.selfHelpGroupName,
-      clusterName: sub.clusterName,
-      federationName: sub.federationName,
-      locked: sub.locked,
+      _id: sub.id ?? "",
+      _memberName: sub.memberName ?? sub.targetName ?? "",
+      _createdAt: sub.createdAt ?? sub.startedAt ?? "",
+      _updatedAt: sub.updatedAt ?? sub.submittedAt ?? "",
     };
 
     const answers = Array.isArray(sub.answers) ? (sub.answers as Record<string, unknown>[]) : [];
@@ -104,26 +107,8 @@ export function buildSurveySubmissionsExportCsv(
     pivotedRows.push(row);
   }
 
-  const columns: BaseDataCsvColumn[] = [
-    { header: headers.surveyTitle, cell: (r) => csvStr(r.surveyTitle) },
-    { header: headers.submissionStatus, cell: (r) => csvStr(r.submissionStatus) },
-    { header: headers.startedAt, cell: (r) => csvStr(r.startedAt) },
-    { header: headers.submittedAt, cell: (r) => csvStr(r.submittedAt) },
-    { header: headers.memberName, cell: (r) => csvStr(r.memberName) },
-    { header: headers.memberPhone, cell: (r) => csvStr(r.memberPhone) },
-    { header: headers.memberFan, cell: (r) => csvStr(r.memberFan) },
-    { header: headers.selfHelpGroupName, cell: (r) => csvStr(r.selfHelpGroupName) },
-    { header: headers.clusterName, cell: (r) => csvStr(r.clusterName) },
-    { header: headers.federationName, cell: (r) => csvStr(r.federationName) },
-    { header: headers.locked, cell: (r) => csvBool(r.locked, yes, no) },
-    ...questionColumns.map((qText): BaseDataCsvColumn => ({
-      header: qText,
-      cell: (r) => csvStr(r[`q__${qText}`]),
-    })),
-  ];
-
   return {
     csv: buildBaseDataCsv(columns, pivotedRows),
-    rowCount: pivotedRows.length,
+    rowCount: pivotedRows.filter((r) => r._id !== "").length,
   };
 }
