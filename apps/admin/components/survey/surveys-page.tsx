@@ -10,6 +10,7 @@ import {
   LanguagesIcon,
   LayersIcon,
   Link2Icon,
+  Loader2Icon,
   SendHorizonalIcon,
   TextIcon,
   RefreshCcwDot,
@@ -122,6 +123,7 @@ export function SurveysPage() {
   /** Defer clearing survey payload until after dialog exit animation (Dialog overlay/content use duration-150). */
   const assignTargetsCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [exportAllPending, setExportAllPending] = useState(false);
+  const [exportingSurveyId, setExportingSurveyId] = useState<string | null>(null);
 
   const untitledLabel = tList("untitled");
 
@@ -207,7 +209,6 @@ export function SurveysPage() {
 
   const submissionsExportHeaders = useMemo(
     () => ({
-      id: tListCol("id"),
       memberName: tListCol("memberName"),
       createdAt: tListCol("createdAt"),
       updatedAt: tListCol("updatedAt"),
@@ -256,6 +257,7 @@ export function SurveysPage() {
   };
 
   const exportSurveySubmissionsCsv = async (survey: SurveyListItem) => {
+    setExportingSurveyId(survey.id);
     try {
       const { data } = await exportSurveySubmissionsBySurveyId(survey.id);
       if (data.length === 0) {
@@ -281,6 +283,8 @@ export function SurveysPage() {
         description:
           error instanceof Error ? error.message : tValidation("unexpectedError"),
       });
+    } finally {
+      setExportingSurveyId(null);
     }
   };
 
@@ -364,10 +368,17 @@ export function SurveysPage() {
                 ) : null}
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
+                  disabled={exportingSurveyId === survey.id}
                   onClick={() => void exportSurveySubmissionsCsv(survey)}
                 >
-                  <DownloadIcon className="size-4" />
-                  {tExport("actions.exportSummary")}
+                  {exportingSurveyId === survey.id ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    <DownloadIcon className="size-4" />
+                  )}
+                  {exportingSurveyId === survey.id
+                    ? tExport("exporting")
+                    : tExport("actions.exportSummary")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"

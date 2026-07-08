@@ -4,7 +4,6 @@ import {
 } from "@/lib/base-data-csv";
 
 export type SurveySubmissionsExportHeaders = {
-  id: string;
   memberName: string;
   createdAt: string;
   updatedAt: string;
@@ -66,7 +65,6 @@ export function buildSurveySubmissionsExportCsv(
   }
 
   const columns: BaseDataCsvColumn[] = [
-    { header: headers.id, cell: (r) => csvStr(r._id) },
     { header: headers.memberName, cell: (r) => csvStr(r._memberName) },
     { header: headers.createdAt, cell: (r) => csvStr(r._createdAt) },
     { header: headers.updatedAt, cell: (r) => csvStr(r._updatedAt) },
@@ -81,16 +79,15 @@ export function buildSurveySubmissionsExportCsv(
 
   for (const sub of apiData) {
     if (options.groupBySurvey) {
-      const sid = csvStr(sub.surveyId || sub.id);
+      const sid = csvStr(sub.surveyId || sub.surveyTitle);
       if (lastSurveyId !== null && sid !== lastSurveyId) {
-        const divider: Record<string, unknown> = { _id: "", _memberName: "", _createdAt: "", _updatedAt: "" };
+        const divider: Record<string, unknown> = { _memberName: "", _createdAt: "", _updatedAt: "" };
         pivotedRows.push(divider);
       }
       lastSurveyId = sid;
     }
 
     const row: Record<string, unknown> = {
-      _id: sub.id ?? "",
       _memberName: sub.memberName ?? sub.targetName ?? "",
       _createdAt: sub.createdAt ?? sub.startedAt ?? "",
       _updatedAt: sub.updatedAt ?? sub.submittedAt ?? "",
@@ -109,6 +106,6 @@ export function buildSurveySubmissionsExportCsv(
 
   return {
     csv: buildBaseDataCsv(columns, pivotedRows),
-    rowCount: pivotedRows.filter((r) => r._id !== "").length,
+    rowCount: pivotedRows.filter((r) => r._memberName !== "").length,
   };
 }

@@ -305,7 +305,6 @@ export function SurveySubmissionsPage({
 
   const submissionExportHeaders = useMemo(
     () => ({
-      id: tExportSubmissions("columns.id"),
       memberName: tExportSubmissions("columns.memberName"),
       createdAt: tExportSubmissions("columns.createdAt"),
       updatedAt: tExportSubmissions("columns.updatedAt"),
