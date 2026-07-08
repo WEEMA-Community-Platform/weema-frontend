@@ -307,7 +307,6 @@ export function SurveySubmissionsPage({
   const submissionExportHeaders = useMemo(
     () => ({
       surveyTitle: tExportSubmissions("columns.surveyTitle"),
-      targetType: tExportSubmissions("columns.targetType"),
       submissionStatus: tExportSubmissions("columns.submissionStatus"),
       startedAt: tExportSubmissions("columns.startedAt"),
       submittedAt: tExportSubmissions("columns.submittedAt"),
@@ -318,15 +317,6 @@ export function SurveySubmissionsPage({
       clusterName: tExportSubmissions("columns.clusterName"),
       federationName: tExportSubmissions("columns.federationName"),
       locked: tExportSubmissions("columns.locked"),
-      sectionTitle: tExportSubmissions("columns.sectionTitle"),
-      questionText: tExportSubmissions("columns.questionText"),
-      questionType: tExportSubmissions("columns.questionType"),
-      answerText: tExportSubmissions("columns.answerText"),
-      answerNumber: tExportSubmissions("columns.answerNumber"),
-      answerDate: tExportSubmissions("columns.answerDate"),
-      answerBoolean: tExportSubmissions("columns.answerBoolean"),
-      answerJson: tExportSubmissions("columns.answerJson"),
-      selectedOptions: tExportSubmissions("columns.selectedOptions"),
     }),
     [tExportSubmissions]
   );
