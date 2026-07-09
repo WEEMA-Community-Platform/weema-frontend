@@ -265,12 +265,14 @@
           "woreda": "ወረዳ",
           "kebele": "ቀበሌ",
           "facilitator": "አመቻች",
+          "establishedByType": "ያቋቋመው",
+          "dateEstablished": "የተቋቋመበት ቀን",
           "memberCount": "አባላት",
           "location": "አካባቢ",
           "latitude": "ኬክሮስ",
           "longitude": "ኬንትሮስ",
           "locked": "ተቆልፏል",
-          "createdAt": "ተፈጥሯል",
+          "createdAt": "ተፈጥሯል (በሲስተም የተመዘገበ)",
           "updatedAt": "የተዘመነ"
         }
       },

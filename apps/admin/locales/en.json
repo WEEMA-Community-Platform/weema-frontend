@@ -265,12 +265,14 @@
           "woreda": "Woreda",
           "kebele": "Kebele",
           "facilitator": "Facilitator",
+          "establishedByType": "Established by",
+          "dateEstablished": "Date established",
           "memberCount": "Members",
           "location": "Location",
           "latitude": "Latitude",
           "longitude": "Longitude",
           "locked": "Locked",
-          "createdAt": "Created",
+          "createdAt": "Created (system-generated)",
           "updatedAt": "Last updated"
         }
       },

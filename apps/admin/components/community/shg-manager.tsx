@@ -392,6 +392,15 @@ export function SHGManager() {
   const entityStatusLabel = (raw: string) =>
     raw === "ACTIVE" ? tStatus("active") : raw === "INACTIVE" ? tStatus("inactive") : raw;
 
+  const establishedByTypeLabel = (raw: string) =>
+    raw === "FACILITATOR"
+      ? tForm("establishedByTypeOptions.facilitator")
+      : raw === "CLUSTER_ADMIN"
+        ? tForm("establishedByTypeOptions.clusterAdmin")
+        : raw === "ADMIN"
+          ? tForm("establishedByTypeOptions.admin")
+          : raw;
+
   const exportCsv = async () => {
     const str = (v: unknown) => (v == null ? "" : String(v));
     setExportPending(true);
@@ -418,6 +427,12 @@ export function SHGManager() {
         { header: tShgCols("kebele"), cell: (r: Record<string, unknown>) => str(r.kebeleName) },
         { header: tShgCols("woreda"), cell: (r: Record<string, unknown>) => str(r.woredaName) },
         { header: tShgCols("facilitator"), cell: (r: Record<string, unknown>) => str(r.facilitatorName) },
+        {
+          header: tShgCols("establishedByType"),
+          cell: (r: Record<string, unknown>) =>
+            r.establishedByType == null ? "" : establishedByTypeLabel(String(r.establishedByType)),
+        },
+        { header: tShgCols("dateEstablished"), cell: (r: Record<string, unknown>) => str(r.dateEstablished) },
         { header: tShgCols("memberCount"), cell: (r: Record<string, unknown>) => str(r.memberCount) },
         { header: tShgCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
         { header: tShgCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
