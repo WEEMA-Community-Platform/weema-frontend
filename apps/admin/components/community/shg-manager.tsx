@@ -407,25 +407,25 @@ export function SHGManager() {
       const columns = [
         { header: tShgCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
         { header: tShgCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
+        { header: tShgCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },
+        { header: tShgCols("latitude"), cell: (r: Record<string, unknown>) => str(r.latitude) },
+        { header: tShgCols("longitude"), cell: (r: Record<string, unknown>) => str(r.longitude) },
         {
           header: tShgCols("status"),
           cell: (r: Record<string, unknown>) => entityStatusLabel(String(r.status ?? "")),
         },
         { header: tShgCols("cluster"), cell: (r: Record<string, unknown>) => str(r.clusterName) },
-        { header: tShgCols("woreda"), cell: (r: Record<string, unknown>) => str(r.woredaName) },
         { header: tShgCols("kebele"), cell: (r: Record<string, unknown>) => str(r.kebeleName) },
+        { header: tShgCols("woreda"), cell: (r: Record<string, unknown>) => str(r.woredaName) },
         { header: tShgCols("facilitator"), cell: (r: Record<string, unknown>) => str(r.facilitatorName) },
         { header: tShgCols("memberCount"), cell: (r: Record<string, unknown>) => str(r.memberCount) },
-        { header: tShgCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },
-        { header: tShgCols("latitude"), cell: (r: Record<string, unknown>) => str(r.latitude) },
-        { header: tShgCols("longitude"), cell: (r: Record<string, unknown>) => str(r.longitude) },
+        { header: tShgCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
+        { header: tShgCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
         {
           header: tShgCols("locked"),
           cell: (r: Record<string, unknown>) =>
             r.locked === true || r.locked === "true" ? tCommonBase("yes") : tCommonBase("no"),
         },
-        { header: tShgCols("createdAt"), cell: (r: Record<string, unknown>) => str(r.createdAt) },
-        { header: tShgCols("updatedAt"), cell: (r: Record<string, unknown>) => str(r.updatedAt) },
       ];
       const csv = buildBaseDataCsv(columns, data);
       downloadBaseDataCsv(csv, exportFilename("self-help-groups"));
