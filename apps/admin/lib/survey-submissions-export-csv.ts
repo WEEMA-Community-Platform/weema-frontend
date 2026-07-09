@@ -88,7 +88,12 @@ export function buildSurveySubmissionsExportCsv(
     }
 
     const row: Record<string, unknown> = {
-      _memberName: sub.memberName ?? sub.targetName ?? "",
+      _memberName:
+        sub.memberName ??
+        sub.selfHelpGroupName ??
+        sub.clusterName ??
+        sub.targetName ??
+        "",
       _createdAt: sub.createdAt ?? sub.startedAt ?? "",
       _updatedAt: sub.updatedAt ?? sub.submittedAt ?? "",
     };
