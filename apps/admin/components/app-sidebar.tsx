@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import {
+  ChartColumnBigIcon,
   ClipboardListIcon,
   MapPinnedIcon,
   NetworkIcon,
@@ -29,6 +30,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const navMain = useMemo(
     () => [
+      {
+        key: "analytics",
+        title: t("analytics"),
+        url: "/analytics",
+        icon: <ChartColumnBigIcon />,
+      },
       {
         key: "baseData",
         title: t("baseData"),

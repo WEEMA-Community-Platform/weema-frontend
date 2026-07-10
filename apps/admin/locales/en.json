@@ -88,6 +88,7 @@
       "shg": "Self-Help Groups",
       "members": "Members",
       "survey": "Survey",
+      "analytics": "Analytics",
       "surveys": "Surveys",
       "userManagement": "User Management"
     },
@@ -1644,5 +1645,68 @@
       "CLUSTER_ADMIN": "Cluster admin",
       "FACILITATOR": "Facilitator"
     }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Self-help group and member trends and distribution across your program.",
+    "datasetLabel": "Dataset",
+    "datasets": {
+      "shg": "Self-Help Groups",
+      "members": "Members"
+    },
+    "customize": "Customize",
+    "customizeHint": "Show or hide charts",
+    "chooseChartType": "Choose chart type",
+    "error": "Couldn’t load analytics. Please try again.",
+    "empty": "No data for the current filters.",
+    "seriesLabel": "Count",
+    "total": "Total",
+    "other": "Other",
+    "showingTopN": "Showing top {n} of {total}",
+    "showingAll": "Showing all {total}",
+    "showAll": "Show all",
+    "showTopN": "Top {n}",
+    "kpi": {
+      "totalShg": "Total self-help groups",
+      "totalMembers": "Total members"
+    },
+    "widgets": {
+      "overTime": "Over time",
+      "byWoreda": "By woreda",
+      "byKebele": "By kebele",
+      "byFacilitator": "By facilitator"
+    },
+    "chartTypes": {
+      "line": "Line",
+      "area": "Area",
+      "bar": "Columns",
+      "hbar": "Bars",
+      "donut": "Donut"
+    },
+    "filters": {
+      "button": "Filter",
+      "title": "Filters",
+      "description": "Narrow the analytics by location, status and date range.",
+      "woredaLabel": "Woreda",
+      "woredaAll": "All woredas",
+      "kebeleLabel": "Kebele",
+      "kebeleAll": "All kebeles",
+      "facilitatorLabel": "Facilitator",
+      "facilitatorAll": "All facilitators",
+      "statusLabel": "Status",
+      "statusAll": "All statuses",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "fromLabel": "From",
+      "toLabel": "To",
+      "granularityLabel": "Time bucket",
+      "granularityDay": "Day",
+      "granularityMonth": "Month",
+      "granularityYear": "Year",
+      "seriesModeLabel": "Trend mode",
+      "perPeriod": "Per period",
+      "cumulative": "Cumulative"
+    },
+    "updating": "Updating…"
   }
 }

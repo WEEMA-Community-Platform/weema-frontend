@@ -88,6 +88,7 @@
       "shg": "የራስ አገዝ ቡድኖች",
       "members": "አባላት",
       "survey": "ዳሰሳ",
+      "analytics": "ትንታኔ",
       "surveys": "ዳሰሳዎች",
       "userManagement": "የተጠቃሚ አስተዳደር"
     },
@@ -1644,5 +1645,68 @@
       "CLUSTER_ADMIN": "የክላስተር አስተዳዳሪ",
       "FACILITATOR": "አመቻች"
     }
+  },
+  "analytics": {
+    "title": "ትንታኔ",
+    "subtitle": "በፕሮግራምዎ ውስጥ ያሉ የራስ አገዝ ቡድኖችና አባላት አዝማሚያዎችና ስርጭት።",
+    "datasetLabel": "የውሂብ ስብስብ",
+    "datasets": {
+      "shg": "የራስ አገዝ ቡድኖች",
+      "members": "አባላት"
+    },
+    "customize": "አብጅ",
+    "customizeHint": "ግራፎችን አሳይ ወይም ደብቅ",
+    "chooseChartType": "የግራፍ አይነት ይምረጡ",
+    "error": "ትንታኔን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+    "empty": "ለአሁኑ ማጣሪያዎች ምንም ውሂብ የለም።",
+    "seriesLabel": "ብዛት",
+    "total": "ጠቅላላ",
+    "other": "ሌላ",
+    "showingTopN": "ከ{total} ውስጥ ከፍተኛ {n} በማሳየት ላይ",
+    "showingAll": "ሁሉንም {total} በማሳየት ላይ",
+    "showAll": "ሁሉንም አሳይ",
+    "showTopN": "ከፍተኛ {n}",
+    "kpi": {
+      "totalShg": "ጠቅላላ የራስ አገዝ ቡድኖች",
+      "totalMembers": "ጠቅላላ አባላት"
+    },
+    "widgets": {
+      "overTime": "በጊዜ ሂደት",
+      "byWoreda": "በወረዳ",
+      "byKebele": "በቀበሌ",
+      "byFacilitator": "በአመቻች"
+    },
+    "chartTypes": {
+      "line": "መስመር",
+      "area": "አካባቢ",
+      "bar": "አምዶች",
+      "hbar": "አሞሌዎች",
+      "donut": "ዶናት"
+    },
+    "filters": {
+      "button": "አጣራ",
+      "title": "ማጣሪያዎች",
+      "description": "ትንታኔውን በቦታ፣ በሁኔታ እና በቀን ክልል ያጥብቡ።",
+      "woredaLabel": "ወረዳ",
+      "woredaAll": "ሁሉም ወረዳዎች",
+      "kebeleLabel": "ቀበሌ",
+      "kebeleAll": "ሁሉም ቀበሌዎች",
+      "facilitatorLabel": "አመቻች",
+      "facilitatorAll": "ሁሉም አመቻቾች",
+      "statusLabel": "ሁኔታ",
+      "statusAll": "ሁሉም ሁኔታዎች",
+      "statusActive": "ንቁ",
+      "statusInactive": "ንቁ ያልሆነ",
+      "fromLabel": "ከ",
+      "toLabel": "እስከ",
+      "granularityLabel": "የጊዜ ደረጃ",
+      "granularityDay": "ቀን",
+      "granularityMonth": "ወር",
+      "granularityYear": "ዓመት",
+      "seriesModeLabel": "የአዝማሚያ ሁኔታ",
+      "perPeriod": "በየጊዜው",
+      "cumulative": "ድምር"
+    },
+    "updating": "በማዘመን ላይ…"
   }
 }

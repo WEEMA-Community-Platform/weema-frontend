@@ -369,6 +369,7 @@ export function SurveysPage() {
                 <DropdownMenuItem
                   className="text-[12px] whitespace-nowrap"
                   disabled={exportingSurveyId === survey.id}
+                  closeOnClick={false}
                   onClick={() => void exportSurveySubmissionsCsv(survey)}
                 >
                   {exportingSurveyId === survey.id ? (
