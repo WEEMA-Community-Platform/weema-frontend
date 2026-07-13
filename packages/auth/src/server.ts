@@ -108,8 +108,18 @@ export function createAuthProxy(config: AuthProxyConfig) {
   const authApiBaseUrl = config.authApiBaseUrl;
   const apiBaseUrl = config.apiBaseUrl ?? config.authApiBaseUrl;
   const authApiPrefix = config.authApiPrefix ?? "/api/auth";
-  const timeoutMs = config.timeoutMs ?? envInt("AUTH_UPSTREAM_TIMEOUT_MS", 15000);
-  const retries = config.retries ?? envInt("AUTH_UPSTREAM_RETRIES", 1);
+
+  // On serverless (Vercel), the whole function has a hard time budget (10s on
+  // Hobby). A retry would double the wait past that limit, so the function is
+  // killed before we can return a clean 503. Default to a single attempt with a
+  // sub-limit timeout so the user gets our readable 503 instead of a platform
+  // 504. Longer-running/self-hosted environments keep a retry + larger budget.
+  const isServerless = process.env.VERCEL === "1";
+  const timeoutMs =
+    config.timeoutMs ??
+    envInt("AUTH_UPSTREAM_TIMEOUT_MS", isServerless ? 8000 : 15000);
+  const retries =
+    config.retries ?? envInt("AUTH_UPSTREAM_RETRIES", isServerless ? 0 : 1);
   const debug = config.debug ?? isAuthProxyDebugEnabled();
 
   const baseContext = () => ({

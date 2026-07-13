@@ -19,7 +19,8 @@ export function getSecureCookieOptions(
 ): Partial<ResponseCookie> {
   return {
     httpOnly: true,
-    secure: false,
+    // Secure in production (HTTPS on Vercel); off in local dev over http://localhost.
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     expires: expiresAt,
