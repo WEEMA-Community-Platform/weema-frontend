@@ -1,115 +1,48 @@
+import { NextResponse } from "next/server";
+
+import {
+  AuthUpstreamError,
+  createAuthProxy,
+  isAuthProxyDebugEnabled,
+} from "@weema/auth/server";
+
 import { API_BASE_URL, AUTH_API_BASE_URL, AUTH_API_PREFIX } from "@/lib/auth";
 
-export function buildAuthBackendUrl(pathname: string) {
-  const base = (AUTH_API_BASE_URL ?? "").replace(/\/$/, "");
-  return `${base}${AUTH_API_PREFIX}${pathname}`;
-}
+const proxy = createAuthProxy({
+  authApiBaseUrl: AUTH_API_BASE_URL,
+  apiBaseUrl: API_BASE_URL,
+  authApiPrefix: AUTH_API_PREFIX,
+});
 
-export function buildBackendUrl(pathname: string) {
-  const base = (API_BASE_URL ?? "").replace(/\/$/, "");
-  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
-  return `${base}${normalizedPath}`;
-}
+export const {
+  buildAuthBackendUrl,
+  buildBackendUrl,
+  safeJson,
+  proxyAuthFetch,
+  proxyAuthFetchOptional,
+} = proxy;
 
-export async function safeJson<T>(response: Response) {
-  return (await response.json().catch(() => null)) as T | null;
-}
+export { AuthUpstreamError, isAuthProxyDebugEnabled };
 
-/** True in development, or when AUTH_DEBUG is 1/true (use for temporary prod debugging). */
-export function isAuthProxyDebugEnabled() {
-  return (
-    process.env.NODE_ENV === "development" ||
-    process.env.AUTH_DEBUG === "1" ||
-    process.env.AUTH_DEBUG === "true"
-  );
-}
-
-function logAuthProxyLine(
-  direction: "out" | "in" | "error",
-  label: string,
-  detail: Record<string, unknown>
-) {
-  if (!isAuthProxyDebugEnabled()) return;
-  const prefix =
-    direction === "out" ? "->" : direction === "in" ? "<-" : "!!";
-  console.log(
-    `[auth-proxy] ${prefix} ${label}`,
-    JSON.stringify({
-      ...detail,
-      authBaseUrlSource: process.env.AUTH_API_BASE_URL ? "env" : "unset",
-      resolvedAuthApiBase: AUTH_API_BASE_URL,
-    })
+/** 503 response for when the upstream auth service is unreachable. */
+export function authServiceUnavailableResponse(): NextResponse {
+  return NextResponse.json(
+    {
+      message:
+        "The authentication service is temporarily unavailable. Please try again in a moment.",
+    },
+    { status: 503 }
   );
 }
 
 /**
- * Server-side fetch to the auth API with optional debug logs (terminal where `pnpm dev` runs).
- * Never log passwords or tokens.
+ * Maps a caught error to a 503 when it is an upstream/network failure, so an
+ * outage is reported distinctly from a real auth error. Re-throws anything
+ * else for the framework to handle.
  */
-export async function proxyAuthFetch(
-  label: string,
-  url: string,
-  init: RequestInit,
-  meta?: Record<string, unknown>,
-  /** If the real URL contains secrets, pass a safe variant for logs only. */
-  logUrl?: string
-): Promise<Response> {
-  const urlForLog = logUrl ?? url;
-  logAuthProxyLine("out", label, {
-    url: urlForLog,
-    method: init.method ?? "GET",
-    ...meta,
-  });
-  const started = Date.now();
-  try {
-    const response = await fetch(url, init);
-    logAuthProxyLine("in", label, {
-      url: urlForLog,
-      status: response.status,
-      ok: response.ok,
-      ms: Date.now() - started,
-    });
-    return response;
-  } catch (err) {
-    logAuthProxyLine("error", label, {
-      url: urlForLog,
-      ms: Date.now() - started,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    throw err;
+export function handleAuthProxyError(err: unknown): NextResponse {
+  if (err instanceof AuthUpstreamError) {
+    return authServiceUnavailableResponse();
   }
+  throw err;
 }
-
-export async function proxyAuthFetchOptional(
-  label: string,
-  url: string,
-  init: RequestInit,
-  meta?: Record<string, unknown>,
-  logUrl?: string
-): Promise<Response | null> {
-  const urlForLog = logUrl ?? url;
-  logAuthProxyLine("out", label, {
-    url: urlForLog,
-    method: init.method ?? "GET",
-    ...meta,
-  });
-  const started = Date.now();
-  try {
-    const response = await fetch(url, init);
-    logAuthProxyLine("in", label, {
-      url: urlForLog,
-      status: response.status,
-      ok: response.ok,
-      ms: Date.now() - started,
-    });
-    return response;
-  } catch (err) {
-    logAuthProxyLine("error", label, {
-      url: urlForLog,
-      ms: Date.now() - started,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return null;
-  }
-}
-

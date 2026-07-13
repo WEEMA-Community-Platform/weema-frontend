@@ -7,7 +7,7 @@ import {
   REFRESH_TOKEN_COOKIE,
   getSecureCookieOptions,
 } from "@/lib/auth";
-import { buildAuthBackendUrl, proxyAuthFetch, safeJson } from "./_lib";
+import { buildAuthBackendUrl, proxyAuthFetchOptional, safeJson } from "./_lib";
 
 /**
  * Uses the refresh-token cookie to obtain new tokens and updates httpOnly cookies.
@@ -18,7 +18,7 @@ export async function tryRefreshSessionCookies(): Promise<string | null> {
   const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
   if (!refreshToken) return null;
 
-  const backendResponse = await proxyAuthFetch(
+  const backendResponse = await proxyAuthFetchOptional(
     "refresh",
     buildAuthBackendUrl("/refresh"),
     {
@@ -32,6 +32,8 @@ export async function tryRefreshSessionCookies(): Promise<string | null> {
       cache: "no-store",
     }
   );
+
+  if (!backendResponse) return null;
 
   const payload = await safeJson<RefreshResponse & { message?: string }>(
     backendResponse

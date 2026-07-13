@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./react-query": "./src/react-query.ts"
+    "./react-query": "./src/react-query.ts",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "lint": "echo 'No lints in @weema/auth yet'",

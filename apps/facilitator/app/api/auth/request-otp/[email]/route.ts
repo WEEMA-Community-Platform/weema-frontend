@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { buildAuthBackendUrl, proxyAuthFetch, safeJson } from "../../_lib";
+import {
+  buildAuthBackendUrl,
+  handleAuthProxyError,
+  proxyAuthFetch,
+  safeJson,
+} from "../../_lib";
 
 type RouteParams = {
   params: Promise<{ email: string }>;
@@ -8,16 +13,21 @@ type RouteParams = {
 
 export async function PATCH(_: Request, { params }: RouteParams) {
   const { email } = await params;
-  const backendResponse = await proxyAuthFetch(
-    "request-otp",
-    buildAuthBackendUrl(`/request-otp/${encodeURIComponent(email)}`),
-    {
-      method: "PATCH",
-      headers: { Accept: "*/*" },
-      cache: "no-store",
-    },
-    { email }
-  );
+  let backendResponse: Response;
+  try {
+    backendResponse = await proxyAuthFetch(
+      "request-otp",
+      buildAuthBackendUrl(`/request-otp/${encodeURIComponent(email)}`),
+      {
+        method: "PATCH",
+        headers: { Accept: "*/*" },
+        cache: "no-store",
+      },
+      { email }
+    );
+  } catch (err) {
+    return handleAuthProxyError(err);
+  }
 
   const payload = await safeJson<{ message?: string; statusCode?: string }>(
     backendResponse

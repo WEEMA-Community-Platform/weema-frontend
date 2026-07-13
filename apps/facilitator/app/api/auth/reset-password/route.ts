@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 
 import type { ResetPasswordRequest } from "@weema/auth";
 
-import { buildAuthBackendUrl, proxyAuthFetch, safeJson } from "../_lib";
+import {
+  buildAuthBackendUrl,
+  handleAuthProxyError,
+  proxyAuthFetch,
+  safeJson,
+} from "../_lib";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as
@@ -16,20 +21,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const backendResponse = await proxyAuthFetch(
-    "reset-password",
-    buildAuthBackendUrl("/reset-password"),
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
+  let backendResponse: Response;
+  try {
+    backendResponse = await proxyAuthFetch(
+      "reset-password",
+      buildAuthBackendUrl("/reset-password"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+        },
+        body: JSON.stringify(body),
+        cache: "no-store",
       },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    },
-    { email: body.email }
-  );
+      { email: body.email }
+    );
+  } catch (err) {
+    return handleAuthProxyError(err);
+  }
 
   const payload = await safeJson<{ message?: string; statusCode?: string }>(
     backendResponse
