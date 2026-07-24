@@ -82,7 +82,6 @@ export function ClusterManager() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<EntityStatus | "">("");
-  const [woredaId, setWoredaId] = useState("");
   const [editingCluster, setEditingCluster] = useState<Cluster | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Cluster | null>(null);
@@ -109,8 +108,6 @@ export function ClusterManager() {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
-  const woredaOptions = (woredaData?.woredas ?? []).map((w: { id: string; name: string }) => ({ value: w.id, label: w.name }));
-
   const federationFilterOptions = useMemo(
     () =>
       (federationsData?.federations ?? []).map((f) => ({ value: f.id, label: f.name })),
@@ -126,7 +123,6 @@ export function ClusterManager() {
     setName("");
     setDescription("");
     setStatus("");
-    setWoredaId("");
     setEditingCluster(null);
   };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
@@ -135,14 +131,12 @@ export function ClusterManager() {
     setName(c.name);
     setDescription(c.description || "");
     setStatus(c.status);
-    setWoredaId(c.woredaId || "");
     setIsFormOpen(true);
   };
 
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) { sileo.warning({ title: tToasts("missingNameTitle"), description: tToasts("missingNameMessage") }); return; }
-    if (!woredaId) { sileo.warning({ title: tToasts("missingWoredaTitle"), description: tToasts("missingWoredaMessage") }); return; }
     if (!status) { sileo.warning({ title: tToasts("missingStatusTitle"), description: tToasts("missingStatusMessage") }); return; }
     const managerId = currentUserData?.user?.id;
     try {
@@ -153,7 +147,6 @@ export function ClusterManager() {
             name: name.trim(),
             description: description.trim(),
             status,
-            woredaId,
             ...(managerId ? { managerId } : {}),
           },
         });
@@ -163,7 +156,6 @@ export function ClusterManager() {
           name: name.trim(),
           description: description.trim(),
           status,
-          woredaId,
           ...(managerId ? { managerId } : {}),
         });
         sileo.success({ title: tToasts("addedTitle"), description: result.message });
@@ -401,13 +393,10 @@ export function ClusterManager() {
         name={name}
         description={description}
         status={status}
-        woredaId={woredaId}
-        woredaOptions={woredaOptions}
         statusOptions={STATUS_OPTIONS}
         setName={setName}
         setDescription={setDescription}
         setStatus={setStatus}
-        setWoredaId={setWoredaId}
         onSubmit={submitForm}
         isSubmitting={isSubmitting}
       />

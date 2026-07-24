@@ -370,7 +370,6 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
               <>
                 <dl className="grid grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_112px_minmax(0,1fr)] gap-x-3 gap-y-2.5">
                   <DetailField label={tDetail("fields.name")} value={cluster.name} />
-                  <DetailField label={tDetail("fields.woreda")} value={cluster.woredaName} />
                   <DetailField label={tDetail("fields.federation")} value={cluster.federationName} />
                   <DetailField label={tDetail("fields.status")} value={<StatusBadge status={cluster.status} />} />
                   <DetailField label={tDetail("fields.manager")} value={cluster.managerName} />
@@ -459,13 +458,10 @@ export function ClusterFormDialog({
   name,
   description,
   status,
-  woredaId,
-  woredaOptions,
   statusOptions,
   setName,
   setDescription,
   setStatus,
-  setWoredaId,
   onSubmit,
   isSubmitting,
 }: {
@@ -475,13 +471,10 @@ export function ClusterFormDialog({
   name: string;
   description: string;
   status: EntityStatus | "";
-  woredaId: string;
-  woredaOptions: Array<{ value: string; label: string }>;
   statusOptions: Array<{ value: string; label: string }>;
   setName: (value: string) => void;
   setDescription: (value: string) => void;
   setStatus: (value: EntityStatus | "") => void;
-  setWoredaId: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
   isSubmitting: boolean;
 }) {
@@ -511,45 +504,17 @@ export function ClusterFormDialog({
                   autoComplete="off"
                 />
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="cluster-woreda">{tForm("woredaLabel")}</Label>
-                  <SelectField
-                    id="cluster-woreda"
-                    value={woredaId}
-                    onValueChange={setWoredaId}
-                    options={woredaOptions}
-                    placeholder={tForm("woredaPlaceholder")}
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="cluster-status">{tForm("statusLabel")}</Label>
-                  <SelectField
-                    id="cluster-status"
-                    value={status}
-                    onValueChange={(v) => setStatus(v as EntityStatus | "")}
-                    options={statusOptions}
-                    placeholder={tForm("statusPlaceholder")}
-                    className="h-11"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cluster-status">{tForm("statusLabel")}</Label>
+                <SelectField
+                  id="cluster-status"
+                  value={status}
+                  onValueChange={(v) => setStatus(v as EntityStatus | "")}
+                  options={statusOptions}
+                  placeholder={tForm("statusPlaceholder")}
+                  className="h-11"
+                />
               </div>
-              {editingCluster ? (
-                <div className="space-y-1.5">
-                  <Label>{tForm("federationLabel")}</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {tForm("federationHintPrefix")}
-                    <span className="font-medium text-foreground">{tForm("federationHintEmphasis")}</span>
-                    {tForm("federationHintSuffix")}
-                  </p>
-                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm">
-                    {editingCluster.federationName ?? (
-                      <span className="text-muted-foreground">{tForm("federationUnassigned")}</span>
-                    )}
-                  </div>
-                </div>
-              ) : null}
               <div className="space-y-1.5">
                 <Label htmlFor="cluster-description">{tForm("descriptionLabel")}</Label>
                 <textarea

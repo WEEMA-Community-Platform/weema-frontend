@@ -71,7 +71,6 @@ export type ClusterPayload = {
   location?: string;
   status?: EntityStatus;
   managerId?: string;
-  woredaId: string;
   federationId?: string | null;
 };
 
