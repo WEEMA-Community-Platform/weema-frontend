@@ -14,9 +14,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  if (!body?.name || !body?.woredaId) {
+  if (!body?.name) {
     return NextResponse.json(
-      { message: "Cluster name and woreda are required." },
+      { message: "Cluster name is required." },
       { status: 400 }
     );
   }

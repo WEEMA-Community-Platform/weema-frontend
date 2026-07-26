@@ -14,13 +14,18 @@ export const API_BASE_URL =
   process.env.API_BASE_URL ?? process.env.AUTH_API_BASE_URL;
 export const AUTH_API_PREFIX = "/api/auth";
 
+function shouldUseSecureCookies() {
+  if (process.env.AUTH_COOKIE_SECURE === "true") return true;
+  if (process.env.AUTH_COOKIE_SECURE === "false") return false;
+  return process.env.VERCEL === "1";
+}
+
 export function getSecureCookieOptions(
   expiresAt?: Date
 ): Partial<ResponseCookie> {
   return {
     httpOnly: true,
-    // Secure in production (HTTPS on Vercel); off in local dev over http://localhost.
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     sameSite: "lax",
     path: "/",
     expires: expiresAt,

@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { ACCESS_TOKEN_COOKIE, isAllowedFacilitatorRole } from "@/lib/auth";
+import {
+  ACCESS_TOKEN_COOKIE,
+  getSecureCookieOptions,
+  isAllowedFacilitatorRole,
+} from "@/lib/auth";
 import { getRoleFromToken } from "@weema/auth";
 
 export async function GET(request: NextRequest) {
@@ -23,12 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(new URL("/", request.url));
-  response.cookies.set(ACCESS_TOKEN_COOKIE, token, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    path: "/",
-  });
+  response.cookies.set(ACCESS_TOKEN_COOKIE, token, getSecureCookieOptions());
 
   return response;
 }
