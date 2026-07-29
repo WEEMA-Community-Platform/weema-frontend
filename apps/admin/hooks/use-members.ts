@@ -12,7 +12,6 @@ import {
   lockMember,
   unlockMember,
   updateMember,
-  uploadMemberNationalId,
   type MemberListQuery,
   type MemberPatchPayload,
 } from "@/lib/api/members";
@@ -80,18 +79,6 @@ export function useDeleteMemberMutation() {
     onSuccess: () => {
       invalidateMemberQueries(queryClient);
       invalidateMemberDependencyQueries(queryClient);
-    },
-  });
-}
-
-export function useUploadMemberNationalIdMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ memberId, file }: { memberId: string; file: File }) =>
-      uploadMemberNationalId(memberId, file),
-    onSuccess: (_data, variables) => {
-      invalidateMemberQueries(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["member", variables.memberId] });
     },
   });
 }

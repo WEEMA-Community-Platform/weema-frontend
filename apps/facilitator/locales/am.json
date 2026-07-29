@@ -342,9 +342,7 @@
         "religion": "ሃይማኖት",
         "status": "ሁኔታ",
         "shg": "የራስ አገዝ ቡድን",
-        "phone": "ስልክ",
-        "nationalId": "መታወቂያ",
-        "nationalIdOptional": "መታወቂያ (አማራጭ)"
+        "phone": "ስልክ"
       },
       "sections": {
         "details": "ዝርዝሮች",
@@ -385,7 +383,7 @@
       "minAgeHint": "አባል ቢያንስ {years} ዓመት መሆን አለበት።",
       "create": {
         "title": "አባል ጨምር",
-        "description": "በራስ አገዝ ቡድን ስር አባል ይመዝግቡ። መታወቂያ አማራጭ ሲሆን በኋላም ሊጨመር ይችላል።",
+        "description": "በራስ አገዝ ቡድን ስር አባል ይመዝግቡ።",
         "submit": "አባል ፍጠር",
         "submitting": "በመፍጠር ላይ…",
         "toasts": {
@@ -395,7 +393,7 @@
       },
       "edit": {
         "title": "አባል አርትዕ",
-        "description": "የአባሉን ዝርዝሮች ያዘምኑ። መታወቂያ ለመቀየር 'ተመልከት' ከፍተው ሰነዱን ይጫኑ።",
+        "description": "የአባሉን ዝርዝሮች ያዘምኑ።",
         "submit": "ለውጦችን አስቀምጥ",
         "submitting": "በማስቀመጥ ላይ…",
         "toasts": {
@@ -405,12 +403,8 @@
       },
       "detail": {
         "titleFallback": "የአባል ዝርዝር",
-        "description": "መገለጫ፣ የፕሮግራም ዝርዝር እና የመታወቂያ ሰነዶች።",
-        "uploadHeading": "መታወቂያ",
-        "uploadHint": "የተቃኘ ምስል ወይም PDF ይጫኑ ወይም ይተኩ። ፋይሉ በደህና ወደ አገልጋዩ ይላካል።",
-        "loadError": "ይህን አባል መጫን አልተቻለም።",
-        "uploadSuccessTitle": "መታወቂያ ተጭኗል",
-        "uploadFailedTitle": "መጫን አልተሳካም"
+        "description": "መገለጫ እና የፕሮግራም ዝርዝር።",
+        "loadError": "ይህን አባል መጫን አልተቻለም።"
       },
       "delete": {
         "title": "አባል ሰርዝ",

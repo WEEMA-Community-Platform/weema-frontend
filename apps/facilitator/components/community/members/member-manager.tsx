@@ -8,7 +8,6 @@ import {
   useDeleteMemberMutation,
   useMembersQuery,
   useUpdateMemberMutation,
-  useUploadMemberNationalIdMutation,
 } from "@/hooks/use-members";
 import { useReligionsQuery } from "@/hooks/use-base-data";
 import { useSHGsQuery } from "@/hooks/use-community";
@@ -77,7 +76,6 @@ export function MemberManager() {
   const createMutation = useCreateMemberMutation();
   const updateMutation = useUpdateMemberMutation();
   const deleteMutation = useDeleteMemberMutation();
-  const uploadIdMutation = useUploadMemberNationalIdMutation();
 
   const hasActiveFilters = Boolean(
     appliedStatus ||
@@ -182,7 +180,6 @@ export function MemberManager() {
         id={viewingId}
         open={isViewOpen}
         onClose={() => setViewingId(null)}
-        uploadIdMutation={uploadIdMutation}
       />
 
       <MemberTableCard

@@ -12,10 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { SaveButton } from "@/components/base-data/shared";
 import { MemberFormFields } from "@/components/community/members/member-form-fields";
-import { NationalIdDropzone } from "@/components/community/members/national-id-dropzone";
 import {
   MIN_MEMBER_AGE_YEARS,
   isAtLeastAge,
@@ -46,7 +44,6 @@ function emptyForm() {
     status: "",
     selfHelpGroupId: "",
     fan: "",
-    nationalIdFile: null as File | null,
   };
 }
 
@@ -72,7 +69,6 @@ export function MemberCreateDialog({
   const [status, setStatus] = useState("");
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
-  const [nationalIdFile, setNationalIdFile] = useState<File | null>(null);
 
   const reset = () => {
     const e = emptyForm();
@@ -86,7 +82,6 @@ export function MemberCreateDialog({
     setStatus(e.status);
     setSelfHelpGroupId(e.selfHelpGroupId);
     setFan(e.fan);
-    setNationalIdFile(e.nationalIdFile);
   };
 
   const dismiss = () => {
@@ -166,7 +161,6 @@ export function MemberCreateDialog({
     fd.append("status", status);
     fd.append("selfHelpGroupId", selfHelpGroupId);
     if (fan.trim()) fd.append("fan", fan.trim());
-    if (nationalIdFile) fd.append("nationalId", nationalIdFile);
 
     try {
       const result = await createMutation.mutateAsync(fd);
@@ -217,17 +211,6 @@ export function MemberCreateDialog({
               setSelfHelpGroupId={setSelfHelpGroupId}
               shgOptions={shgOptions}
               showReligionField={false}
-              // nationalIdSection={
-              //   <div className="space-y-2 rounded-xl border border-border/60 bg-muted/10 p-4">
-              //     <Label className="text-foreground">{t("fields.nationalIdOptional")}</Label>
-              //     <NationalIdDropzone
-              //       mode="pick"
-              //       variant="compact"
-              //       onFileChange={setNationalIdFile}
-              //       disabled={isSubmitting}
-              //     />
-              //   </div>
-              // }
             />
           </div>
           <DialogFooter className="flex justify-end border-t border-border/60 px-6 py-4">

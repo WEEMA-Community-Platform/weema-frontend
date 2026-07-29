@@ -342,9 +342,7 @@
         "religion": "Religion",
         "status": "Status",
         "shg": "Self-help group",
-        "phone": "Phone",
-        "nationalId": "National ID",
-        "nationalIdOptional": "National ID (optional)"
+        "phone": "Phone"
       },
       "sections": {
         "details": "Details",
@@ -385,7 +383,7 @@
       "minAgeHint": "Member must be at least {years} years old.",
       "create": {
         "title": "Add member",
-        "description": "Register a member under a self-help group. National ID is optional and can be added later.",
+        "description": "Register a member under a self-help group.",
         "submit": "Create member",
         "submitting": "Creating…",
         "toasts": {
@@ -395,7 +393,7 @@
       },
       "edit": {
         "title": "Edit member",
-        "description": "Update member details. To change national ID, open View and upload a document.",
+        "description": "Update member details.",
         "submit": "Save changes",
         "submitting": "Saving…",
         "toasts": {
@@ -405,12 +403,8 @@
       },
       "detail": {
         "titleFallback": "Member details",
-        "description": "Profile, program details, and identification documents.",
-        "uploadHeading": "National ID",
-        "uploadHint": "Upload or replace a scanned image or PDF. The file is sent securely to the server.",
-        "loadError": "Could not load this member.",
-        "uploadSuccessTitle": "National ID uploaded",
-        "uploadFailedTitle": "Upload failed"
+        "description": "Profile and program details.",
+        "loadError": "Could not load this member."
       },
       "delete": {
         "title": "Delete member",

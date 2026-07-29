@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +50,6 @@ export type MemberFormFieldsProps = {
   religionOptions?: { value: string; label: string }[];
   shgOptions: { value: string; label: string }[];
   showReligionField?: boolean;
-  nationalIdSection?: ReactNode;
 };
 
 export function MemberFormFields({
@@ -80,7 +78,6 @@ export function MemberFormFields({
   religionOptions,
   shgOptions,
   showReligionField = true,
-  //nationalIdSection,
 }: MemberFormFieldsProps) {
   const t = useTranslations("community.members");
   const tGender = useTranslations("community.members.options.gender");
@@ -263,7 +260,6 @@ export function MemberFormFields({
           </div>
         </div>
       </div>
-      {/* {nationalIdSection} */}
     </>
   );
 }

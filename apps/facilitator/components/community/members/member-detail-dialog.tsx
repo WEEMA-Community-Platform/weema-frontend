@@ -1,10 +1,8 @@
 "use client";
 
-import { ExternalLinkIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { sileo } from "sileo";
 
-import { useMemberDetailQuery, useUploadMemberNationalIdMutation } from "@/hooks/use-members";
+import { useMemberDetailQuery } from "@/hooks/use-members";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MemberDetailField } from "@/components/community/members/member-detail-field";
-import { NationalIdDropzone } from "@/components/community/members/national-id-dropzone";
 import { StatusBadge } from "@/components/community/community-card";
 import {
   GENDER_OPTIONS,
@@ -26,7 +23,6 @@ type MemberDetailDialogProps = {
   id: string | null;
   open: boolean;
   onClose: () => void;
-  uploadIdMutation: ReturnType<typeof useUploadMemberNationalIdMutation>;
 };
 
 function DetailSkeleton() {
@@ -46,12 +42,10 @@ export function MemberDetailDialog({
   id,
   open,
   onClose,
-  uploadIdMutation,
 }: MemberDetailDialogProps) {
   const t = useTranslations("community.members");
   const tDetail = useTranslations("community.members.detail");
   const tActions = useTranslations("common.actions");
-  const tEmpty = useTranslations("common.empty");
   const tGender = useTranslations("community.members.options.gender");
   const tMarital = useTranslations("community.members.options.marital");
 
@@ -60,24 +54,6 @@ export function MemberDetailDialog({
   });
   const member = data?.member;
   const showSkeleton = isPending && !member;
-
-  const handleUpload = async (file: File) => {
-    if (!id) return;
-    try {
-      const result = await uploadIdMutation.mutateAsync({ memberId: id, file });
-      sileo.success({
-        title: tDetail("uploadSuccessTitle"),
-        description: result.message,
-      });
-      await refetch();
-    } catch (err) {
-      sileo.error({
-        title: tDetail("uploadFailedTitle"),
-        description: err instanceof Error ? err.message : "Unexpected error",
-      });
-      throw err;
-    }
-  };
 
   const genderLabel = (raw: string | null | undefined) => {
     if (!raw) return raw;
@@ -162,54 +138,7 @@ export function MemberDetailDialog({
                   label={t("fields.fan")}
                   value={member.fan}
                 />
-                <div className="md:col-span-2">
-                  <MemberDetailField
-                    label={t("fields.nationalId")}
-                    value={
-                      member.nationalIdUrl ? (
-                        <a
-                          href={member.nationalIdUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 transition-colors hover:text-primary/90 hover:underline"
-                        >
-                          {tActions("openDocument")}
-                          <ExternalLinkIcon
-                            className="size-3.5 shrink-0 opacity-80"
-                            aria-hidden
-                          />
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          {tEmpty("notUploaded")}
-                        </span>
-                      )
-                    }
-                  />
-                </div>
               </div>
-
-              <section
-                className="rounded-xl border border-border/60 bg-muted/15 p-4"
-                aria-labelledby="national-id-upload-heading"
-              >
-                <h3
-                  id="national-id-upload-heading"
-                  className="text-sm font-semibold text-foreground"
-                >
-                  {tDetail("uploadHeading")}
-                </h3>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {tDetail("uploadHint")}
-                </p>
-                <div className="mt-4">
-                  <NationalIdDropzone
-                    mode="upload"
-                    isUploading={uploadIdMutation.isPending}
-                    onUpload={handleUpload}
-                  />
-                </div>
-              </section>
             </div>
           ) : null}
         </div>

@@ -14,7 +14,6 @@ export type Member = {
   maritalStatus: string | null;
   religionId: string | null;
   religionName: string | null;
-  nationalIdUrl: string | null;
   status: string;
   selfHelpGroupId: string;
   selfHelpGroupName: string;
@@ -143,17 +142,6 @@ export async function updateMember(id: string, payload: MemberPatchPayload) {
 export async function deleteMember(id: string) {
   const response = await fetch(`/api/member/${id}`, {
     method: "DELETE",
-    credentials: "include",
-  });
-  return parseResponse<BaseApiResponse>(response);
-}
-
-export async function uploadMemberNationalId(memberId: string, file: File) {
-  const fd = new FormData();
-  fd.append("file", file);
-  const response = await fetch(`/api/member/${memberId}/national-id`, {
-    method: "POST",
-    body: fd,
     credentials: "include",
   });
   return parseResponse<BaseApiResponse>(response);

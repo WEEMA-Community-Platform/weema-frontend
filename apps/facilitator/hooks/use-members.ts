@@ -10,7 +10,6 @@ import {
   getMembers,
   rejectMember,
   updateMember,
-  uploadMemberNationalId,
   type RejectMemberPayload,
   type MemberListQuery,
   type MemberPatchPayload,
@@ -63,18 +62,6 @@ export function useDeleteMemberMutation() {
     mutationFn: (id: string) => deleteMember(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-    },
-  });
-}
-
-export function useUploadMemberNationalIdMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ memberId, file }: { memberId: string; file: File }) =>
-      uploadMemberNationalId(memberId, file),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["members"] });
-      queryClient.invalidateQueries({ queryKey: ["member", variables.memberId] });
     },
   });
 }
