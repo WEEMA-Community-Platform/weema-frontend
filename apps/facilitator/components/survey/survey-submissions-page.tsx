@@ -168,7 +168,13 @@ export function SurveySubmissionsPage({
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("submissionId", submission.id);
-    next.set("targetName", submission.targetName || submission.memberName || targetLabelSingular);
+    next.set(
+      "targetName",
+      submission.targetName ||
+        submission.selfHelpGroupName ||
+        submission.memberName ||
+        targetLabelSingular
+    );
     next.delete("memberName");
     next.set("view", "answers");
     setRouteSearch(next);

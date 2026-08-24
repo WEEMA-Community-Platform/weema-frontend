@@ -327,14 +327,15 @@ export function MemberSubmissionsTableCard({
                 : 0;
             const rowKey =
               submission.id ||
-              `${submission.targetId || submission.memberId || submission.targetName || submission.memberName || "target"}-${submission.surveyAssignmentId || "pending"}-${index}`;
+              `${submission.targetId || submission.memberId || submission.targetName || submission.selfHelpGroupName || submission.memberName || "target"}-${submission.surveyAssignmentId || "pending"}-${index}`;
             const hasSubmissionId = Boolean(submission.id);
             const hasTargetId = Boolean(
               submission.targetId || submission.memberId
             );
             const fillMode = isNotStartedStatus(submission.submissionStatus);
             const actionLabel = fillMode ? t("fill") : t("viewAnswers");
-            const displayName = submission.targetName || submission.memberName;
+            const displayName =
+              submission.targetName || submission.selfHelpGroupName || submission.memberName;
 
             return (
               <TableRow key={rowKey}>

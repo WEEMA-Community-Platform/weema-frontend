@@ -1209,6 +1209,7 @@ export function SurveySubmissionAnswerWorkspace({
   const dirtyCount = Object.keys(dirtyQuestionKeys).length;
   const displayTargetName =
     submission.targetName ||
+    submission.selfHelpGroupName ||
     submission.memberName ||
     t("unknownTarget", { target: resolvedTargetLabel });
   const allQuestionsCompleted = visibleQuestions.every((question) =>

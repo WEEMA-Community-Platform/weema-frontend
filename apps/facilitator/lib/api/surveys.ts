@@ -540,13 +540,28 @@ export async function getSurveySubmissionById(
     SurveySubmissionDetailResponse | (BaseApiResponse & { data?: SurveySubmissionRecord | null })
   >(response);
   if ("submission" in payload) {
-    return payload as SurveySubmissionDetailResponse;
+    const rawSubmission = (payload as SurveySubmissionDetailResponse).submission;
+    return {
+      ...payload,
+      submission: rawSubmission
+        ? normalizeSurveySubmissionFromSurveyListApi(
+            rawSubmission as unknown as Record<string, unknown>,
+            rawSubmission.surveyId
+          )
+        : null,
+    } as SurveySubmissionDetailResponse;
   }
 
+  const rawSubmission = (payload as { data?: SurveySubmissionRecord | null }).data ?? null;
   return {
     message: payload.message,
     statusCode: payload.statusCode,
-    submission: (payload as { data?: SurveySubmissionRecord | null }).data ?? null,
+    submission: rawSubmission
+      ? normalizeSurveySubmissionFromSurveyListApi(
+          rawSubmission as unknown as Record<string, unknown>,
+          rawSubmission.surveyId
+        )
+      : null,
   };
 }
 

@@ -128,7 +128,10 @@ export function SurveySubmissionAnswerWorkspace({
   const isSubmitting = submitSubmissionMutation.isPending;
   const dirtyCount = Object.keys(dirtyQuestionKeys).length;
   const displayTargetName =
-    submission.targetName || submission.memberName || t("unknownTarget", { target: resolvedTargetLabel });
+    submission.targetName ||
+    submission.selfHelpGroupName ||
+    submission.memberName ||
+    t("unknownTarget", { target: resolvedTargetLabel });
   const allQuestionsCompleted = questions.every((question) => isQuestionAnswered(question, getDraft(question)));
 
   const persistDirtyAnswers = async () => {

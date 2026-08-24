@@ -86,6 +86,7 @@ function SubmissionLockDialog({
   const isPending = lockMutation.isPending || unlockMutation.isPending;
   const targetName =
     p?.submission.targetName ||
+    p?.submission.selfHelpGroupName ||
     p?.submission.memberName ||
     tLock("thisTarget", { target: targetLabelSingular });
 
@@ -354,7 +355,13 @@ export function SurveySubmissionsPage({
   const openAnswerWorkspace = (submission: SurveySubmissionRecord) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("submissionId", submission.id);
-    next.set("targetName", submission.targetName || submission.memberName || targetLabelSingular);
+    next.set(
+      "targetName",
+      submission.targetName ||
+        submission.selfHelpGroupName ||
+        submission.memberName ||
+        targetLabelSingular
+    );
     next.delete("memberName");
     next.set("view", "answers");
     setRouteSearch(next);
