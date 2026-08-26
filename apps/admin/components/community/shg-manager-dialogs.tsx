@@ -328,9 +328,6 @@ export function SHGFormDialog({
             </div>
             <div className="space-y-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tForm("sectionCoordinates")}</p>
-              <p className="text-xs text-muted-foreground">
-                {tForm("coordinatesHint")}
-              </p>
               {/*
               <div className="space-y-1.5">
                 <Label htmlFor="shg-maps-url">{tForm("mapLink")}</Label>
