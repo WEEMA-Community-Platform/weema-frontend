@@ -1,6 +1,6 @@
 "use client";
 
-import { type ClipboardEvent, FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { LayersIcon, MapPinIcon, UsersIcon, UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
@@ -12,7 +12,6 @@ import {
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
 import { useCurrentUser } from "@/hooks/use-user";
 import type { SHG } from "@/lib/api/community";
-import { extractLatLngFromMapsUrl } from "@/lib/maps-coordinates";
 import {
   CardMetaRow,
   CommunityCard,
@@ -57,8 +56,6 @@ export function SHGManager() {
   const [dateEstablished, setDateEstablished] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [mapsUrl, setMapsUrl] = useState("");
-  const [coordinateMode, setCoordinateMode] = useState<"idle" | "map" | "manual">("idle");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
 
@@ -94,75 +91,13 @@ export function SHGManager() {
     setDateEstablished("");
     setLatitude("");
     setLongitude("");
-    setMapsUrl("");
-    setCoordinateMode("idle");
   };
 
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
 
-  const applyMapsUrl = (raw: string) => {
-    const trimmed = raw.trim();
-    if (!trimmed) return false;
-    const next = extractLatLngFromMapsUrl(trimmed);
-    if (next) {
-      setLatitude(String(next.lat));
-      setLongitude(String(next.lng));
-      setCoordinateMode("map");
-      return true;
-    }
-    return false;
-  };
-
-  const handleMapsUrlChange = (value: string) => {
-    setMapsUrl(value);
-    if (coordinateMode === "map" && !value.trim()) {
-      setCoordinateMode("idle");
-      setLatitude("");
-      setLongitude("");
-    }
-  };
-
-  const handleMapsUrlBlur = () => {
-    if (coordinateMode === "manual") return;
-    const trimmed = mapsUrl.trim();
-    if (!trimmed) return;
-    const ok = applyMapsUrl(trimmed);
-    if (!ok && /https?:|maps\.|apple\.|goo\.|google\.com\/maps/i.test(trimmed)) {
-      sileo.warning({
-        title: tToasts("badMapLinkTitle"),
-        description: tToasts("badMapLinkMessage"),
-      });
-    }
-  };
-
-  const handleMapsPaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    if (coordinateMode === "manual") return;
-    const pasted = e.clipboardData.getData("text")?.trim();
-    if (!pasted) return;
-    const next = extractLatLngFromMapsUrl(pasted);
-    if (next) {
-      e.preventDefault();
-      setMapsUrl(pasted);
-      setLatitude(String(next.lat));
-      setLongitude(String(next.lng));
-      setCoordinateMode("map");
-    }
-  };
-
   const handleManualCoordinateInput = (field: "lat" | "lng", value: string) => {
-    if (coordinateMode === "idle") {
-      setCoordinateMode("manual");
-      setMapsUrl("");
-    }
     if (field === "lat") setLatitude(value);
     else setLongitude(value);
-  };
-
-  const switchToMapLinkEntry = () => {
-    setCoordinateMode("idle");
-    setMapsUrl("");
-    setLatitude("");
-    setLongitude("");
   };
 
   const submitForm = async (event: FormEvent) => {
@@ -351,8 +286,6 @@ export function SHGManager() {
         kebeleId={kebeleId}
         latitude={latitude}
         longitude={longitude}
-        mapsUrl={mapsUrl}
-        coordinateMode={coordinateMode}
         woredaOptions={woredaOptions}
         kebeleOptions={kebeleOptions}
         statusOptions={STATUS_OPTIONS}
@@ -363,13 +296,7 @@ export function SHGManager() {
         setStatus={setStatus}
         setWoredaId={setWoredaId}
         setKebeleId={setKebeleId}
-        handleMapsUrlChange={handleMapsUrlChange}
-        handleMapsUrlBlur={handleMapsUrlBlur}
-        handleMapsPaste={handleMapsPaste}
         handleManualCoordinateInput={handleManualCoordinateInput}
-        switchToMapLinkEntry={switchToMapLinkEntry}
-        setCoordinateMode={setCoordinateMode}
-        setMapsUrl={setMapsUrl}
         onSubmit={submitForm}
         isSubmitting={createMutation.isPending}
       />

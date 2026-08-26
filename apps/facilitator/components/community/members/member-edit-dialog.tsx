@@ -80,7 +80,7 @@ export function MemberEditDialog({
   const [selfHelpGroupId, setSelfHelpGroupId] = useState("");
   const [fan, setFan] = useState("");
   const [editFormSynced, setEditFormSynced] = useState(false);
-  const [syncedMember, setSyncedMember] = useState<Member | null>(member);
+  const [syncedMember, setSyncedMember] = useState<Member | null>(null);
 
   // Re-hydrate the form whenever a new member is selected (or the selection
   // is cleared). Using "adjust state during render" avoids the cascading

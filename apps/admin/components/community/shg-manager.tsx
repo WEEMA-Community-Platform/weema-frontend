@@ -1,6 +1,6 @@
 "use client";
 
-import { type ClipboardEvent, FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { LayersIcon, LockIcon, MapPinIcon, UnlockIcon, UsersIcon, UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
@@ -19,7 +19,6 @@ import { useUsersQuery } from "@/hooks/use-users-admin";
 import type { EntityStatus, SHG } from "@/lib/api/community";
 import { exportSelfHelpGroupsList } from "@/lib/api/community";
 import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
-import { extractLatLngFromMapsUrl } from "@/lib/maps-coordinates";
 import {
   CardMetaRow,
   CommunityCard,
@@ -98,14 +97,6 @@ export function SHGManager() {
   const [dateEstablished, setDateEstablished] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  /** Helper field — not submitted; used to paste maps links and fill lat/lng. */
-  const [mapsUrl, setMapsUrl] = useState("");
-  /**
-   * idle: user can paste a map link or type coordinates.
-   * map: coordinates came from a parsed link — lat/lng read-only.
-   * manual: user is typing coordinates — map link field disabled until they switch back.
-   */
-  const [coordinateMode, setCoordinateMode] = useState<"idle" | "map" | "manual">("idle");
   const [editingSHG, setEditingSHG] = useState<SHG | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<SHG | null>(null);
@@ -228,8 +219,6 @@ export function SHGManager() {
     setDateEstablished("");
     setLatitude("");
     setLongitude("");
-    setMapsUrl("");
-    setCoordinateMode("idle");
     setEditingSHG(null);
   };
   const openCreate = () => { resetForm(); setIsFormOpen(true); };
@@ -248,74 +237,12 @@ export function SHGManager() {
     const lngStr = s.longitude != null ? String(s.longitude) : "";
     setLatitude(latStr);
     setLongitude(lngStr);
-    setMapsUrl("");
-    setCoordinateMode(latStr !== "" || lngStr !== "" ? "manual" : "idle");
     setIsFormOpen(true);
   };
 
-  const applyMapsUrl = (raw: string) => {
-    const trimmed = raw.trim();
-    if (!trimmed) return false;
-    const next = extractLatLngFromMapsUrl(trimmed);
-    if (next) {
-      setLatitude(String(next.lat));
-      setLongitude(String(next.lng));
-      setCoordinateMode("map");
-      return true;
-    }
-    return false;
-  };
-
-  const handleMapsUrlChange = (value: string) => {
-    setMapsUrl(value);
-    if (coordinateMode === "map" && !value.trim()) {
-      setCoordinateMode("idle");
-      setLatitude("");
-      setLongitude("");
-    }
-  };
-
-  const handleMapsUrlBlur = () => {
-    if (coordinateMode === "manual") return;
-    const trimmed = mapsUrl.trim();
-    if (!trimmed) return;
-    const ok = applyMapsUrl(trimmed);
-    if (!ok && /https?:|maps\.|apple\.|goo\.|google\.com\/maps/i.test(trimmed)) {
-      sileo.warning({
-        title: tToasts("badMapLinkTitle"),
-        description: tToasts("badMapLinkMessage"),
-      });
-    }
-  };
-
-  const handleMapsPaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    if (coordinateMode === "manual") return;
-    const pasted = e.clipboardData.getData("text")?.trim();
-    if (!pasted) return;
-    const next = extractLatLngFromMapsUrl(pasted);
-    if (next) {
-      e.preventDefault();
-      setMapsUrl(pasted);
-      setLatitude(String(next.lat));
-      setLongitude(String(next.lng));
-      setCoordinateMode("map");
-    }
-  };
-
   const handleManualCoordinateInput = (field: "lat" | "lng", value: string) => {
-    if (coordinateMode === "idle") {
-      setCoordinateMode("manual");
-      setMapsUrl("");
-    }
     if (field === "lat") setLatitude(value);
     else setLongitude(value);
-  };
-
-  const switchToMapLinkEntry = () => {
-    setCoordinateMode("idle");
-    setMapsUrl("");
-    setLatitude("");
-    setLongitude("");
   };
 
   const submitForm = async (event: FormEvent) => {
@@ -675,8 +602,6 @@ export function SHGManager() {
         dateEstablished={dateEstablished}
         latitude={latitude}
         longitude={longitude}
-        mapsUrl={mapsUrl}
-        coordinateMode={coordinateMode}
         woredaOptions={woredaOptions}
         kebeleOptions={kebeleOptions}
         facilitatorOptions={facilitatorOptions}
@@ -691,13 +616,7 @@ export function SHGManager() {
         setFacilitatorId={setFacilitatorId}
         setEstablishedByType={setEstablishedByType}
         setDateEstablished={setDateEstablished}
-        handleMapsUrlChange={handleMapsUrlChange}
-        handleMapsUrlBlur={handleMapsUrlBlur}
-        handleMapsPaste={handleMapsPaste}
         handleManualCoordinateInput={handleManualCoordinateInput}
-        switchToMapLinkEntry={switchToMapLinkEntry}
-        setCoordinateMode={setCoordinateMode}
-        setMapsUrl={setMapsUrl}
         onSubmit={submitForm}
         isSubmitting={isSubmitting}
         isFacilitatorsLoading={facilitatorsQuery.isLoading || facilitatorsQuery.isFetching}

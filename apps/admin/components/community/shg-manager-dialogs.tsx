@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { LockIcon, UnlockIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
 import { sileo } from "sileo";
 
 import { useSHGDetailQuery } from "@/hooks/use-community";
@@ -47,6 +46,14 @@ function DetailField({ label, value }: { label: string; value: React.ReactNode }
         {isEmptyDetailValue(value) ? <span className="text-muted-foreground/50">--</span> : value}
       </dd>
     </>
+  );
+}
+
+function RequiredStar() {
+  return (
+    <span className="ml-0.5 text-base leading-none text-destructive" aria-hidden="true">
+      *
+    </span>
   );
 }
 
@@ -127,8 +134,6 @@ type SHGFormDialogProps = {
   facilitatorSearchQuery?: string;
   latitude: string;
   longitude: string;
-  mapsUrl: string;
-  coordinateMode: "idle" | "map" | "manual";
   woredaOptions: Array<{ value: string; label: string }>;
   kebeleOptions: Array<{ value: string; label: string }>;
   facilitatorOptions: Array<{ value: string; label: string }>;
@@ -144,13 +149,7 @@ type SHGFormDialogProps = {
   setEstablishedByType: (value: string) => void;
   setDateEstablished: (value: string) => void;
   setFacilitatorSearchQuery?: (value: string) => void;
-  handleMapsUrlChange: (value: string) => void;
-  handleMapsUrlBlur: () => void;
-  handleMapsPaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   handleManualCoordinateInput: (field: "lat" | "lng", value: string) => void;
-  switchToMapLinkEntry: () => void;
-  setCoordinateMode: (mode: "idle" | "map" | "manual") => void;
-  setMapsUrl: (value: string) => void;
   onSubmit: (event: React.FormEvent) => void;
   isSubmitting: boolean;
   isFacilitatorsLoading: boolean;
@@ -171,8 +170,6 @@ export function SHGFormDialog({
   dateEstablished,
   latitude,
   longitude,
-  mapsUrl,
-  coordinateMode,
   woredaOptions,
   kebeleOptions,
   facilitatorOptions,
@@ -187,13 +184,7 @@ export function SHGFormDialog({
   setFacilitatorId,
   setEstablishedByType,
   setDateEstablished,
-  handleMapsUrlChange,
-  handleMapsUrlBlur,
-  handleMapsPaste,
   handleManualCoordinateInput,
-  switchToMapLinkEntry,
-  setCoordinateMode,
-  setMapsUrl,
   onSubmit,
   isSubmitting,
   isFacilitatorsLoading,
@@ -213,7 +204,10 @@ export function SHGFormDialog({
             <div className="space-y-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tForm("sectionDetails")}</p>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-name">{tForm("nameLabel")}</Label>
+                <Label htmlFor="shg-name">
+                  {tForm("nameLabel")}
+                  <RequiredStar />
+                </Label>
                 <Input
                   id="shg-name"
                   placeholder={tForm("namePlaceholder")}
@@ -221,10 +215,14 @@ export function SHGFormDialog({
                   onChange={(e) => setName(e.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-location">{tForm("locationLabel")}</Label>
+                <Label htmlFor="shg-location">
+                  {tForm("locationLabel")}
+                  <RequiredStar />
+                </Label>
                 <Input
                   id="shg-location"
                   placeholder={tForm("locationPlaceholder")}
@@ -232,10 +230,14 @@ export function SHGFormDialog({
                   onChange={(e) => setLocation(e.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-facilitator">{tForm("facilitator")}</Label>
+                <Label htmlFor="shg-facilitator">
+                  {tForm("facilitator")}
+                  <RequiredStar />
+                </Label>
                 <SelectField
                   id="shg-facilitator"
                   value={facilitatorId || "none"}
@@ -251,7 +253,10 @@ export function SHGFormDialog({
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-woreda">{tForm("woreda")}</Label>
+                  <Label htmlFor="shg-woreda">
+                    {tForm("woreda")}
+                    <RequiredStar />
+                  </Label>
                   <SelectField
                     id="shg-woreda"
                     value={woredaId || "none"}
@@ -262,7 +267,10 @@ export function SHGFormDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-kebele">{tForm("kebele")}</Label>
+                  <Label htmlFor="shg-kebele">
+                    {tForm("kebele")}
+                    <RequiredStar />
+                  </Label>
                   <SelectField
                     id="shg-kebele"
                     value={kebeleId || "none"}
@@ -275,7 +283,10 @@ export function SHGFormDialog({
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-status">{tForm("status")}</Label>
+                  <Label htmlFor="shg-status">
+                    {tForm("status")}
+                    <RequiredStar />
+                  </Label>
                   <SelectField
                     id="shg-status"
                     value={status}
@@ -286,7 +297,10 @@ export function SHGFormDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-established-by-type">{tForm("establishedByTypeLabel")}</Label>
+                  <Label htmlFor="shg-established-by-type">
+                    {tForm("establishedByTypeLabel")}
+                    <RequiredStar />
+                  </Label>
                   <SelectField
                     id="shg-established-by-type"
                     value={establishedByType}
@@ -298,13 +312,17 @@ export function SHGFormDialog({
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-date-established">{tForm("dateEstablishedLabel")}</Label>
+                <Label htmlFor="shg-date-established">
+                  {tForm("dateEstablishedLabel")}
+                  <RequiredStar />
+                </Label>
                 <Input
                   id="shg-date-established"
                   type="date"
                   value={dateEstablished}
                   onChange={(e) => setDateEstablished(e.target.value)}
                   className={inputClass}
+                  required
                 />
               </div>
             </div>
@@ -313,6 +331,7 @@ export function SHGFormDialog({
               <p className="text-xs text-muted-foreground">
                 {tForm("coordinatesHint")}
               </p>
+              {/*
               <div className="space-y-1.5">
                 <Label htmlFor="shg-maps-url">{tForm("mapLink")}</Label>
                 <Input
@@ -355,6 +374,7 @@ export function SHGFormDialog({
                   </button>
                 ) : null}
               </div>
+              */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="shg-latitude">{tForm("latitude")}</Label>
@@ -365,11 +385,7 @@ export function SHGFormDialog({
                     step="any"
                     value={latitude}
                     onChange={(e) => handleManualCoordinateInput("lat", e.target.value)}
-                    readOnly={coordinateMode === "map"}
-                    className={cn(
-                      inputClass,
-                      coordinateMode === "map" && "cursor-not-allowed bg-muted/50",
-                    )}
+                    className={inputClass}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -381,11 +397,7 @@ export function SHGFormDialog({
                     step="any"
                     value={longitude}
                     onChange={(e) => handleManualCoordinateInput("lng", e.target.value)}
-                    readOnly={coordinateMode === "map"}
-                    className={cn(
-                      inputClass,
-                      coordinateMode === "map" && "cursor-not-allowed bg-muted/50",
-                    )}
+                    className={inputClass}
                   />
                 </div>
               </div>
