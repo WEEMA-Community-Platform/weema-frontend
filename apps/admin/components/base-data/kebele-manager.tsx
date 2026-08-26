@@ -51,6 +51,7 @@ import {
   tableActionsCellClass,
   tableRowActionsClass,
   useListEmptyMessage,
+  readOnlyDisplayValue,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
@@ -346,7 +347,7 @@ export function KebeleManager() {
                 <SelectField
                   id="kebele-woreda-view"
                   value={viewingKebele?.woredaId ?? ""}
-                  placeholder={t("woredaPlaceholder")}
+                  placeholder="--"
                   options={woredaCreateOptions}
                   onValueChange={() => {}}
                   className={viewReadOnlyInputClass}
@@ -359,8 +360,7 @@ export function KebeleManager() {
                   id="kebele-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
-                  value={viewingKebele?.description ?? ""}
-                  placeholder={tCommon("descriptionPlaceholder")}
+                  value={readOnlyDisplayValue(viewingKebele?.description)}
                 />
               </Field>
             </FieldGroup>

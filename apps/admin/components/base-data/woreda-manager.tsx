@@ -51,6 +51,7 @@ import {
   tableActionsCellClass,
   tableRowActionsClass,
   useListEmptyMessage,
+  readOnlyDisplayValue,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
@@ -339,7 +340,7 @@ export function WoredaManager() {
                 <SelectField
                   id="woreda-zone-view"
                   value={viewingWoreda?.zoneId ?? ""}
-                  placeholder={t("zonePlaceholder")}
+                  placeholder="--"
                   options={zoneCreateOptions}
                   onValueChange={() => {}}
                   className={viewReadOnlyInputClass}
@@ -352,8 +353,7 @@ export function WoredaManager() {
                   id="woreda-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
-                  value={viewingWoreda?.description ?? ""}
-                  placeholder={tCommon("descriptionPlaceholder")}
+                  value={readOnlyDisplayValue(viewingWoreda?.description)}
                 />
               </Field>
             </FieldGroup>

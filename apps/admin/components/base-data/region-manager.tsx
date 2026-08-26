@@ -48,6 +48,7 @@ import {
   tableActionsCellClass,
   tableRowActionsClass,
   useListEmptyMessage,
+  readOnlyDisplayValue,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
@@ -288,8 +289,7 @@ export function RegionManager() {
                   id="region-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
-                  value={viewingRegion?.description ?? ""}
-                  placeholder={tCommon("descriptionPlaceholder")}
+                  value={readOnlyDisplayValue(viewingRegion?.description)}
                 />
               </Field>
             </FieldGroup>

@@ -60,21 +60,15 @@ export function MemberFormFields({
   setDateOfBirth,
   dateJoinedShg,
   setDateJoinedShg,
-  fan,
-  setFan,
   gender,
   setGender,
   maritalStatus,
   setMaritalStatus,
-  religionId,
-  setReligionId,
   status,
   setStatus,
   selfHelpGroupId,
   setSelfHelpGroupId,
-  religionOptions,
   shgOptions,
-  showReligionField = true,
 }: MemberFormFieldsProps) {
   const t = useTranslations("community.members");
   const tGender = useTranslations("community.members.options.gender");
@@ -163,6 +157,7 @@ export function MemberFormFields({
               {t("minAgeHint", { years: MIN_MEMBER_AGE_YEARS })}
             </p>
           </div>
+          {/*
           <div className="space-y-1.5">
             <Label htmlFor="member-fan">{t("fields.fan")}</Label>
             <Input
@@ -173,6 +168,7 @@ export function MemberFormFields({
               className={inputClass}
             />
           </div>
+          */}
           <div className="space-y-1.5">
             <Label htmlFor="member-date-joined-shg">{t("fields.dateJoinedShg")}</Label>
             <Input
@@ -215,6 +211,7 @@ export function MemberFormFields({
               onValueChange={setMaritalStatus}
             />
           </div>
+          {/*
           {showReligionField ? (
             <div className="space-y-1.5">
               <Label htmlFor="member-religion">{t("fields.religion")}</Label>
@@ -227,6 +224,7 @@ export function MemberFormFields({
               />
             </div>
           ) : null}
+          */}
           <div className="space-y-1.5">
             <Label htmlFor="member-status">
               {t("fields.status")}

@@ -39,12 +39,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SaveButton, inputClass } from "@/components/base-data/shared";
 import { SelectField } from "@/components/base-data/select-field";
 
+function isEmptyDetailValue(value: React.ReactNode) {
+  return value == null || (typeof value === "string" && value.trim().length === 0);
+}
+
 function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <>
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-sm font-medium wrap-break-word">
-        {value ?? <span className="text-muted-foreground/50">—</span>}
+        {isEmptyDetailValue(value) ? <span className="text-muted-foreground/50">--</span> : value}
       </dd>
     </>
   );
@@ -352,7 +356,7 @@ export function ClusterDetailDialog({ id, open, onClose }: { id: string | null; 
             <DialogTitle>{cluster?.name ?? tDetail("title")}</DialogTitle>
             <DialogDescription>{tDetail("description")}</DialogDescription>
           </DialogHeader>
-          <div className="px-5 pb-2 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 pb-6">
             {isLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}

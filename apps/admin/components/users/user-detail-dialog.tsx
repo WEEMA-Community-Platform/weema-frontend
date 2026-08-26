@@ -20,11 +20,17 @@ type UserDetailDialogProps = {
   onClose: () => void;
 };
 
+function isEmptyDetailValue(value: ReactNode) {
+  return value == null || (typeof value === "string" && value.trim().length === 0);
+}
+
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-3 gap-y-1 sm:gap-x-4">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium">{value ?? "—"}</dd>
+      <dd className="text-sm font-medium">
+        {isEmptyDetailValue(value) ? <span className="text-muted-foreground/60">--</span> : value}
+      </dd>
     </div>
   );
 }
@@ -46,7 +52,7 @@ export function UserDetailDialog({ id, open, onClose }: UserDetailDialogProps) {
           </DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
-        <div className="px-6 pb-6 pt-5">
+        <div className="px-6 pb-8 pt-5">
           {isPending && !u ? (
             <div className="space-y-3" aria-busy>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -70,7 +76,7 @@ export function UserDetailDialog({ id, open, onClose }: UserDetailDialogProps) {
             <dl className="grid gap-3">
               <Field label={tFields("email")} value={u.email} />
               <Field label={tFields("role")} value={<span className="capitalize">{roleLabel(u.role)}</span>} />
-              <Field label={tFields("phone")} value={u.phoneNumber ?? "—"} />
+              <Field label={tFields("phone")} value={u.phoneNumber} />
               <Field
                 label={tFields("status")}
                 value={u.active ? tStates("active") : tStates("inactive")}

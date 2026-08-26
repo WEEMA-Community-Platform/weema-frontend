@@ -80,7 +80,7 @@ export function MemberDetailDialog({
           <DialogDescription>{tDetail("description")}</DialogDescription>
         </DialogHeader>
 
-        <div className="px-6 pb-6 pt-5">
+        <div className="px-6 pb-8 pt-5">
           {showSkeleton ? (
             <DetailSkeleton />
           ) : isError ? (
@@ -116,10 +116,12 @@ export function MemberDetailDialog({
                   label={t("fields.maritalStatus")}
                   value={maritalLabel(member.maritalStatus)}
                 />
+                {/*
                 <MemberDetailField
                   label={t("fields.religion")}
                   value={member.religionName}
                 />
+                */}
                 <MemberDetailField
                   label={t("fields.status")}
                   value={<StatusBadge status={member.status as EntityStatus} />}
@@ -128,7 +130,9 @@ export function MemberDetailDialog({
                   label={t("fields.shg")}
                   value={member.selfHelpGroupName}
                 />
+                {/*
                 <MemberDetailField label={t("fields.fan")} value={member.fan} />
+                */}
               </div>
             </div>
           ) : null}

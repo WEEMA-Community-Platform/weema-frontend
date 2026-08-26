@@ -35,12 +35,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SaveButton, inputClass } from "@/components/base-data/shared";
 import { SelectField } from "@/components/base-data/select-field";
 
+function isEmptyDetailValue(value: React.ReactNode) {
+  return value == null || (typeof value === "string" && value.trim().length === 0);
+}
+
 function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <>
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-sm font-medium wrap-break-word">
-        {value ?? <span className="text-muted-foreground/50">—</span>}
+        {isEmptyDetailValue(value) ? <span className="text-muted-foreground/50">--</span> : value}
       </dd>
     </>
   );
@@ -69,7 +73,7 @@ export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open
           <DialogTitle>{shg?.name ?? tDetail("title")}</DialogTitle>
           <DialogDescription>{tDetail("description")}</DialogDescription>
         </DialogHeader>
-        <div className="px-5 pb-2">
+        <div className="px-5 pb-6">
           {isLoading ? (
             <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}</div>
           ) : isError ? (
@@ -82,18 +86,13 @@ export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open
               </button>
             </div>
           ) : shg ? (
-            <dl className="grid grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 ">
-              <DetailField label={tDetail("fields.id")} value={shg.id} />
+            <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 lg:grid-cols-[112px_minmax(0,1fr)_112px_minmax(0,1fr)]">
               <DetailField label={tDetail("fields.name")} value={shg.name} />
               <DetailField label={tDetail("fields.status")} value={<StatusBadge status={shg.status} />} />
               <DetailField label={tDetail("fields.cluster")} value={shg.clusterName} />
-              <DetailField label={tDetail("fields.clusterId")} value={shg.clusterId} />
               <DetailField label={tDetail("fields.woreda")} value={shg.woredaName} />
-              <DetailField label={tDetail("fields.woredaId")} value={shg.woredaId} />
               <DetailField label={tDetail("fields.kebele")} value={shg.kebeleName} />
-              <DetailField label={tDetail("fields.kebeleId")} value={shg.kebeleId} />
               <DetailField label={tDetail("fields.facilitator")} value={shg.facilitatorName} />
-              <DetailField label={tDetail("fields.facilitatorId")} value={shg.facilitatorId} />
               <DetailField label={tDetail("fields.members")} value={shg.memberCount} />
               <DetailField
                 label={tDetail("fields.locked")}
@@ -101,8 +100,6 @@ export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open
               />
               <DetailField label={tDetail("fields.location")} value={shg.location} />
               <DetailField label={tDetail("fields.gps")} value={shg.latitude != null && shg.longitude != null ? `${shg.latitude}, ${shg.longitude}` : null} />
-              <DetailField label={tDetail("fields.latitude")} value={shg.latitude} />
-              <DetailField label={tDetail("fields.longitude")} value={shg.longitude} />
               <DetailField label={tDetail("fields.establishedByType")} value={shg.establishedByType} />
               <DetailField label={tDetail("fields.dateEstablished")} value={shg.dateEstablished} />
               <DetailField label={tDetail("fields.description")} value={shg.description} />

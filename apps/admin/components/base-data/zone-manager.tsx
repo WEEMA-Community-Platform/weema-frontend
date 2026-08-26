@@ -51,6 +51,7 @@ import {
   tableActionsCellClass,
   tableRowActionsClass,
   useListEmptyMessage,
+  readOnlyDisplayValue,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
@@ -417,7 +418,7 @@ export function ZoneManager() {
                 <SelectField
                   id="zone-region-view"
                   value={viewingZone?.regionId ?? ""}
-                  placeholder={t("regionPlaceholder")}
+                  placeholder="--"
                   options={regionOptions}
                   onValueChange={() => {}}
                   className={viewReadOnlyInputClass}
@@ -463,8 +464,7 @@ export function ZoneManager() {
                   id="zone-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
-                  value={viewingZone?.description ?? ""}
-                  placeholder={tCommon("descriptionPlaceholder")}
+                  value={readOnlyDisplayValue(viewingZone?.description)}
                 />
               </Field>
             </FieldGroup>

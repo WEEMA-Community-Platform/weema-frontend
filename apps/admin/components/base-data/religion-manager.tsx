@@ -47,6 +47,7 @@ import {
   tableActionsCellClass,
   tableRowActionsClass,
   useListEmptyMessage,
+  readOnlyDisplayValue,
   viewReadOnlyInputClass,
   viewReadOnlyTextareaClass,
 } from "@/components/base-data/shared";
@@ -243,8 +244,7 @@ export function ReligionManager() {
                   id="religion-description-view"
                   readOnly
                   className={viewReadOnlyTextareaClass}
-                  value={viewingReligion?.description ?? ""}
-                  placeholder={tCommon("descriptionPlaceholder")}
+                  value={readOnlyDisplayValue(viewingReligion?.description)}
                 />
               </Field>
             </FieldGroup>

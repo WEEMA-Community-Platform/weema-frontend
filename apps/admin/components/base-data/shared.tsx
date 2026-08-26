@@ -22,11 +22,15 @@ export const viewReadOnlyInputClass = `${inputClass} cursor-default bg-muted/30`
 export const viewReadOnlyTextareaClass =
   "min-h-24 w-full cursor-default rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm outline-none";
 
+export function readOnlyDisplayValue(value: string | null | undefined) {
+  return value == null || value.trim().length === 0 ? "--" : value;
+}
+
 /**
  * Body for base-data dialog forms. `FieldGroup` already uses flex `gap`; do not add `space-y-*`
  * on the same node — it stacks with gap and makes spacing look uneven.
  */
-export const baseDataDialogFieldGroupClass = "gap-4 overflow-auto px-5 pb-4";
+export const baseDataDialogFieldGroupClass = "gap-4 overflow-auto px-5 pb-6";
 
 /** Editable description in add/edit modals — matches `inputClass` typography and focus treatment. */
 export const formTextareaClass =
