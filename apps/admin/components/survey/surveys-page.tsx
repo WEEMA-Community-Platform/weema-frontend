@@ -436,6 +436,21 @@ export function SurveysPage() {
                 </DropdownMenuItem>
               </>
             );
+            const viewerMenuItems = (
+              <DropdownMenuItem
+                className="text-[12px] whitespace-nowrap"
+                onClick={() =>
+                  router.push(
+                    `/survey/${survey.id}/submissions?surveyTitle=${encodeURIComponent(
+                      surveyTitle
+                    )}&targetType=${encodeURIComponent(survey.targetType || "")}`
+                  )
+                }
+              >
+                <ClipboardListIcon className="size-4" />
+                {tListActions("viewSubmission")}
+              </DropdownMenuItem>
+            );
             return (
             <CommunityCard
               key={survey.id}
@@ -452,6 +467,7 @@ export function SurveysPage() {
               showEditAction={false}
               viewActionLabel={tList("openAction")}
               extraMenuItems={extraMenuItems}
+              viewerMenuItems={viewerMenuItems}
             >
               <CardMetaRow icon={LayersIcon} label={tCard("target")}>
                 {survey.targetType || "-"}

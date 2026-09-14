@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 /** Backend role strings for user create / filters. Labels are English fallbacks — prefer `useUserRoleOptions` in client components. */
 export const USER_ROLE_OPTIONS = [
   { value: "ROLE_SUPER_ADMIN", label: "Super admin" },
+  { value: "ROLE_VIEWER_ADMIN", label: "Viewer admin" },
   { value: "ROLE_CLUSTER_ADMIN", label: "Cluster admin" },
   { value: "ROLE_FACILITATOR", label: "Facilitator" },
 ] as const;
@@ -17,6 +18,8 @@ function roleTranslationKey(role: string): string | null {
   switch (role) {
     case "ROLE_SUPER_ADMIN":
       return "SUPER_ADMIN";
+    case "ROLE_VIEWER_ADMIN":
+      return "VIEWER_ADMIN";
     case "ROLE_CLUSTER_ADMIN":
       return "CLUSTER_ADMIN";
     case "ROLE_FACILITATOR":
@@ -40,6 +43,7 @@ export function useUserRoleOptions() {
   const t = useTranslations("users.roles");
   return [
     { value: "ROLE_SUPER_ADMIN", label: t("SUPER_ADMIN") },
+    { value: "ROLE_VIEWER_ADMIN", label: t("VIEWER_ADMIN") },
     { value: "ROLE_CLUSTER_ADMIN", label: t("CLUSTER_ADMIN") },
     { value: "ROLE_FACILITATOR", label: t("FACILITATOR") },
   ];

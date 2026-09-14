@@ -23,6 +23,7 @@ import {
 import { LockedBadge } from "@/components/community/community-card";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { SurveySubmissionRecord } from "@/lib/api/surveys";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 export function formatSubmissionDateTime(value: string | null | undefined) {
   if (!value) return "—";
@@ -133,6 +134,8 @@ export function MemberSubmissionsTableCard({
 }: MemberSubmissionsTableCardProps) {
   const t = useTranslations("survey.submissions.memberTable");
   const tTable = useTranslations("community.members.table");
+  const isViewerAdmin = useIsViewerAdmin();
+  const canManageSubmissions = showLockActions && !isViewerAdmin;
   const titleTargetLabel = targetLabelPlural[0]
     ? targetLabelPlural[0].toUpperCase() + targetLabelPlural.slice(1)
     : targetLabelPlural;
@@ -140,7 +143,7 @@ export function MemberSubmissionsTableCard({
     ? targetLabelSingular[0].toUpperCase() + targetLabelSingular.slice(1)
     : targetLabelSingular;
 
-  const columnCount = showLockActions ? 6 : 5;
+  const columnCount = canManageSubmissions ? 6 : 5;
 
   return (
     <Card className="gap-0 border border-primary/10 bg-card py-0 ring-0">
@@ -194,7 +197,7 @@ export function MemberSubmissionsTableCard({
                 </Select>
               </div>
             ) : null}
-            {onExportSubmissions &&
+            {!isViewerAdmin && onExportSubmissions &&
             exportSubmissionsLabel &&
             exportSubmissionsPendingLabel ? (
               <Button
@@ -229,7 +232,7 @@ export function MemberSubmissionsTableCard({
             t("columnStatus"),
             t("columnProgress"),
             t("columnSubmitted"),
-            ...(showLockActions ? [t("columnLocked")] : []),
+            ...(canManageSubmissions ? [t("columnLocked")] : []),
             t("columnActions"),
           ]}
           loading={loading}
@@ -292,14 +295,14 @@ export function MemberSubmissionsTableCard({
                 <TableCell className="text-sm text-muted-foreground">
                   {formatSubmissionDateTime(submission.submittedAt)}
                 </TableCell>
-                {showLockActions ? (
+                {canManageSubmissions ? (
                   <TableCell>
                     <LockedBadge locked={submission.locked ?? false} />
                   </TableCell>
                 ) : null}
                 <TableCell className={tableActionsCellClass}>
                   <div className={tableRowActionsClass}>
-                    <Button
+                    {!isViewerAdmin || !fillMode ? <Button
                       type="button"
                       size="sm"
                       variant="outline"
@@ -308,8 +311,8 @@ export function MemberSubmissionsTableCard({
                       onClick={() => onPrimaryAction(submission)}
                     >
                       {actionLabel}
-                    </Button>
-                    {showLockActions && submission.locked ? (
+                    </Button> : null}
+                    {canManageSubmissions && submission.locked ? (
                       <Button
                         type="button"
                         size="sm"
@@ -321,7 +324,7 @@ export function MemberSubmissionsTableCard({
                         <UnlockIcon className="size-3" />
                         {t("unlock")}
                       </Button>
-                    ) : showLockActions ? (
+                    ) : canManageSubmissions ? (
                       <Button
                         type="button"
                         size="sm"

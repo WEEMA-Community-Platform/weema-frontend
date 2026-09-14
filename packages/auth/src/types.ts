@@ -1,8 +1,9 @@
-export type WeemaRole = "admin" | "cluster_admin" | "facilitator";
+export type WeemaRole = "admin" | "viewer_admin" | "cluster_admin" | "facilitator";
 
 export type WeemaBackendRole =
   | "ROLE_SUPER_ADMIN"
   | "ROLE_ADMIN"
+  | "ROLE_VIEWER_ADMIN"
   | "ROLE_CLUSTER_ADMIN"
   | "ROLE_FACILITATOR";
 
@@ -45,4 +46,3 @@ export type LogoutResponse = {
   message: string;
   statusCode: AuthStatusCode;
 };
-

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 export const inputClass = "h-11 text-[0.95rem] md:text-base";
 /** Read-only fields in view dialogs (matches edit sizing, muted surface). */
@@ -119,6 +120,7 @@ export function DataToolbar({
   hasActiveFilters?: boolean;
 }) {
   const tTable = useTranslations("community.members.table");
+  const isViewerAdmin = useIsViewerAdmin();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Input
@@ -144,7 +146,7 @@ export function DataToolbar({
           )}
         </Button>
       )}
-      {onExport && exportLabel && exportPendingLabel && (
+      {!isViewerAdmin && onExport && exportLabel && exportPendingLabel && (
         <Button
           type="button"
           variant="outline"
@@ -165,7 +167,7 @@ export function DataToolbar({
           )}
         </Button>
       )}
-      {onAdd && (
+      {!isViewerAdmin && onAdd && (
         <Button
           type="button"
           className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"

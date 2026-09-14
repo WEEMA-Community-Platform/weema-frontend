@@ -16,6 +16,7 @@ import {
 } from "@/components/base-data/shared";
 import type { UserListItem } from "@/lib/api/users-admin";
 import { useRoleLabel } from "@/components/users/constants";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 type UserTableCardProps = {
   searchQuery: string;
@@ -61,6 +62,7 @@ export function UserTableCard({
   const tCell = useTranslations("users.list.cell");
   const tRow = useTranslations("users.list.rowActions");
   const roleLabel = useRoleLabel();
+  const isViewerAdmin = useIsViewerAdmin();
 
   return (
     <Card className="border-primary/10">
@@ -110,14 +112,14 @@ export function UserTableCard({
                   <Button type="button" size="sm" variant="outline" onClick={() => onView(u.id)}>
                     {tRow("view")}
                   </Button>
-                  <Button
+                  {!isViewerAdmin ? <Button
                     type="button"
                     size="sm"
                     variant={u.active ? "outline" : "default"}
                     onClick={() => onToggleActivation(u)}
                   >
                     {u.active ? tRow("deactivate") : tRow("activate")}
-                  </Button>
+                  </Button> : null}
                 </div>
               </TableCell>
             </TableRow>

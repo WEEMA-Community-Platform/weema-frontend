@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { SaveAllEligibility } from "./shared";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 type BuilderHeaderProps = {
   initialSurveyId: string | null;
@@ -39,6 +40,7 @@ export function BuilderHeader({
   exportDetailLabel,
   exportDetailPendingLabel,
 }: BuilderHeaderProps) {
+  const isViewerAdmin = useIsViewerAdmin();
   return (
     <header className="flex min-h-14 flex-wrap items-center justify-between gap-2 border-b border-primary/10 px-4 py-2 sm:flex-nowrap sm:py-0">
       <Button type="button" variant="ghost" render={<Link href="/survey" />}>
@@ -47,17 +49,22 @@ export function BuilderHeader({
       </Button>
 
       <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-normal">
+        {isViewerAdmin ? (
+          <span className="rounded-md border border-primary/20 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary">
+            Read-only access
+          </span>
+        ) : null}
         {isTranslationMode ? (
           <span className="rounded-md border border-primary/20 bg-primary/5 px-2 py-1 text-xs text-primary">
             Translation mode
           </span>
         ) : null}
-        <Button type="button" variant="outline" onClick={onCreateNew}>
+        {!isViewerAdmin ? <Button type="button" variant="outline" onClick={onCreateNew}>
           <PlusIcon className="size-4" />
           New survey
-        </Button>
+        </Button> : null}
 
-        {initialSurveyId && onExportDetail && exportDetailLabel && exportDetailPendingLabel ? (
+        {!isViewerAdmin && initialSurveyId && onExportDetail && exportDetailLabel && exportDetailPendingLabel ? (
           <Button
             type="button"
             variant="outline"
@@ -78,7 +85,7 @@ export function BuilderHeader({
           </Button>
         ) : null}
 
-        {!initialSurveyId ? (
+        {!isViewerAdmin && (!initialSurveyId ? (
           <Tooltip>
             <TooltipTrigger
               render={
@@ -136,7 +143,7 @@ export function BuilderHeader({
             </TooltipTrigger>
             <TooltipContent>{saveAllEligibility.reason}</TooltipContent>
           </Tooltip>
-        )}
+        ))}
       </div>
     </header>
   );

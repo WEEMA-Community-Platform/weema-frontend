@@ -1627,6 +1627,7 @@
     },
     "roles": {
       "SUPER_ADMIN": "Super admin",
+      "VIEWER_ADMIN": "Viewer admin",
       "CLUSTER_ADMIN": "Cluster admin",
       "FACILITATOR": "Facilitator"
     }

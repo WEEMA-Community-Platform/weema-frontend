@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { ACCESS_TOKEN_COOKIE, API_BASE_URL } from "@/lib/auth";
+import {
+  ACCESS_TOKEN_COOKIE,
+  API_BASE_URL,
+  getTokenRole,
+  isViewerAdminRole,
+} from "@/lib/auth";
 import {
   buildBackendUrl,
   isAuthProxyDebugEnabled,
@@ -47,6 +52,30 @@ type ForwardRequestArgs = {
   body?: unknown;
 };
 
+const VIEWER_ADMIN_WRITE_PATHS = new Set([
+  "/api/user/edit-profile",
+  "/api/user/change-password",
+]);
+
+function viewerAdminForbiddenResponse() {
+  return NextResponse.json(
+    { message: "Viewer Admin accounts have read-only access." },
+    { status: 403 }
+  );
+}
+
+function isViewerAdminWriteForbidden(token: string, method: ForwardRequestArgs["method"], path: string) {
+  return (
+    isViewerAdminRole(getTokenRole(token)) &&
+    method !== "GET" &&
+    !VIEWER_ADMIN_WRITE_PATHS.has(path)
+  );
+}
+
+function isViewerAdminExportForbidden(token: string, path: string) {
+  return isViewerAdminRole(getTokenRole(token)) && path.startsWith("/api/export/");
+}
+
 export async function forwardAuthorizedRequest({
   path,
   method,
@@ -60,6 +89,13 @@ export async function forwardAuthorizedRequest({
 
   if (!accessToken) {
     return unauthorizedJsonResponse();
+  }
+
+  if (
+    isViewerAdminWriteForbidden(accessToken, method, path) ||
+    isViewerAdminExportForbidden(accessToken, path)
+  ) {
+    return viewerAdminForbiddenResponse();
   }
 
   const doFetch = (token: string) =>
@@ -109,6 +145,10 @@ export async function forwardAuthorizedFormDataRequest({
 
   if (!accessToken) {
     return unauthorizedJsonResponse();
+  }
+
+  if (isViewerAdminRole(getTokenRole(accessToken))) {
+    return viewerAdminForbiddenResponse();
   }
 
   const started = Date.now();
@@ -185,4 +225,3 @@ export function buildPathWithQuery(request: Request, basePath: string) {
   const query = searchParams.toString();
   return query ? `${basePath}?${query}` : basePath;
 }
-

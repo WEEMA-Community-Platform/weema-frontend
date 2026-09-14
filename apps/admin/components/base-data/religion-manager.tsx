@@ -12,6 +12,7 @@ import {
 } from "@/hooks/use-base-data";
 import type { Religion } from "@/lib/api/base-data";
 import { Button } from "@/components/ui/button";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,7 @@ import {
 } from "@/components/base-data/shared";
 
 export function ReligionManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const t = useTranslations("basedata.religion");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -163,7 +165,7 @@ export function ReligionManager() {
               <DescriptionTableCell description={religion.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
-                  <Button
+                  {!isViewerAdmin ? <><Button
                     type="button"
                     size="sm"
                     variant="outline"
@@ -195,7 +197,7 @@ export function ReligionManager() {
                     onClick={() => setPendingDeleteReligion(religion)}
                   >
                     {tActions("delete")}
-                  </Button>
+                  </Button></> : null}
                 </div>
               </TableCell>
             </TableRow>

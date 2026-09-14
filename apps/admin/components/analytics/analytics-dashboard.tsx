@@ -44,6 +44,7 @@ import type {
   AnalyticsQuery,
   ShgAnalytics,
 } from "@/lib/api/analytics";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 function filtersToQuery(f: AnalyticsFilters): AnalyticsQuery {
   return {
@@ -59,6 +60,7 @@ function filtersToQuery(f: AnalyticsFilters): AnalyticsQuery {
 }
 
 export function AnalyticsDashboard() {
+  const isViewerAdmin = useIsViewerAdmin();
   const t = useTranslations("analytics");
   const [dataset, setDataset] = useState<Dataset>("shg");
   const [filters, setFilters] = useState<AnalyticsFilters>(EMPTY_FILTERS);
@@ -129,7 +131,7 @@ export function AnalyticsDashboard() {
             ) : null}
           </Button>
 
-          <DropdownMenu>
+          {!isViewerAdmin ? <DropdownMenu>
             <DropdownMenuTrigger
               render={
                 <Button type="button" variant="outline" className="h-10">
@@ -156,7 +158,7 @@ export function AnalyticsDashboard() {
                 ))}
               </DropdownMenuGroup>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> : null}
         </div>
       </div>
 

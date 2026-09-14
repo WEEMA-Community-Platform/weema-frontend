@@ -36,6 +36,10 @@ export function isAllowedAdminRole(role: WeemaRole | null) {
   return hasAllowedRole(role, ADMIN_ALLOWED_ROLES);
 }
 
+export function isViewerAdminRole(role: WeemaRole | null) {
+  return role === "viewer_admin";
+}
+
 export function getTokenRole(token: string | undefined) {
   if (!token) return null;
   return getRoleFromToken(token);

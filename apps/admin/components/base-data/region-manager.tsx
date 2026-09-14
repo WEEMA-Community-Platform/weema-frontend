@@ -13,6 +13,7 @@ import {
 import { exportRegionsList, type Region } from "@/lib/api/base-data";
 import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +55,7 @@ import {
 } from "@/components/base-data/shared";
 
 export function RegionManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const t = useTranslations("basedata.region");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -235,12 +237,12 @@ export function RegionManager() {
                   >
                     {tActions("view")}
                   </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => openEdit(region)}>
-                    {tActions("edit")}
-                  </Button>
-                  <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteRegion(region)}>
-                    {tActions("delete")}
-                  </Button>
+                  {!isViewerAdmin ? (
+                    <>
+                      <Button type="button" size="sm" variant="outline" onClick={() => openEdit(region)}>{tActions("edit")}</Button>
+                      <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteRegion(region)}>{tActions("delete")}</Button>
+                    </>
+                  ) : null}
                 </div>
               </TableCell>
             </TableRow>

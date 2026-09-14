@@ -13,11 +13,12 @@ import type { WeemaRole } from "./types";
 
 export const ROLE_HOME_PATHS: Record<WeemaRole, string> = {
   admin: "/",
+  viewer_admin: "/",
   cluster_admin: "/",
   facilitator: "/",
 };
 
-export const ADMIN_ALLOWED_ROLES: WeemaRole[] = ["admin"];
+export const ADMIN_ALLOWED_ROLES: WeemaRole[] = ["admin", "viewer_admin"];
 export const FACILITATOR_ALLOWED_ROLES: WeemaRole[] = ["facilitator"];
 
 type JwtPayload = {
@@ -42,6 +43,13 @@ export function normalizeRole(rawRole: string | null | undefined): WeemaRole | n
     normalized === "role_super_admin"
   ) {
     return "admin";
+  }
+  if (
+    normalized === "viewer_admin" ||
+    normalized === "viewer-admin" ||
+    normalized === "role_viewer_admin"
+  ) {
+    return "viewer_admin";
   }
   if (normalized === "cluster_admin" || normalized === "cluster-admin") {
     return "cluster_admin";

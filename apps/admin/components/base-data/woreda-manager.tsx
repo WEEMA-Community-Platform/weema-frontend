@@ -15,6 +15,7 @@ import {
 import { exportWoredasList, type Woreda } from "@/lib/api/base-data";
 import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,7 @@ import {
 } from "@/components/base-data/shared";
 
 export function WoredaManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const t = useTranslations("basedata.woreda");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -266,7 +268,7 @@ export function WoredaManager() {
               <DescriptionTableCell description={woreda.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
-                  <Button
+                  {!isViewerAdmin ? <><Button
                     type="button"
                     size="sm"
                     variant="outline"
@@ -294,7 +296,7 @@ export function WoredaManager() {
                   </Button>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteWoreda(woreda)}>
                     {tActions("delete")}
-                  </Button>
+                  </Button></> : null}
                 </div>
               </TableCell>
             </TableRow>

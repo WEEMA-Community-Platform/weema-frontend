@@ -15,6 +15,7 @@ import {
 import { exportKebelesList, type Kebele } from "@/lib/api/base-data";
 import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,7 @@ import {
 } from "@/components/base-data/shared";
 
 export function KebeleManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const t = useTranslations("basedata.kebele");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -273,7 +275,7 @@ export function KebeleManager() {
               <DescriptionTableCell description={kebele.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
-                  <Button
+                  {!isViewerAdmin ? <><Button
                     type="button"
                     size="sm"
                     variant="outline"
@@ -301,7 +303,7 @@ export function KebeleManager() {
                   </Button>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteKebele(kebele)}>
                     {tActions("delete")}
-                  </Button>
+                  </Button></> : null}
                 </div>
               </TableCell>
             </TableRow>

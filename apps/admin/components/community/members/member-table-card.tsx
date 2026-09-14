@@ -25,6 +25,7 @@ import { StatusBadge } from "@/components/community/community-card";
 import { GENDER_OPTIONS } from "@/components/community/members/constants";
 import type { Member } from "@/lib/api/members";
 import type { EntityStatus } from "@/lib/api/community";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 type MemberTableCardProps = {
   searchQuery: string;
@@ -84,6 +85,7 @@ export function MemberTableCard({
   const tMemberActions = useTranslations("community.members.actions");
   const tEmpty = useTranslations("common.empty");
   const tGender = useTranslations("community.members.options.gender");
+  const isViewerAdmin = useIsViewerAdmin();
 
   const genderLabel = (raw: string) => {
     const found = GENDER_OPTIONS.find((o) => o.value === raw);
@@ -164,13 +166,14 @@ export function MemberTableCard({
                         <EyeIcon />
                         {tActions("viewDetails")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-[12px]" onClick={() => onEdit(m)}>
-                        <PencilIcon />
-                        {tActions("edit")}
-                      </DropdownMenuItem>
+                      {!isViewerAdmin ? (
+                        <DropdownMenuItem className="text-[12px]" onClick={() => onEdit(m)}>
+                          <PencilIcon />
+                          {tActions("edit")}
+                        </DropdownMenuItem>
+                      ) : null}
                     </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
+                    {!isViewerAdmin ? <><DropdownMenuSeparator /><DropdownMenuGroup>
                       {m.locked ? (
                         <DropdownMenuItem
                           className="text-[12px] text-amber-600 focus:text-amber-600"
@@ -188,9 +191,7 @@ export function MemberTableCard({
                           {tMemberActions("lock")}
                         </DropdownMenuItem>
                       )}
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
+                    </DropdownMenuGroup><DropdownMenuSeparator /><DropdownMenuGroup>
                       <DropdownMenuItem
                         className="text-[12px]"
                         variant="destructive"
@@ -199,7 +200,7 @@ export function MemberTableCard({
                         <Trash2Icon />
                         {tActions("delete")}
                       </DropdownMenuItem>
-                    </DropdownMenuGroup>
+                    </DropdownMenuGroup></> : null}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

@@ -1627,6 +1627,7 @@
     },
     "roles": {
       "SUPER_ADMIN": "ዋና አስተዳዳሪ",
+      "VIEWER_ADMIN": "ተመልካች አስተዳዳሪ",
       "CLUSTER_ADMIN": "የክላስተር አስተዳዳሪ",
       "FACILITATOR": "አመቻች"
     }

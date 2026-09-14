@@ -15,6 +15,7 @@ import { exportZonesList, type Zone } from "@/lib/api/base-data";
 import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,6 +74,7 @@ function zoneSpecialWoredaRaw(zone: Zone): unknown {
 }
 
 export function ZoneManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const t = useTranslations("basedata.zone");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -289,7 +291,7 @@ export function ZoneManager() {
               <DescriptionTableCell description={zone.description} />
               <TableCell className={tableActionsCellClass}>
                 <div className={tableRowActionsClass}>
-                  <Button
+                  {!isViewerAdmin ? <><Button
                     type="button"
                     size="sm"
                     variant="outline"
@@ -318,7 +320,7 @@ export function ZoneManager() {
                   </Button>
                   <Button type="button" size="sm" variant="destructive" onClick={() => setPendingDeleteZone(zone)}>
                     {tActions("delete")}
-                  </Button>
+                  </Button></> : null}
                 </div>
               </TableCell>
             </TableRow>

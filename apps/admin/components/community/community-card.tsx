@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 export function LockedBadge({ locked }: { locked: boolean }) {
   const tCard = useTranslations("community.card");
@@ -64,6 +65,7 @@ export function CommunityCard({
   onEdit,
   onDelete,
   extraMenuItems,
+  viewerMenuItems,
   showViewAction = true,
   showEditAction = true,
   viewActionLabel,
@@ -76,6 +78,8 @@ export function CommunityCard({
   onEdit: () => void;
   onDelete: () => void;
   extraMenuItems?: React.ReactNode;
+  /** Additional read-only actions that remain available to Viewer Admin accounts. */
+  viewerMenuItems?: React.ReactNode;
   showViewAction?: boolean;
   showEditAction?: boolean;
   viewActionLabel?: string;
@@ -83,9 +87,10 @@ export function CommunityCard({
 }) {
   const tActions = useTranslations("common.actions");
   const tCard = useTranslations("community.card");
+  const isViewerAdmin = useIsViewerAdmin();
   const resolvedViewLabel = viewActionLabel ?? tActions("viewDetails");
   const resolvedEditLabel = editActionLabel ?? tActions("edit");
-  const hasPrimaryActions = showViewAction || showEditAction;
+  const hasPrimaryActions = showViewAction || (showEditAction && !isViewerAdmin);
   return (
     <Card className=" py-0 overflow-hidden transition-colors hover:ring-primary/50">
       <CardHeader className="px-4 pt-4  flex flex-row items-center justify-between gap-2">
@@ -107,21 +112,31 @@ export function CommunityCard({
                 {showViewAction ? (
                   <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onView}><EyeIcon />{resolvedViewLabel}</DropdownMenuItem>
                 ) : null}
-                {showEditAction ? (
+                {showEditAction && !isViewerAdmin ? (
                   <DropdownMenuItem className="text-[12px] whitespace-nowrap" onClick={onEdit}><PencilIcon />{resolvedEditLabel}</DropdownMenuItem>
                 ) : null}
               </DropdownMenuGroup>
             ) : null}
-            {extraMenuItems && (
+            {extraMenuItems && !isViewerAdmin && (
               <>
                 {hasPrimaryActions ? <DropdownMenuSeparator /> : null}
                 <DropdownMenuGroup>{extraMenuItems}</DropdownMenuGroup>
               </>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />{tActions("delete")}</DropdownMenuItem>
-            </DropdownMenuGroup>
+            {viewerMenuItems && isViewerAdmin ? (
+              <>
+                {hasPrimaryActions ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuGroup>{viewerMenuItems}</DropdownMenuGroup>
+              </>
+            ) : null}
+            {!isViewerAdmin ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem className="text-[12px] whitespace-nowrap" variant="destructive" onClick={onDelete}><Trash2Icon />{tActions("delete")}</DropdownMenuItem>
+                </DropdownMenuGroup>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
