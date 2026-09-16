@@ -16,7 +16,7 @@ import {
 } from "@/hooks/use-community";
 import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
 import { useUsersQuery } from "@/hooks/use-users-admin";
-import type { EntityStatus, SHG } from "@/lib/api/community";
+import type { EntityStatus, SHG, SHGEstablishedByType } from "@/lib/api/community";
 import { exportSelfHelpGroupsList } from "@/lib/api/community";
 import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import {
@@ -93,7 +93,7 @@ export function SHGManager() {
   const [woredaId, setWoredaId] = useState("none");
   const [kebeleId, setKebeleId] = useState("none");
   const [facilitatorId, setFacilitatorId] = useState("none");
-  const [establishedByType, setEstablishedByType] = useState("");
+  const [establishedByType, setEstablishedByType] = useState<SHGEstablishedByType | "">("");
   const [dateEstablished, setDateEstablished] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
@@ -203,7 +203,7 @@ export function SHGManager() {
     () => [
       { value: "FACILITATOR", label: tForm("establishedByTypeOptions.facilitator") },
       { value: "CLUSTER_ADMIN", label: tForm("establishedByTypeOptions.clusterAdmin") },
-      { value: "ADMIN", label: tForm("establishedByTypeOptions.admin") },
+      { value: "SUPER_ADMIN", label: tForm("establishedByTypeOptions.superAdmin") },
     ],
     [tForm]
   );
@@ -231,7 +231,11 @@ export function SHGManager() {
     setWoredaId(s.woredaId || "none");
     setKebeleId(s.kebeleId || "none");
     setFacilitatorId(s.facilitatorId || "none");
-    setEstablishedByType(s.establishedByType || "");
+    setEstablishedByType(
+      s.establishedByType === "ADMIN"
+        ? "SUPER_ADMIN"
+        : (s.establishedByType as SHGEstablishedByType | null) || ""
+    );
     setDateEstablished(s.dateEstablished || "");
     const latStr = s.latitude != null ? String(s.latitude) : "";
     const lngStr = s.longitude != null ? String(s.longitude) : "";
@@ -248,7 +252,6 @@ export function SHGManager() {
   const submitForm = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) { sileo.warning({ title: tToasts("missingNameTitle"), description: tToasts("missingNameMessage") }); return; }
-    if (!location.trim()) { sileo.warning({ title: tToasts("missingLocationTitle"), description: tToasts("missingLocationMessage") }); return; }
     if (!status) { sileo.warning({ title: tToasts("missingStatusTitle"), description: tToasts("missingStatusMessage") }); return; }
     if (!woredaId || woredaId === "none") { sileo.warning({ title: tToasts("missingWoredaTitle"), description: tToasts("missingWoredaMessage") }); return; }
     if (!kebeleId || kebeleId === "none") { sileo.warning({ title: tToasts("missingKebeleTitle"), description: tToasts("missingKebeleMessage") }); return; }
@@ -264,7 +267,7 @@ export function SHGManager() {
           payload: {
             name: name.trim(),
             description: description.trim(),
-            location: location.trim(),
+            location: location.trim() || null,
             status,
             woredaId,
             kebeleId,
@@ -280,7 +283,7 @@ export function SHGManager() {
         const result = await createMutation.mutateAsync({
           name: name.trim(),
           description: description.trim(),
-          location: location.trim(),
+          ...(location.trim() ? { location: location.trim() } : {}),
           status,
           woredaId,
           kebeleId,
@@ -324,8 +327,8 @@ export function SHGManager() {
       ? tForm("establishedByTypeOptions.facilitator")
       : raw === "CLUSTER_ADMIN"
         ? tForm("establishedByTypeOptions.clusterAdmin")
-        : raw === "ADMIN"
-          ? tForm("establishedByTypeOptions.admin")
+        : raw === "SUPER_ADMIN" || raw === "ADMIN"
+          ? tForm("establishedByTypeOptions.superAdmin")
           : raw;
 
   const exportCsv = async () => {

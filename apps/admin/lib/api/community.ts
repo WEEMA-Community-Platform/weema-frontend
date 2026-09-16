@@ -123,17 +123,19 @@ export type SHG = {
   locked: boolean;
 };
 
+export type SHGEstablishedByType = "SUPER_ADMIN" | "CLUSTER_ADMIN" | "FACILITATOR";
+
 export type SHGPayload = {
   name: string;
   description: string;
-  location: string;
+  location?: string | null;
   latitude: number | null;
   longitude: number | null;
   status: EntityStatus;
   woredaId: string;
   kebeleId: string;
   facilitatorId: string;
-  establishedByType: string;
+  establishedByType: SHGEstablishedByType;
   dateEstablished: string;
 };
 

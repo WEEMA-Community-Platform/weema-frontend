@@ -377,7 +377,7 @@
         "establishedByTypeOptions": {
           "facilitator": "Facilitator",
           "clusterAdmin": "Cluster Admin",
-          "admin": "Admin"
+          "superAdmin": "Super Admin"
         },
         "dateEstablishedLabel": "Date established",
         "descriptionLabel": "Description",

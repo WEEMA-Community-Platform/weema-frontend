@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { sileo } from "sileo";
 
 import { useSHGDetailQuery } from "@/hooks/use-community";
-import type { EntityStatus, SHG } from "@/lib/api/community";
+import type { EntityStatus, SHG, SHGEstablishedByType } from "@/lib/api/community";
 import { StatusBadge } from "@/components/community/community-card";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { BaseApiResponse } from "@/lib/api/base-data";
@@ -129,7 +129,7 @@ type SHGFormDialogProps = {
   woredaId: string;
   kebeleId: string;
   facilitatorId: string;
-  establishedByType: string;
+  establishedByType: SHGEstablishedByType | "";
   dateEstablished: string;
   facilitatorSearchQuery?: string;
   latitude: string;
@@ -146,7 +146,7 @@ type SHGFormDialogProps = {
   setWoredaId: (value: string) => void;
   setKebeleId: (value: string) => void;
   setFacilitatorId: (value: string) => void;
-  setEstablishedByType: (value: string) => void;
+  setEstablishedByType: (value: SHGEstablishedByType | "") => void;
   setDateEstablished: (value: string) => void;
   setFacilitatorSearchQuery?: (value: string) => void;
   handleManualCoordinateInput: (field: "lat" | "lng", value: string) => void;
@@ -221,7 +221,6 @@ export function SHGFormDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="shg-location">
                   {tForm("locationLabel")}
-                  <RequiredStar />
                 </Label>
                 <Input
                   id="shg-location"
@@ -230,7 +229,6 @@ export function SHGFormDialog({
                   onChange={(e) => setLocation(e.target.value)}
                   className={inputClass}
                   autoComplete="off"
-                  required
                 />
               </div>
               <div className="space-y-1.5">
@@ -304,7 +302,9 @@ export function SHGFormDialog({
                   <SelectField
                     id="shg-established-by-type"
                     value={establishedByType}
-                    onValueChange={setEstablishedByType}
+                    onValueChange={(value) =>
+                      setEstablishedByType(value as SHGEstablishedByType)
+                    }
                     options={establishedByTypeOptions}
                     placeholder={tForm("establishedByTypePlaceholder")}
                     className="h-11"

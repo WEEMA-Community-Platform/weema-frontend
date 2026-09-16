@@ -377,7 +377,7 @@
         "establishedByTypeOptions": {
           "facilitator": "አመቻች",
           "clusterAdmin": "የክላስተር አስተዳዳሪ",
-          "admin": "አስተዳዳሪ"
+          "superAdmin": "ዋና አስተዳዳሪ"
         },
         "dateEstablishedLabel": "የተመሰረተበት ቀን",
         "descriptionLabel": "መግለጫ",
