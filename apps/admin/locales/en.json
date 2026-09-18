@@ -157,7 +157,7 @@
     "users": {
       "group": "User Management",
       "label": "Users",
-      "description": "Create users and manage activation (super admin)."
+      "description": "View users, roles, and account status."
     },
     "survey": {
       "group": "Survey",
@@ -1275,6 +1275,7 @@
     }
   },
   "listEmpty": {
+    "emptyCatalog": "No {entity} found.",
     "searchAndFilters": "No {entity} match your search and filters. Try adjusting or clearing them.",
     "searchOnly": "No {entity} match your search. Try a different term.",
     "filtersOnly": "No {entity} match your filters. Try adjusting or clearing filters.",

@@ -49,6 +49,7 @@ export const tableActionsCellClass = "align-top text-left";
 /** Empty list copy when the API returns no rows — reflects search vs filters vs empty catalog. */
 export function useListEmptyMessage() {
   const t = useTranslations("listEmpty");
+  const isViewerAdmin = useIsViewerAdmin();
   return function listEmptyMessage(opts: {
     entityPlural: string;
     hasSearch: boolean;
@@ -65,7 +66,7 @@ export function useListEmptyMessage() {
     if (hasFilters) {
       return t("filtersOnly", { entity: entityPlural });
     }
-    return emptyCatalogHint;
+    return isViewerAdmin ? t("emptyCatalog", { entity: entityPlural }) : emptyCatalogHint;
   };
 }
 

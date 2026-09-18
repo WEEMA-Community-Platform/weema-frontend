@@ -28,8 +28,10 @@ import {
 } from "@/components/community/members/member-filters-dialog";
 import { MemberLockDialog } from "@/components/community/members/member-lock-dialog";
 import { MemberTableCard } from "@/components/community/members/member-table-card";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 export function MemberManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -138,7 +140,9 @@ export function MemberManager() {
         ? tListEmpty("searchOnly", { entity: entityPlural })
         : hasActiveFilters
           ? tListEmpty("filtersOnly", { entity: entityPlural })
-          : tTable("emptyHint");
+          : isViewerAdmin
+            ? tListEmpty("emptyCatalog", { entity: entityPlural })
+            : tTable("emptyHint");
 
   const isSubmittingCreate = createMutation.isPending;
   const isSubmittingEdit = updateMutation.isPending;

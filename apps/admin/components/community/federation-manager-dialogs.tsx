@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SaveButton, inputClass } from "@/components/base-data/shared";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import { SelectField } from "@/components/base-data/select-field";
 
 function isEmptyDetailValue(value: React.ReactNode) {
@@ -314,6 +315,7 @@ export function FederationDetailDialog({
   const tDetail = useTranslations("community.federation.detail");
   const tActions = useTranslations("common.actions");
   const tValidation = useTranslations("common.validation");
+  const isViewerAdmin = useIsViewerAdmin();
 
   const [activeId, setActiveId] = useState<string | null>(id);
 
@@ -409,7 +411,7 @@ export function FederationDetailDialog({
                             <p className="text-xs text-muted-foreground truncate">{c.woredaName ?? tDetail("noWoreda")}</p>
                           </div>
                           <StatusBadge status={c.status} />
-                          <Button
+                          {!isViewerAdmin ? <Button
                             type="button"
                             variant="ghost"
                             size="icon"
@@ -423,7 +425,7 @@ export function FederationDetailDialog({
                             ) : (
                               <Trash2Icon className="size-4" aria-hidden />
                             )}
-                          </Button>
+                          </Button> : null}
                         </div>
                       ))}
                     </div>
@@ -435,7 +437,7 @@ export function FederationDetailDialog({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
+      {!isViewerAdmin ? <AlertDialog open={!!pendingRemove} onOpenChange={(o) => { if (!o) setPendingRemove(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{tDetail("removeTitle")}</AlertDialogTitle>
@@ -452,7 +454,7 @@ export function FederationDetailDialog({
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> : null}
     </>
   );
 }

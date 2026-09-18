@@ -57,6 +57,7 @@ import {
 } from "@/lib/api/surveys";
 import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import { buildSurveySubmissionsExportCsv } from "@/lib/survey-submissions-export-csv";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 const PAGE_SIZE = 10;
 
@@ -83,6 +84,7 @@ function SurveyStatusBadge({ status }: { status?: string }) {
 }
 
 export function SurveysPage() {
+  const isViewerAdmin = useIsViewerAdmin();
   const router = useRouter();
   const tList = useTranslations("survey.list");
   const tCard = useTranslations("survey.list.card");
@@ -204,7 +206,9 @@ export function SurveysPage() {
     if (hasActiveFilters) {
       return tListEmpty("filtersOnly", { entity: entityPlural });
     }
-    return tList("emptyCatalogHint");
+    return isViewerAdmin
+      ? tListEmpty("emptyCatalog", { entity: entityPlural })
+      : tList("emptyCatalogHint");
   })();
 
   const submissionsExportHeaders = useMemo(

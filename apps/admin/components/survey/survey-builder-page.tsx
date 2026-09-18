@@ -34,6 +34,8 @@ import { BuilderHeader } from "@/components/survey/builder/builder-header";
 import { BuilderNavigator } from "@/components/survey/builder/builder-navigator";
 import { SurveyBuilderLoadingSkeleton } from "@/components/survey/builder/survey-builder-loading-skeleton";
 import { SurveyBuilderMainPanel } from "@/components/survey/builder/survey-builder-main-panel";
+import { SurveyReadOnlyView } from "@/components/survey/builder/survey-read-only-view";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import { useBuilderLeaveGuard } from "@/components/survey/builder/use-builder-leave-guard";
 import { useBuilderPersistence } from "@/components/survey/builder/use-builder-persistence";
 import {
@@ -54,6 +56,7 @@ export function SurveyBuilderPage({
   translationSourceSurveyId?: string | null;
   translationLanguage?: "en" | "am";
 }) {
+  const isViewerAdmin = useIsViewerAdmin();
   const [initialSurveyId, setInitialSurveyId] = useState<string | null>(routeSurveyId ?? null);
   const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(
     Boolean(routeSurveyId || translationSourceSurveyId)
@@ -540,6 +543,25 @@ export function SurveyBuilderPage({
 
   if (initialSurveyId && isLoadingInitialSurvey) {
     return <SurveyBuilderLoadingSkeleton />;
+  }
+
+  if (isViewerAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <BuilderHeader
+          initialSurveyId={initialSurveyId}
+          isTranslationMode={false}
+          totalQuestionCount={totalQuestionCount}
+          isCreatingSurvey={false}
+          isSavingAllChanges={false}
+          saveAllEligibility={persistence.saveAllEligibility}
+          onCreateNew={() => undefined}
+          onSaveSurvey={() => undefined}
+          onSaveAllChanges={() => undefined}
+        />
+        <SurveyReadOnlyView survey={builder.state} />
+      </div>
+    );
   }
 
   return (

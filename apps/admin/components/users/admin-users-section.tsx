@@ -6,6 +6,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useCurrentUser } from "@/hooks/use-user";
 import { SUPER_ADMIN_ROLE } from "@/components/users/constants";
 import { UserManagementManager } from "@/components/users/user-management-manager";
+import { normalizeRole } from "@weema/auth";
 
 export function AdminUsersSection() {
   const { data, isLoading } = useCurrentUser();
@@ -23,7 +24,8 @@ export function AdminUsersSection() {
     );
   }
 
-  if (role !== SUPER_ADMIN_ROLE) {
+  const normalizedRole = normalizeRole(role);
+  if (role !== SUPER_ADMIN_ROLE && normalizedRole !== "viewer_admin") {
     return (
       <Card className="border-primary/10">
         <CardHeader>

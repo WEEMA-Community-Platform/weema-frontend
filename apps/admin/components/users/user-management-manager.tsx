@@ -14,8 +14,10 @@ import { UserDetailDialog } from "@/components/users/user-detail-dialog";
 import { UserFiltersDialog, type UserAppliedFilters } from "@/components/users/user-filters-dialog";
 import { UserTableCard } from "@/components/users/user-table-card";
 import { UserToggleDialog } from "@/components/users/user-toggle-dialog";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 export function UserManagementManager() {
+  const isViewerAdmin = useIsViewerAdmin();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [appliedFilterRole, setAppliedFilterRole] = useState("");
@@ -57,7 +59,9 @@ export function UserManagementManager() {
         ? tEmpty("searchOnly", { entity })
         : hasActiveFilters
           ? tEmpty("filtersOnly", { entity })
-          : tList("emptyHint");
+          : isViewerAdmin
+            ? tEmpty("emptyCatalog", { entity })
+            : tList("emptyHint");
 
   const list = listQuery.data;
 
@@ -72,13 +76,13 @@ export function UserManagementManager() {
 
   return (
     <>
-      <UserCreateDialog
+      {!isViewerAdmin ? <UserCreateDialog
         key={`create-${createKey}`}
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         createMutation={createMutation}
         setPage={setPage}
-      />
+      /> : null}
 
       <UserDetailDialog
         id={viewingId}
@@ -86,14 +90,14 @@ export function UserManagementManager() {
         onClose={() => setViewingId(null)}
       />
 
-      <UserToggleDialog
+      {!isViewerAdmin ? <UserToggleDialog
         user={toggleUser}
         open={!!toggleUser}
         onOpenChange={(open) => {
           if (!open) setToggleUser(null);
         }}
         toggleMutation={toggleMutation}
-      />
+      /> : null}
 
       <UserTableCard
         searchQuery={searchQuery}

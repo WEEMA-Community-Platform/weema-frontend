@@ -2,11 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { useLoginMutation } from "@weema/auth/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { sileo } from "sileo";
 
@@ -24,7 +25,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,12 +43,14 @@ export function LoginForm({
   const loginMutation = useLoginMutation({
     baseUrl: "/api/auth",
     onSuccess: (data) => {
+      // A login can occur after another account logged out in this same browser tab.
+      // Remove all account-scoped data before rendering the new session.
+      queryClient.removeQueries();
       sileo.success({
         title: t("loggedInTitle"),
         description: data.message || t("loggedInMessage"),
       });
-      router.push(returnTo);
-      router.refresh();
+      window.location.assign(returnTo);
     },
     onError: (error) => {
       const description =

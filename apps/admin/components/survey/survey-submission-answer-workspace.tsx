@@ -17,6 +17,7 @@ import {
 } from "@/hooks/use-surveys";
 
 import { QuestionAnswerEditor } from "@/components/survey/workspace/question-answer-editor";
+import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import { SubmissionStatusBadge } from "@/components/survey/workspace/submission-status-badge";
 import type { AnswerDraft, WorkspaceQuestion } from "@/components/survey/workspace/types";
 import {
@@ -51,6 +52,7 @@ export function SurveySubmissionAnswerWorkspace({
   onSubmissionUpdated?: () => Promise<unknown> | void;
 }) {
   const t = useTranslations("survey.workspace");
+  const isViewerAdmin = useIsViewerAdmin();
   const tTargetLabels = useTranslations("survey.submissions.targetLabels");
   const resolvedTargetLabel = targetLabelSingular ?? tTargetLabels("memberSingular");
   const [draftOverrides, setDraftOverrides] = useState<Record<string, Partial<AnswerDraft>>>({});
@@ -212,7 +214,7 @@ export function SurveySubmissionAnswerWorkspace({
         <Button type="button" variant="outline" onClick={onBackToTable}>
           {t("backToTable")}
         </Button>
-        <div className="flex items-center gap-2">
+        {!isViewerAdmin ? <div className="flex items-center gap-2">
           <Button
             type="button"
             onClick={() => void handleSaveChanges()}
@@ -234,7 +236,7 @@ export function SurveySubmissionAnswerWorkspace({
               {isSubmitting ? t("submitting") : t("submitSubmission")}
             </Button>
           ) : null}
-        </div>
+        </div> : null}
       </div>
 
       <Card className="border-primary/10">
@@ -269,7 +271,7 @@ export function SurveySubmissionAnswerWorkspace({
               {t("noQuestions")}
             </div>
           ) : (
-            <div className="space-y-3">
+            <fieldset disabled={isViewerAdmin} className="space-y-3">
               {pageQuestions.map((question, index) => (
                 <QuestionAnswerEditor
                   key={question.key}
@@ -279,7 +281,7 @@ export function SurveySubmissionAnswerWorkspace({
                   onDraftChange={(patch) => updateDraft(question.key, patch)}
                 />
               ))}
-            </div>
+            </fieldset>
           )}
 
           {totalPages > 1 ? (

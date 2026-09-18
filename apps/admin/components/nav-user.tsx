@@ -1,6 +1,7 @@
 "use client"
 
 import { useLogoutMutation } from "@weema/auth/react-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { LogOutIcon, ChevronsUpDownIcon, UserCircle2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useRouter } from "next/navigation"
@@ -37,6 +38,7 @@ export function NavUser({
   const tCommon = useTranslations("common.validation")
   const { isMobile } = useSidebar()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const logoutMutation = useLogoutMutation({ baseUrl: "/api/auth" })
 
   const initials = user.name
@@ -53,8 +55,9 @@ export function NavUser({
         title: t("loggedOut"),
         description: result.message || t("loggedOutMessage"),
       })
-      router.push("/login")
-      router.refresh()
+      // Do not leave the previous account's profile, role, or lists in memory.
+      queryClient.removeQueries()
+      window.location.assign("/login")
     } catch (error) {
       sileo.error({
         title: t("logoutFailed"),
