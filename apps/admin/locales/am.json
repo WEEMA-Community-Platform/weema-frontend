@@ -1585,9 +1585,9 @@
       "submitting": "በመፍጠር ላይ…",
       "toasts": {
         "requiredTitle": "ግዴታ መሞላት ያለባቸው መስኮች",
-        "requiredMessage": "ስም፣ የአባት ስም፣ ኢሜይልና ሚና ያስፈልጋሉ።",
+        "requiredMessage": "ስም፣ የአባት ስም፣ ኢሜይል፣ የስልክ ቁጥርና ሚና ያስፈልጋሉ።",
         "phoneRequiredTitle": "የስልክ ቁጥር ያስፈልጋል",
-        "phoneRequiredMessage": "የአመቻች መለያዎች የስልክ ቁጥር ያስፈልጋቸዋል።",
+        "phoneRequiredMessage": "ለሁሉም መለያዎች የስልክ ቁጥር ያስፈልጋል።",
         "phoneInvalidTitle": "የተሳሳተ የስልክ ቁጥር",
         "phoneInvalidMessage": "በ9 ወይም በ7 የሚጀምር ትክክለኛ የኢትዮጵያ ሞባይል ቁጥር ይጠቀሙ።",
         "createdTitle": "ተጠቃሚ ተፈጥሯል",

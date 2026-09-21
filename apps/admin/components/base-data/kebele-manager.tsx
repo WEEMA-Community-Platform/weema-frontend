@@ -386,17 +386,18 @@ export function KebeleManager() {
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="kebele-name">{t("nameLabel")}</FieldLabel>
+                <FieldLabel htmlFor="kebele-name" required>{t("nameLabel")}</FieldLabel>
                 <Input
                   id="kebele-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="kebele-woreda">{t("woredaLabel")}</FieldLabel>
+                <FieldLabel htmlFor="kebele-woreda" required>{t("woredaLabel")}</FieldLabel>
                 <SelectField
                   id="kebele-woreda"
                   value={selectedWoredaId}
@@ -404,6 +405,7 @@ export function KebeleManager() {
                   options={woredaCreateOptions}
                   onValueChange={setSelectedWoredaId}
                   className={inputClass}
+                  required
                 />
               </Field>
               <Field>

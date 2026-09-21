@@ -490,17 +490,18 @@ export function ZoneManager() {
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="zone-name">{t("nameLabel")}</FieldLabel>
+                <FieldLabel htmlFor="zone-name" required>{t("nameLabel")}</FieldLabel>
                 <Input
                   id="zone-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="zone-region">{t("regionLabel")}</FieldLabel>
+                <FieldLabel htmlFor="zone-region" required>{t("regionLabel")}</FieldLabel>
                 <SelectField
                   id="zone-region"
                   value={regionId}
@@ -508,6 +509,7 @@ export function ZoneManager() {
                   options={regionOptions}
                   onValueChange={setRegionId}
                   className={inputClass}
+                  required
                 />
               </Field>
               <div className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-muted/10 px-3 py-3">

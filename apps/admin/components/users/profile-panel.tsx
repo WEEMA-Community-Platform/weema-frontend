@@ -217,7 +217,7 @@ export function ProfilePanel() {
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="profile-first-name">{t("firstName")}</Label>
+                <Label htmlFor="profile-first-name" required>{t("firstName")}</Label>
                 <Input
                   id="profile-first-name"
                   value={firstName}
@@ -228,7 +228,7 @@ export function ProfilePanel() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="profile-last-name">{t("lastName")}</Label>
+                <Label htmlFor="profile-last-name" required>{t("lastName")}</Label>
                 <Input
                   id="profile-last-name"
                   value={lastName}
@@ -290,7 +290,7 @@ export function ProfilePanel() {
               >
                 <div className="w-full space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="profile-old-password">{t("currentPassword")}</Label>
+                    <Label htmlFor="profile-old-password" required>{t("currentPassword")}</Label>
                     <Input
                       id="profile-old-password"
                       type="password"
@@ -301,7 +301,7 @@ export function ProfilePanel() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="profile-new-password">{t("newPassword")}</Label>
+                    <Label htmlFor="profile-new-password" required>{t("newPassword")}</Label>
                     <Input
                       id="profile-new-password"
                       type="password"
@@ -312,7 +312,7 @@ export function ProfilePanel() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="profile-confirm-password">{t("confirmPassword")}</Label>
+                    <Label htmlFor="profile-confirm-password" required>{t("confirmPassword")}</Label>
                     <Input
                       id="profile-confirm-password"
                       type="password"

@@ -270,13 +270,14 @@ export function ReligionManager() {
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="religion-name">{t("nameLabel")}</FieldLabel>
+                <FieldLabel htmlFor="religion-name" required>{t("nameLabel")}</FieldLabel>
                 <Input
                   id="religion-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </Field>
               <Field>

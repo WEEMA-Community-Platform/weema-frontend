@@ -88,7 +88,7 @@ export function LoginForm({
                 </p>
               </div>
               <Field>
-                <FieldLabel htmlFor="email">{t("email")}</FieldLabel>
+                <FieldLabel htmlFor="email" required>{t("email")}</FieldLabel>
                 <Input
                   id="email"
                   type="email"
@@ -102,7 +102,7 @@ export function LoginForm({
               </Field>
               <Field>
                 <div className="flex items-center">
-                  <FieldLabel htmlFor="password">{t("password")}</FieldLabel>
+                  <FieldLabel htmlFor="password" required>{t("password")}</FieldLabel>
                 </div>
                 <div className="relative">
                   <Input

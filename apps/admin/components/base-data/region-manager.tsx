@@ -315,13 +315,14 @@ export function RegionManager() {
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="region-name">{t("nameLabel")}</FieldLabel>
+                <FieldLabel htmlFor="region-name" required>{t("nameLabel")}</FieldLabel>
                 <Input
                   id="region-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </Field>
               <Field>

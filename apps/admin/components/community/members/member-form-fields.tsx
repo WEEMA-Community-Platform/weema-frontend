@@ -13,14 +13,6 @@ import {
   getMaxDobDate,
 } from "@/components/community/members/constants";
 
-function RequiredStar() {
-  return (
-    <span className="ml-0.5 text-base leading-none text-destructive" aria-hidden="true">
-      *
-    </span>
-  );
-}
-
 export type MemberFormFieldsProps = {
   firstName: string;
   setFirstName: (v: string) => void;
@@ -98,10 +90,7 @@ export function MemberFormFields({
           </p>
           <div className="flex flex-col gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="member-first-name">
-                {t("fields.firstName")}
-                <RequiredStar />
-              </Label>
+              <Label htmlFor="member-first-name" required>{t("fields.firstName")}</Label>
               <Input
                 id="member-first-name"
                 placeholder={t("placeholders.firstName")}
@@ -113,10 +102,7 @@ export function MemberFormFields({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="member-last-name">
-                {t("fields.lastName")}
-                <RequiredStar />
-              </Label>
+              <Label htmlFor="member-last-name" required>{t("fields.lastName")}</Label>
               <Input
                 id="member-last-name"
                 placeholder={t("placeholders.lastName")}
@@ -140,10 +126,7 @@ export function MemberFormFields({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-dob">
-              {t("fields.dateOfBirth")}
-              <RequiredStar />
-            </Label>
+            <Label htmlFor="member-dob" required>{t("fields.dateOfBirth")}</Label>
             <Input
               id="member-dob"
               type="date"
@@ -186,29 +169,25 @@ export function MemberFormFields({
             {t("sections.classifications")}
           </p>
           <div className="space-y-1.5">
-            <Label htmlFor="member-gender">
-              {t("fields.gender")}
-              <RequiredStar />
-            </Label>
+            <Label htmlFor="member-gender" required>{t("fields.gender")}</Label>
             <SelectField
               id="member-gender"
               value={gender}
               placeholder={t("placeholders.gender")}
               options={genderOptions}
               onValueChange={setGender}
+              required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-marital">
-              {t("fields.maritalStatus")}
-              <RequiredStar />
-            </Label>
+            <Label htmlFor="member-marital" required>{t("fields.maritalStatus")}</Label>
             <SelectField
               id="member-marital"
               value={maritalStatus}
               placeholder={t("placeholders.maritalStatus")}
               options={maritalOptions}
               onValueChange={setMaritalStatus}
+              required
             />
           </div>
           {/*
@@ -226,29 +205,25 @@ export function MemberFormFields({
           ) : null}
           */}
           <div className="space-y-1.5">
-            <Label htmlFor="member-status">
-              {t("fields.status")}
-              <RequiredStar />
-            </Label>
+            <Label htmlFor="member-status" required>{t("fields.status")}</Label>
             <SelectField
               id="member-status"
               value={status}
               placeholder={t("placeholders.status")}
               options={statusOptions}
               onValueChange={setStatus}
+              required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="member-shg">
-              {t("fields.shg")}
-              <RequiredStar />
-            </Label>
+            <Label htmlFor="member-shg" required>{t("fields.shg")}</Label>
             <SelectField
               id="member-shg"
               value={selfHelpGroupId}
               placeholder={t("placeholders.shg")}
               options={shgOptions}
               onValueChange={setSelfHelpGroupId}
+              required
             />
           </div>
         </div>

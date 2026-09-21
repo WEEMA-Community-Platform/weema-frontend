@@ -1585,9 +1585,9 @@
       "submitting": "Creating…",
       "toasts": {
         "requiredTitle": "Required fields",
-        "requiredMessage": "First name, last name, email, and role are required.",
+        "requiredMessage": "First name, last name, email, phone number, and role are required.",
         "phoneRequiredTitle": "Phone number required",
-        "phoneRequiredMessage": "Facilitator accounts require a phone number.",
+        "phoneRequiredMessage": "A phone number is required for every account.",
         "phoneInvalidTitle": "Invalid phone number",
         "phoneInvalidMessage": "Use a valid Ethiopian mobile number starting with 9 or 7.",
         "createdTitle": "User created",

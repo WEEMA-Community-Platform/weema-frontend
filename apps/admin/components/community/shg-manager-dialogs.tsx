@@ -49,14 +49,6 @@ function DetailField({ label, value }: { label: string; value: React.ReactNode }
   );
 }
 
-function RequiredStar() {
-  return (
-    <span className="ml-0.5 text-base leading-none text-destructive" aria-hidden="true">
-      *
-    </span>
-  );
-}
-
 export function SHGDetailDialog({ id, open, onClose }: { id: string | null; open: boolean; onClose: () => void }) {
   const tDetail = useTranslations("community.shg.detail");
   const tActions = useTranslations("common.actions");
@@ -204,10 +196,7 @@ export function SHGFormDialog({
             <div className="space-y-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tForm("sectionDetails")}</p>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-name">
-                  {tForm("nameLabel")}
-                  <RequiredStar />
-                </Label>
+                <Label htmlFor="shg-name" required>{tForm("nameLabel")}</Label>
                 <Input
                   id="shg-name"
                   placeholder={tForm("namePlaceholder")}
@@ -232,10 +221,7 @@ export function SHGFormDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-facilitator">
-                  {tForm("facilitator")}
-                  <RequiredStar />
-                </Label>
+                <Label htmlFor="shg-facilitator" required>{tForm("facilitator")}</Label>
                 <SelectField
                   id="shg-facilitator"
                   value={facilitatorId || "none"}
@@ -247,14 +233,12 @@ export function SHGFormDialog({
                       : tForm("facilitatorPlaceholder")
                   }
                   className="h-11"
+                  required
                 />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-woreda">
-                    {tForm("woreda")}
-                    <RequiredStar />
-                  </Label>
+                  <Label htmlFor="shg-woreda" required>{tForm("woreda")}</Label>
                   <SelectField
                     id="shg-woreda"
                     value={woredaId || "none"}
@@ -262,13 +246,11 @@ export function SHGFormDialog({
                     options={woredaOptions}
                     placeholder={tForm("woredaPlaceholder")}
                     className="h-11"
+                    required
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-kebele">
-                    {tForm("kebele")}
-                    <RequiredStar />
-                  </Label>
+                  <Label htmlFor="shg-kebele" required>{tForm("kebele")}</Label>
                   <SelectField
                     id="shg-kebele"
                     value={kebeleId || "none"}
@@ -276,15 +258,13 @@ export function SHGFormDialog({
                     options={kebeleOptions}
                     placeholder={tForm("kebelePlaceholder")}
                     className="h-11"
+                    required
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-status">
-                    {tForm("status")}
-                    <RequiredStar />
-                  </Label>
+                  <Label htmlFor="shg-status" required>{tForm("status")}</Label>
                   <SelectField
                     id="shg-status"
                     value={status}
@@ -292,13 +272,11 @@ export function SHGFormDialog({
                     options={statusOptions}
                     placeholder={tForm("statusPlaceholder")}
                     className="h-11"
+                    required
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="shg-established-by-type">
-                    {tForm("establishedByTypeLabel")}
-                    <RequiredStar />
-                  </Label>
+                  <Label htmlFor="shg-established-by-type" required>{tForm("establishedByTypeLabel")}</Label>
                   <SelectField
                     id="shg-established-by-type"
                     value={establishedByType}
@@ -308,14 +286,12 @@ export function SHGFormDialog({
                     options={establishedByTypeOptions}
                     placeholder={tForm("establishedByTypePlaceholder")}
                     className="h-11"
+                    required
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="shg-date-established">
-                  {tForm("dateEstablishedLabel")}
-                  <RequiredStar />
-                </Label>
+                <Label htmlFor="shg-date-established" required>{tForm("dateEstablishedLabel")}</Label>
                 <Input
                   id="shg-date-established"
                   type="date"

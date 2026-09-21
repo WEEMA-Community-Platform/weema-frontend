@@ -500,7 +500,7 @@ export function ClusterFormDialog({
             <div className="space-y-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tForm("sectionDetails")}</p>
               <div className="space-y-1.5">
-                <Label htmlFor="cluster-name">{tForm("nameLabel")}</Label>
+                <Label htmlFor="cluster-name" required>{tForm("nameLabel")}</Label>
                 <Input
                   id="cluster-name"
                   placeholder={tForm("namePlaceholder")}
@@ -508,10 +508,11 @@ export function ClusterFormDialog({
                   onChange={(e) => setName(e.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="cluster-status">{tForm("statusLabel")}</Label>
+                <Label htmlFor="cluster-status" required>{tForm("statusLabel")}</Label>
                 <SelectField
                   id="cluster-status"
                   value={status}
@@ -519,6 +520,7 @@ export function ClusterFormDialog({
                   options={statusOptions}
                   placeholder={tForm("statusPlaceholder")}
                   className="h-11"
+                  required
                 />
               </div>
               <div className="space-y-1.5">

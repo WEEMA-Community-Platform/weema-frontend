@@ -31,6 +31,7 @@ export function SelectField({
   placeholder,
   id,
   disabled,
+  required,
 }: {
   value: string;
   onValueChange: (value: string) => void;
@@ -40,6 +41,8 @@ export function SelectField({
   /** For pairing with `<Label htmlFor={id}>`. */
   id?: string;
   disabled?: boolean;
+  /** Marks the custom select as required for assistive technology. */
+  required?: boolean;
 }) {
   const selectValue = value || NONE_SELECTED_VALUE;
 
@@ -51,7 +54,7 @@ export function SelectField({
         onValueChange(nextValue === NONE_SELECTED_VALUE ? "" : nextValue)
       }
     >
-      <SelectTrigger id={id} className={className}>
+      <SelectTrigger id={id} className={className} aria-required={required || undefined}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

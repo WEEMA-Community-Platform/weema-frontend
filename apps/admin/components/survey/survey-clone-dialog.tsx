@@ -90,7 +90,7 @@ export function SurveyCloneDialog({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="clone-title">{t("titleLabel")}</Label>
+            <Label htmlFor="clone-title" required>{t("titleLabel")}</Label>
             <Input
               id="clone-title"
               value={title}
@@ -99,6 +99,7 @@ export function SurveyCloneDialog({
               className={inputClass}
               disabled={cloneMutation.isPending}
               autoFocus
+              required
             />
           </div>
           <div className="space-y-1.5">

@@ -379,17 +379,18 @@ export function WoredaManager() {
             </DialogHeader>
             <FieldGroup className={baseDataDialogFieldGroupClass}>
               <Field>
-                <FieldLabel htmlFor="woreda-name">{t("nameLabel")}</FieldLabel>
+                <FieldLabel htmlFor="woreda-name" required>{t("nameLabel")}</FieldLabel>
                 <Input
                   id="woreda-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="woreda-zone">{t("zoneLabel")}</FieldLabel>
+                <FieldLabel htmlFor="woreda-zone" required>{t("zoneLabel")}</FieldLabel>
                 <SelectField
                   id="woreda-zone"
                   value={selectedZoneId}
@@ -397,6 +398,7 @@ export function WoredaManager() {
                   options={zoneCreateOptions}
                   onValueChange={setSelectedZoneId}
                   className={inputClass}
+                  required
                 />
               </Field>
               <Field>

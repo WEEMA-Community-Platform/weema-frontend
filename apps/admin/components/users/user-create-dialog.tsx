@@ -36,7 +36,6 @@ export function UserCreateDialog({
   createMutation,
   setPage,
 }: UserCreateDialogProps) {
-  const FACILITATOR_ROLE = "ROLE_FACILITATOR";
   const normalizeLocalPhone = (raw: string) => {
     let digits = raw.replace(/\D/g, "");
     if (digits.startsWith("251")) digits = digits.slice(3);
@@ -75,7 +74,7 @@ export function UserCreateDialog({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !role) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phoneNumber.trim() || !role) {
       sileo.warning({
         title: tToasts("requiredTitle"),
         description: tToasts("requiredMessage"),
@@ -83,9 +82,7 @@ export function UserCreateDialog({
       return;
     }
     const localPhoneNumber = normalizeLocalPhone(phoneNumber);
-    const isFacilitator = role === FACILITATOR_ROLE;
-
-    if (isFacilitator && !localPhoneNumber) {
+    if (!localPhoneNumber) {
       sileo.warning({
         title: tToasts("phoneRequiredTitle"),
         description: tToasts("phoneRequiredMessage"),
@@ -133,7 +130,7 @@ export function UserCreateDialog({
           <div className="space-y-4 overflow-y-auto px-6 py-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="create-user-first">{t("firstName")}</Label>
+                <Label htmlFor="create-user-first" required>{t("firstName")}</Label>
                 <Input
                   id="create-user-first"
                   value={firstName}
@@ -144,7 +141,7 @@ export function UserCreateDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="create-user-last">{t("lastName")}</Label>
+                <Label htmlFor="create-user-last" required>{t("lastName")}</Label>
                 <Input
                   id="create-user-last"
                   value={lastName}
@@ -156,7 +153,7 @@ export function UserCreateDialog({
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-user-email">{t("email")}</Label>
+              <Label htmlFor="create-user-email" required>{t("email")}</Label>
               <Input
                 id="create-user-email"
                 type="email"
@@ -168,10 +165,7 @@ export function UserCreateDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-user-phone">
-                {t("phoneLabel")}{" "}
-                {role === FACILITATOR_ROLE ? t("phoneRequiredSuffix") : t("phoneOptionalSuffix")}
-              </Label>
+              <Label htmlFor="create-user-phone" required>{t("phoneLabel")}</Label>
               <div className="flex items-stretch">
                 <span className="inline-flex h-11 items-center gap-1.5 rounded-l-lg border border-r-0 border-input bg-muted/30 px-3 text-sm text-muted-foreground">
                   <span aria-hidden="true">🇪🇹</span>
@@ -186,6 +180,7 @@ export function UserCreateDialog({
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(normalizeLocalPhone(e.target.value))}
                   className={`${inputClass} rounded-l-none`}
+                  required
                   autoComplete="tel"
                   placeholder={t("phonePlaceholder")}
                 />
@@ -193,13 +188,14 @@ export function UserCreateDialog({
               <p className="text-xs text-muted-foreground">{t("phoneHint")}</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-user-role">{t("role")}</Label>
+              <Label htmlFor="create-user-role" required>{t("role")}</Label>
               <SelectField
                 id="create-user-role"
                 value={role}
                 placeholder={t("rolePlaceholder")}
                 options={roleOptions.map((o) => ({ value: o.value, label: o.label }))}
                 onValueChange={setRole}
+                required
               />
             </div>
           </div>

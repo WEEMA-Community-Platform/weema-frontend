@@ -41,12 +41,13 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
   return (
     <FieldGroup className="gap-4">
       <Field>
-        <FieldLabel>{t("titleLabel")}</FieldLabel>
+        <FieldLabel required>{t("titleLabel")}</FieldLabel>
         <Input
           value={props.title}
           onChange={(event) => props.onTitleChange(event.target.value)}
           placeholder={t("titlePlaceholder")}
           className={inputClass}
+          required
         />
       </Field>
       <Field>
@@ -59,13 +60,13 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
         />
       </Field>
       <Field>
-        <FieldLabel>{t("targetTypeLabel")}</FieldLabel>
+        <FieldLabel required>{t("targetTypeLabel")}</FieldLabel>
         <Select
           value={props.targetType}
           onValueChange={props.onTargetTypeChange}
           disabled={props.lockTargetType}
         >
-          <SelectTrigger className={inputClass}>
+          <SelectTrigger className={inputClass} aria-required="true">
             <SelectValue placeholder={t("targetTypePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -84,13 +85,13 @@ export function SurveySettingsForm(props: SurveySettingsFormProps) {
         </Select>
       </Field>
       <Field>
-        <FieldLabel>{t("languageLabel")}</FieldLabel>
+        <FieldLabel required>{t("languageLabel")}</FieldLabel>
         <Select
           value={props.language}
           onValueChange={(value) => props.onLanguageChange(value as "en" | "am")}
           disabled={props.lockLanguage}
         >
-          <SelectTrigger className={inputClass}>
+          <SelectTrigger className={inputClass} aria-required="true">
             <SelectValue placeholder={t("languagePlaceholder")} />
           </SelectTrigger>
           <SelectContent>

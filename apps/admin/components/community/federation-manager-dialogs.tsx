@@ -506,7 +506,7 @@ export function FederationFormDialog({
             <div className="space-y-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{tForm("sectionDetails")}</p>
               <div className="space-y-1.5">
-                <Label htmlFor="federation-name">{tForm("nameLabel")}</Label>
+                <Label htmlFor="federation-name" required>{tForm("nameLabel")}</Label>
                 <Input
                   id="federation-name"
                   placeholder={tForm("namePlaceholder")}
@@ -514,6 +514,7 @@ export function FederationFormDialog({
                   onChange={(e) => setName(e.target.value)}
                   className={inputClass}
                   autoComplete="off"
+                  required
                 />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -529,7 +530,7 @@ export function FederationFormDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="federation-status">{tForm("statusLabel")}</Label>
+                  <Label htmlFor="federation-status" required>{tForm("statusLabel")}</Label>
                   <SelectField
                     id="federation-status"
                     value={status}
@@ -537,6 +538,7 @@ export function FederationFormDialog({
                     options={statusOptions}
                     placeholder={tForm("statusPlaceholder")}
                     className="h-11"
+                    required
                   />
                 </div>
               </div>
