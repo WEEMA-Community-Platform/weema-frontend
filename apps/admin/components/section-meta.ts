@@ -63,6 +63,16 @@ export const SECTION_META_KEYS: Record<string, SectionMetaKey> = {
 };
 
 export const PATH_META_KEYS: Record<string, SectionMetaKey> = {
+  "/analytics": {
+    groupKey: "sections.analytics.group",
+    labelKey: "sections.analytics.label",
+    descriptionKey: "sections.analytics.description",
+  },
+  "/analytics/detailed": {
+    groupKey: "sections.analytics.group",
+    labelKey: "sections.detailedAnalytics.label",
+    descriptionKey: "sections.detailedAnalytics.description",
+  },
   "/survey": {
     groupKey: "sections.survey.group",
     labelKey: "sections.survey.label",

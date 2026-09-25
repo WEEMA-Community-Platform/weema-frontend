@@ -159,6 +159,16 @@
       "label": "ተጠቃሚዎች",
       "description": "ተጠቃሚዎችን፣ ሚናዎችን እና የመለያ ሁኔታን ይመልከቱ።"
     },
+    "analytics": {
+      "group": "ትንታኔ",
+      "label": "አጠቃላይ እይታ",
+      "description": "የፕሮግራሙን አዝማሚያዎችና ስርጭቶች ይመልከቱ።"
+    },
+    "detailedAnalytics": {
+      "group": "ትንታኔ",
+      "label": "ዝርዝር ዳሽቦርድ",
+      "description": "ዝርዝር የSuperset ዳሽቦርድን ያስሱ።"
+    },
     "survey": {
       "group": "ዳሰሳ",
       "label": "ዳሰሳዎች",
@@ -1636,6 +1646,22 @@
   "analytics": {
     "title": "ትንታኔ",
     "subtitle": "በፕሮግራምዎ ውስጥ ያሉ የራስ አገዝ ቡድኖችና አባላት አዝማሚያዎችና ስርጭት።",
+    "views": {
+      "label": "የትንታኔ እይታዎች",
+      "overview": "አጠቃላይ እይታ",
+      "detailed": "ዝርዝር ዳሽቦርድ"
+    },
+    "detailed": {
+      "title": "ዝርዝር ትንታኔ",
+      "description": "ከMINCH ሳይወጡ ሙሉውን የፕሮግራም ዳሽቦርድ ያስሱ።",
+      "liveDashboard": "የቀጥታ Superset ዳሽቦርድ",
+      "readOnlyHint": "በይነተገናኝ የሪፖርት ዳሽቦርድ",
+      "refresh": "ዳሽቦርዱን አድስ",
+      "loading": "ዝርዝር ትንታኔውን በመጫን ላይ…",
+      "frameTitle": "የMINCH ዝርዝር ትንታኔ ዳሽቦርድ",
+      "notConfiguredTitle": "ዝርዝር ዳሽቦርዱ አልተዋቀረም",
+      "notConfiguredDescription": "በአድሚን ሰርቨር ላይ SUPERSET_DASHBOARD_URL ያስቀምጡና ኮንቴነሩን እንደገና ይፍጠሩ።"
+    },
     "datasetLabel": "የውሂብ ስብስብ",
     "datasets": {
       "shg": "የራስ አገዝ ቡድኖች",

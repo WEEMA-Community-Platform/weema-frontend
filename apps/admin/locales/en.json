@@ -159,6 +159,16 @@
       "label": "Users",
       "description": "View users, roles, and account status."
     },
+    "analytics": {
+      "group": "Analytics",
+      "label": "Overview",
+      "description": "Review program trends and distributions."
+    },
+    "detailedAnalytics": {
+      "group": "Analytics",
+      "label": "Detailed dashboard",
+      "description": "Explore the detailed Superset dashboard."
+    },
     "survey": {
       "group": "Survey",
       "label": "Surveys",
@@ -1636,6 +1646,22 @@
   "analytics": {
     "title": "Analytics",
     "subtitle": "Self-help group and member trends and distribution across your program.",
+    "views": {
+      "label": "Analytics views",
+      "overview": "Overview",
+      "detailed": "Detailed dashboard"
+    },
+    "detailed": {
+      "title": "Detailed analytics",
+      "description": "Explore the complete program dashboard without leaving MINCH.",
+      "liveDashboard": "Live Superset dashboard",
+      "readOnlyHint": "Interactive reporting dashboard",
+      "refresh": "Refresh dashboard",
+      "loading": "Loading detailed analytics…",
+      "frameTitle": "MINCH detailed analytics dashboard",
+      "notConfiguredTitle": "Detailed dashboard is not configured",
+      "notConfiguredDescription": "Set SUPERSET_DASHBOARD_URL on the Admin server and recreate the container."
+    },
     "datasetLabel": "Dataset",
     "datasets": {
       "shg": "Self-Help Groups",
