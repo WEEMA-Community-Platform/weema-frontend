@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { parseJwtPayload } from "@weema/auth";
 
 import {
   ACCESS_TOKEN_COOKIE,
@@ -47,6 +48,7 @@ function logMultipartProxy(
 }
 
 type ForwardRequestArgs = {
+  superAdminOnly?: boolean;
   path: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -76,10 +78,16 @@ function isViewerAdminExportForbidden(token: string, path: string) {
   return isViewerAdminRole(getTokenRole(token)) && path.startsWith("/api/export/");
 }
 
+function isSuperAdminToken(token: string) {
+  const payload = parseJwtPayload(token);
+  return payload?.role === "ROLE_SUPER_ADMIN" || payload?.roles?.includes("ROLE_SUPER_ADMIN") === true;
+}
+
 export async function forwardAuthorizedRequest({
   path,
   method,
   body,
+  superAdminOnly = false,
 }: ForwardRequestArgs) {
   const url = buildBackendUrl(path);
 
@@ -89,6 +97,10 @@ export async function forwardAuthorizedRequest({
 
   if (!accessToken) {
     return unauthorizedJsonResponse();
+  }
+
+  if (superAdminOnly && !isSuperAdminToken(accessToken)) {
+    return NextResponse.json({ message: "Only Super Admin accounts can perform this action." }, { status: 403 });
   }
 
   if (
@@ -115,6 +127,9 @@ export async function forwardAuthorizedRequest({
   if (backendResponse.status === 401) {
     const refreshed = await tryRefreshSessionCookies();
     if (refreshed) {
+      if (superAdminOnly && !isSuperAdminToken(refreshed)) {
+        return NextResponse.json({ message: "Only Super Admin accounts can perform this action." }, { status: 403 });
+      }
       backendResponse = await doFetch(refreshed);
     }
   }

@@ -19,6 +19,11 @@
 **/.next/
 /out/
 
+# Data Migration
+
+/migrations
+**/migrations
+
 # production
 /build
 
@@ -32,6 +37,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .pnpm-store
+.import-runs
+**/.import-runs
 
 # env files (can opt-in for committing if needed)
 .env*

@@ -1537,6 +1537,27 @@
     }
   },
   "users": {
+    "accountActions": {
+      "roleTitle": "Change user role",
+      "passwordTitle": "Reset user password",
+      "roleLabel": "Role",
+      "selectRole": "Select role",
+      "roleDescription": "Change the user's access permissions. Super Admin cannot be assigned.",
+      "passwordDescription": "Generate a new password for this user? Copy the returned password and share it securely.",
+      "temporaryPassword": "Temporary password",
+      "passwordVisibility": "Copy and share this password securely before closing. It will not be shown again after you close this dialog.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyError": "Could not copy automatically. Select the password and copy it manually.",
+      "roleSuccess": "User role updated.",
+      "passwordSuccess": "Password reset successfully.",
+      "protectedAccount": "Super Admin accounts cannot be changed using this action.",
+      "saveRole": "Save role",
+      "resetPassword": "Reset password",
+      "updating": "Updating…",
+      "cancel": "Cancel",
+      "done": "Done"
+    },
     "section": {
       "title": "User management",
       "loading": "Loading…",
@@ -1561,6 +1582,9 @@
         "no": "No"
       },
       "rowActions": {
+        "openMenu": "Open user actions",
+        "changeRole": "Change role",
+        "resetPassword": "Reset password",
         "view": "View",
         "activate": "Activate",
         "deactivate": "Deactivate"

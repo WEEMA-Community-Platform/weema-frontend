@@ -15,9 +15,14 @@ import { UserFiltersDialog, type UserAppliedFilters } from "@/components/users/u
 import { UserTableCard } from "@/components/users/user-table-card";
 import { UserToggleDialog } from "@/components/users/user-toggle-dialog";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
+import { UserAccountActionDialog } from "@/components/users/user-account-action-dialog";
+import { useCurrentUser } from "@/hooks/use-user";
+import { SUPER_ADMIN_ROLE } from "@/components/users/constants";
 
 export function UserManagementManager() {
   const isViewerAdmin = useIsViewerAdmin();
+  const { data: currentUser } = useCurrentUser();
+  const [accountAction, setAccountAction] = useState<{ user: UserListItem; kind: "role" | "password" } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [appliedFilterRole, setAppliedFilterRole] = useState("");
@@ -76,6 +81,12 @@ export function UserManagementManager() {
 
   return (
     <>
+      {currentUser?.user.role === SUPER_ADMIN_ROLE && accountAction ? <UserAccountActionDialog
+        key={`${accountAction.kind}-${accountAction.user.id}`}
+        user={accountAction.user}
+        kind={accountAction.kind}
+        onClose={() => setAccountAction(null)}
+      /> : null}
       {!isViewerAdmin ? <UserCreateDialog
         key={`create-${createKey}`}
         open={isCreateOpen}
@@ -125,6 +136,8 @@ export function UserManagementManager() {
           setViewingId(id);
         }}
         onToggleActivation={setToggleUser}
+        onChangeRole={(user) => setAccountAction({ user, kind: "role" })}
+        onResetPassword={(user) => setAccountAction({ user, kind: "password" })}
       />
 
       <UserFiltersDialog

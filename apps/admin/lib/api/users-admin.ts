@@ -23,6 +23,30 @@ export type UserDetailResponse = BaseApiResponse & {
   user: UserListItem;
 };
 
+export type ResetUserPasswordResponse = BaseApiResponse & {
+  password?: string;
+  newPassword?: string;
+  temporaryPassword?: string;
+};
+
+export async function changeUserRole(id: string, role: string): Promise<BaseApiResponse> {
+  const response = await fetch(`/api/user/change-role/${encodeURIComponent(id)}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role }), cache: "no-store",
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) throw new Error(data?.message ?? "Failed to change user role");
+  return data;
+}
+
+export async function resetUserPassword(id: string): Promise<ResetUserPasswordResponse> {
+  const response = await fetch(`/api/user/reset-password/${encodeURIComponent(id)}`, {
+    method: "POST", headers: { Accept: "*/*" }, cache: "no-store",
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) throw new Error(data?.message ?? "Failed to reset user password");
+  return data;
+}
+
 export type CreateUserPayload = {
   firstName: string;
   lastName: string;

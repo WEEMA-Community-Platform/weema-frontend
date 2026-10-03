@@ -1537,6 +1537,27 @@
     }
   },
   "users": {
+    "accountActions": {
+      "roleTitle": "የተጠቃሚ ሚና ቀይር",
+      "passwordTitle": "የተጠቃሚ የይለፍ ቃል ዳግም አስጀምር",
+      "roleLabel": "ሚና",
+      "selectRole": "ሚና ይምረጡ",
+      "roleDescription": "የተጠቃሚውን የመዳረሻ ፈቃዶች ይቀይሩ። የዋና አስተዳዳሪ ሚና መመደብ አይቻልም።",
+      "passwordDescription": "ለዚህ ተጠቃሚ አዲስ የይለፍ ቃል ይፈጠር? የተመለሰውን የይለፍ ቃል ይቅዱና በደህንነት ያጋሩ።",
+      "temporaryPassword": "ጊዜያዊ የይለፍ ቃል",
+      "passwordVisibility": "ከመዝጋትዎ በፊት ይህን የይለፍ ቃል ይቅዱና በደህንነት ያጋሩ። ይህን መስኮት ከዘጉ በኋላ ዳግም አይታይም።",
+      "copy": "ቅዳ",
+      "copied": "ተቀድቷል",
+      "copyError": "በራስ-ሰር መቅዳት አልተቻለም። የይለፍ ቃሉን ይምረጡና በእጅ ይቅዱ።",
+      "roleSuccess": "የተጠቃሚ ሚና ተዘምኗል።",
+      "passwordSuccess": "የይለፍ ቃል በተሳካ ሁኔታ ዳግም ተጀምሯል።",
+      "protectedAccount": "የዋና አስተዳዳሪ መለያዎችን በዚህ እርምጃ መቀየር አይቻልም።",
+      "saveRole": "ሚና አስቀምጥ",
+      "resetPassword": "የይለፍ ቃል ዳግም አስጀምር",
+      "updating": "በማዘመን ላይ…",
+      "cancel": "ሰርዝ",
+      "done": "ተጠናቋል"
+    },
     "section": {
       "title": "የተጠቃሚ አስተዳደር",
       "loading": "በመጫን ላይ…",
@@ -1561,6 +1582,9 @@
         "no": "አይ"
       },
       "rowActions": {
+        "openMenu": "የተጠቃሚ እርምጃዎችን ክፈት",
+        "changeRole": "ሚና ቀይር",
+        "resetPassword": "የይለፍ ቃል ዳግም አስጀምር",
         "view": "ተመልከት",
         "activate": "አንቃ",
         "deactivate": "አቁም"

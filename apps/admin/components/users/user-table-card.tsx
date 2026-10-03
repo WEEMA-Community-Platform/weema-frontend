@@ -1,6 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { EyeIcon, MoreVerticalIcon, ShieldIcon, KeyRoundIcon, UserCheckIcon, UserXIcon } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +14,12 @@ import {
   TableShell,
   descriptionCellClass,
   tableActionsCellClass,
-  tableRowActionsClass,
 } from "@/components/base-data/shared";
 import type { UserListItem } from "@/lib/api/users-admin";
 import { useRoleLabel } from "@/components/users/constants";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
+import { useCurrentUser } from "@/hooks/use-user";
+import { SUPER_ADMIN_ROLE } from "@/components/users/constants";
 
 type UserTableCardProps = {
   searchQuery: string;
@@ -35,6 +38,8 @@ type UserTableCardProps = {
   onPageChange: (page: number) => void;
   onView: (id: string) => void;
   onToggleActivation: (user: UserListItem) => void;
+  onChangeRole: (user: UserListItem) => void;
+  onResetPassword: (user: UserListItem) => void;
   emptyMessage: string;
 };
 
@@ -55,6 +60,8 @@ export function UserTableCard({
   onPageChange,
   onView,
   onToggleActivation,
+  onChangeRole,
+  onResetPassword,
   emptyMessage,
 }: UserTableCardProps) {
   const t = useTranslations("users.list");
@@ -63,6 +70,8 @@ export function UserTableCard({
   const tRow = useTranslations("users.list.rowActions");
   const roleLabel = useRoleLabel();
   const isViewerAdmin = useIsViewerAdmin();
+  const { data: currentUser } = useCurrentUser();
+  const canManage = currentUser?.user.role === SUPER_ADMIN_ROLE;
 
   return (
     <Card className="border-primary/10">
@@ -108,19 +117,21 @@ export function UserTableCard({
               <TableCell>{u.active ? tCell("yes") : tCell("no")}</TableCell>
               <TableCell>{u.firstTimeLogin ? tCell("yes") : tCell("no")}</TableCell>
               <TableCell className={tableActionsCellClass}>
-                <div className={tableRowActionsClass}>
-                  <Button type="button" size="sm" variant="outline" onClick={() => onView(u.id)}>
-                    {tRow("view")}
-                  </Button>
-                  {!isViewerAdmin ? <Button
-                    type="button"
-                    size="sm"
-                    variant={u.active ? "outline" : "default"}
-                    onClick={() => onToggleActivation(u)}
-                  >
-                    {u.active ? tRow("deactivate") : tRow("activate")}
-                  </Button> : null}
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="size-8 text-muted-foreground" aria-label={tRow("openMenu")}><MoreVerticalIcon className="size-4" /></Button>} />
+                  <DropdownMenuContent align="end" className="min-w-44">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem onClick={() => onView(u.id)}><EyeIcon />{tRow("view")}</DropdownMenuItem>
+                      {!isViewerAdmin ? <DropdownMenuItem onClick={() => onToggleActivation(u)}>
+                        {u.active ? <UserXIcon /> : <UserCheckIcon />}{u.active ? tRow("deactivate") : tRow("activate")}
+                      </DropdownMenuItem> : null}
+                      {canManage && u.role !== SUPER_ADMIN_ROLE ? <>
+                        <DropdownMenuItem onClick={() => onChangeRole(u)}><ShieldIcon />{tRow("changeRole")}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onResetPassword(u)}><KeyRoundIcon />{tRow("resetPassword")}</DropdownMenuItem>
+                      </> : null}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
