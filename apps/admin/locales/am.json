@@ -1677,6 +1677,9 @@
     },
     "detailed": {
       "title": "ዝርዝር ትንታኔ",
+      "blockedTitle": "ዳሽቦርዱ አይገኝም",
+      "blockedDescription": "ዳሽቦርዱ በMINCH ውስጥ መጫን አልቻለም። እንደገና ለመሞከር ያድሱ።",
+      "slowLoading": "ዳሽቦርዱ ለመጫን ከተጠበቀው በላይ ጊዜ እየወሰደ ነው።",
       "description": "ከMINCH ሳይወጡ ሙሉውን የፕሮግራም ዳሽቦርድ ያስሱ።",
       "liveDashboard": "የቀጥታ Superset ዳሽቦርድ",
       "readOnlyHint": "በይነተገናኝ የሪፖርት ዳሽቦርድ",

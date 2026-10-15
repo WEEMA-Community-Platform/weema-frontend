@@ -1,6 +1,3 @@
-import { getTranslations } from "next-intl/server";
-
-import { AnalyticsViewNav } from "@/components/analytics/analytics-view-nav";
 import { SupersetDashboardFrame } from "@/components/analytics/superset-dashboard-frame";
 
 export const dynamic = "force-dynamic";
@@ -27,26 +24,22 @@ function getSupersetDashboardUrl(): string | null {
 }
 
 export default async function DetailedAnalyticsPage() {
-  const t = await getTranslations("analytics");
   const dashboardUrl = getSupersetDashboardUrl();
+  let embeddingBlocked = false;
+  if (dashboardUrl) {
+    try {
+      const response = await fetch(dashboardUrl, { cache: "no-store", signal: AbortSignal.timeout(5000) });
+      // CSP frame-ancestors overrides X-Frame-Options in modern browsers.
+      const ancestors = response.headers.get("content-security-policy")?.match(/(?:^|;)\s*frame-ancestors\s+([^;]+)/i);
+      const frameOptions = response.headers.get("x-frame-options")?.trim().toUpperCase();
+      embeddingBlocked = !ancestors && (frameOptions === "SAMEORIGIN" || frameOptions === "DENY");
+      await response.body?.cancel();
+    } catch {
+      // A failed probe doesn't establish whether the user's browser can load it.
+    }
+  }
 
   return (
-    <>
-      <div className="rounded-xl border border-primary/15 bg-card px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">
-              {t("detailed.title")}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("detailed.description")}
-            </p>
-          </div>
-          <AnalyticsViewNav />
-        </div>
-      </div>
-
-      <SupersetDashboardFrame src={dashboardUrl} />
-    </>
+      <SupersetDashboardFrame src={dashboardUrl} embeddingBlocked={embeddingBlocked} />
   );
 }

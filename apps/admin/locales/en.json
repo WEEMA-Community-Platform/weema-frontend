@@ -1677,6 +1677,9 @@
     },
     "detailed": {
       "title": "Detailed analytics",
+      "blockedTitle": "Dashboard unavailable",
+      "blockedDescription": "The dashboard couldn’t load inside MINCH. Refresh to try again.",
+      "slowLoading": "The dashboard is taking longer than expected to load.",
       "description": "Explore the complete program dashboard without leaving MINCH.",
       "liveDashboard": "Live Superset dashboard",
       "readOnlyHint": "Interactive reporting dashboard",
