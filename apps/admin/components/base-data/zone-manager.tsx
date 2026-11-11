@@ -12,7 +12,7 @@ import {
   useZonesQuery,
 } from "@/hooks/use-base-data";
 import { exportZonesList, type Zone } from "@/lib/api/base-data";
-import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
@@ -126,6 +126,7 @@ export function ZoneManager() {
         return;
       }
       const columns = [
+        { header: tExport("columns.id"), cell: (r: Record<string, unknown>) => csvUuid(r.id) },
         { header: tExport("columns.name"), cell: (r: Record<string, unknown>) => str(r.name) },
         {
           header: tExport("columns.region"),

@@ -337,8 +337,12 @@ export async function deleteKebele(id: string) {
   return parseResponse<BaseApiResponse>(response);
 }
 
+export type BaseDataExportRow = Record<string, unknown> & {
+  id: string;
+};
+
 export type BaseDataExportListResponse = BaseApiResponse & {
-  data: Record<string, unknown>[];
+  data: BaseDataExportRow[];
 };
 
 export async function parseExportListResponse(
@@ -348,7 +352,14 @@ export async function parseExportListResponse(
     | (BaseApiResponse & { data?: unknown })
     | null;
 
-  if (!response.ok || !payload || !Array.isArray(payload.data)) {
+  if (
+    !response.ok ||
+    !payload ||
+    !Array.isArray(payload.data) ||
+    payload.data.some(
+      (row) => !row || typeof row !== "object" || typeof (row as { id?: unknown }).id !== "string"
+    )
+  ) {
     throw new Error(
       payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string"
         ? payload.message

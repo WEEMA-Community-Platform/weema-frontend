@@ -14,7 +14,7 @@ import {
 import { useCurrentUser } from "@/hooks/use-user";
 import type { EntityStatus, Federation } from "@/lib/api/community";
 import { exportFederationsList } from "@/lib/api/community";
-import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import {
   CardMetaRow,
   CommunityCard,
@@ -149,6 +149,7 @@ export function FederationManager() {
         return;
       }
       const columns = [
+        { header: tFedCols("id"), cell: (r: Record<string, unknown>) => csvUuid(r.id) },
         { header: tFedCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
         { header: tFedCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
         { header: tFedCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },

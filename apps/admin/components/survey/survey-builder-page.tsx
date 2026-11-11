@@ -503,6 +503,7 @@ export function SurveyBuilderPage({
         sectionQuestions: tDetail("sectionQuestions"),
         colField: tDetail("colField"),
         colValue: tDetail("colValue"),
+        lblId: tDetail("lblId"),
         lblTitle: tDetail("lblTitle"),
         lblDescription: tDetail("lblDescription"),
         lblTargetType: tDetail("lblTargetType"),

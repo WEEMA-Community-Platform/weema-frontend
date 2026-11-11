@@ -243,6 +243,7 @@
       "emptyDescription": "There is no data to include in the file.",
       "federation": {
         "columns": {
+          "id": "ID",
           "name": "Name",
           "description": "Description",
           "location": "Location",
@@ -255,6 +256,7 @@
       },
       "cluster": {
         "columns": {
+          "id": "ID",
           "name": "Name",
           "description": "Description",
           "location": "Location",
@@ -269,6 +271,7 @@
       },
       "shg": {
         "columns": {
+          "id": "ID",
           "name": "Name",
           "description": "Description",
           "status": "Status",
@@ -289,6 +292,7 @@
       },
       "member": {
         "columns": {
+          "id": "ID",
           "firstName": "First name",
           "lastName": "Last name",
           "phone": "Phone",
@@ -301,6 +305,9 @@
           "religion": "Religion",
           "shg": "Self-help group",
           "cluster": "Cluster",
+          "kebele": "Kebele",
+          "woreda": "Woreda",
+          "zone": "Zone",
           "locked": "Locked",
           "createdAt": "Created",
           "updatedAt": "Last updated"
@@ -886,6 +893,9 @@
         "columns": {
           "id": "ID",
           "memberName": "Name",
+          "kebele": "Kebele",
+          "woreda": "Woreda",
+          "zone": "Zone",
           "createdAt": "Created",
           "updatedAt": "Last updated"
         }
@@ -895,6 +905,7 @@
         "sectionQuestions": "Questions",
         "colField": "Field",
         "colValue": "Value",
+        "lblId": "ID",
         "lblTitle": "Title",
         "lblDescription": "Description",
         "lblTargetType": "Target type",
@@ -925,6 +936,9 @@
         "columns": {
           "id": "ID",
           "memberName": "Name",
+          "kebele": "Kebele",
+          "woreda": "Woreda",
+          "zone": "Zone",
           "createdAt": "Created",
           "updatedAt": "Last updated"
         }
@@ -1327,6 +1341,7 @@
       "emptyTitle": "Nothing to export",
       "emptyDescription": "There is no data to include in the file.",
       "columns": {
+        "id": "ID",
         "name": "Name",
         "description": "Description",
         "region": "Region",

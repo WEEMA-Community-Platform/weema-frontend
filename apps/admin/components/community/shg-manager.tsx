@@ -18,7 +18,7 @@ import { useKebelesQuery, useWoredasQuery } from "@/hooks/use-base-data";
 import { useUsersQuery } from "@/hooks/use-users-admin";
 import type { EntityStatus, SHG, SHGEstablishedByType } from "@/lib/api/community";
 import { exportSelfHelpGroupsList } from "@/lib/api/community";
-import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import {
   CardMetaRow,
   CommunityCard,
@@ -344,6 +344,7 @@ export function SHGManager() {
         return;
       }
       const columns = [
+        { header: tShgCols("id"), cell: (r: Record<string, unknown>) => csvUuid(r.id) },
         { header: tShgCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
         { header: tShgCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
         { header: tShgCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },

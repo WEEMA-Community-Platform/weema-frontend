@@ -5,6 +5,11 @@ export type BaseDataCsvColumn = {
   cell: (row: Record<string, unknown>) => string;
 };
 
+/** Export identifiers only when the API supplied the UUID as a JSON string. */
+export function csvUuid(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
 function escapeCsvCell(value: string): string {
   if (/[",\r\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;

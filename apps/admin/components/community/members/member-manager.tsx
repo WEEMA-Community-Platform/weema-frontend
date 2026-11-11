@@ -16,7 +16,7 @@ import { useReligionsQuery } from "@/hooks/use-base-data";
 import { useSHGsQuery } from "@/hooks/use-community";
 import type { Member } from "@/lib/api/members";
 import { exportMembersList } from "@/lib/api/members";
-import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { GENDER_OPTIONS } from "@/components/community/members/constants";
 import { MemberCreateDialog } from "@/components/community/members/member-create-dialog";
 import { MemberDeleteDialog } from "@/components/community/members/member-delete-dialog";
@@ -205,6 +205,7 @@ export function MemberManager() {
         return;
       }
       const columns = [
+        { header: tMemCols("id"), cell: (r: Record<string, unknown>) => csvUuid(r.id) },
         { header: tMemCols("firstName"), cell: (r: Record<string, unknown>) => str(r.firstName) },
         { header: tMemCols("lastName"), cell: (r: Record<string, unknown>) => str(r.lastName) },
         { header: tMemCols("phone"), cell: (r: Record<string, unknown>) => str(r.contactPhone) },
@@ -226,6 +227,9 @@ export function MemberManager() {
           cell: (r: Record<string, unknown>) => str(r.selfHelpGroupName),
         },
         { header: tMemCols("cluster"), cell: (r: Record<string, unknown>) => str(r.clusterName) },
+        { header: tMemCols("kebele"), cell: (r: Record<string, unknown>) => str(r.kebeleName) },
+        { header: tMemCols("woreda"), cell: (r: Record<string, unknown>) => str(r.woredaName) },
+        { header: tMemCols("zone"), cell: (r: Record<string, unknown>) => str(r.zoneName) },
         {
           header: tMemCols("locked"),
           cell: (r: Record<string, unknown>) =>

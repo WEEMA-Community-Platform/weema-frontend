@@ -213,7 +213,11 @@ export function SurveysPage() {
 
   const submissionsExportHeaders = useMemo(
     () => ({
+      id: tListCol("id"),
       memberName: tListCol("memberName"),
+      kebele: tListCol("kebele"),
+      woreda: tListCol("woreda"),
+      zone: tListCol("zone"),
       createdAt: tListCol("createdAt"),
       updatedAt: tListCol("updatedAt"),
     }),

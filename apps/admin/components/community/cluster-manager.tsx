@@ -16,7 +16,7 @@ import { useCurrentUser } from "@/hooks/use-user";
 import { useWoredasQuery } from "@/hooks/use-base-data";
 import type { Cluster, EntityStatus } from "@/lib/api/community";
 import { exportClustersList } from "@/lib/api/community";
-import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import {
   Dialog,
   DialogContent,
@@ -198,6 +198,7 @@ export function ClusterManager() {
         return;
       }
       const columns = [
+        { header: tClusterCols("id"), cell: (r: Record<string, unknown>) => csvUuid(r.id) },
         { header: tClusterCols("name"), cell: (r: Record<string, unknown>) => str(r.name) },
         { header: tClusterCols("description"), cell: (r: Record<string, unknown>) => str(r.description) },
         { header: tClusterCols("location"), cell: (r: Record<string, unknown>) => str(r.location) },

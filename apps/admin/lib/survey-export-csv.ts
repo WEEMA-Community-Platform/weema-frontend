@@ -1,5 +1,6 @@
 import {
   buildBaseDataCsv,
+  csvUuid,
   type BaseDataCsvColumn,
 } from "@/lib/base-data-csv";
 
@@ -88,6 +89,7 @@ export type SurveyDetailCsvLabels = {
   sectionQuestions: string;
   colField: string;
   colValue: string;
+  lblId: string;
   lblTitle: string;
   lblDescription: string;
   lblTargetType: string;
@@ -128,6 +130,7 @@ export function buildSurveyDetailExportCsv(
   noLabel: string
 ): string {
   const overviewRows: Record<string, unknown>[] = [
+    { f: labels.lblId, v: csvUuid(detail.id) },
     { f: labels.lblTitle, v: str(detail.title) },
     { f: labels.lblDescription, v: str(detail.description) },
     { f: labels.lblTargetType, v: str(detail.targetType) },

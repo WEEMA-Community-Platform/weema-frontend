@@ -1,10 +1,15 @@
 import {
   buildBaseDataCsv,
+  csvUuid,
   type BaseDataCsvColumn,
 } from "@/lib/base-data-csv";
 
 export type SurveySubmissionsExportHeaders = {
+  id: string;
   memberName: string;
+  kebele: string;
+  woreda: string;
+  zone: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -40,7 +45,8 @@ function resolveAnswerValue(ans: Record<string, unknown>): string {
 
 /**
  * Builds a pivoted CSV: one row per submission, questions as columns.
- * Columns: ID, Member Name, Created At, Updated At, then one column per unique question.
+ * Columns: ID, target name, member location, timestamps, then one column per unique question.
+ * Location cells remain empty for SHG/cluster submissions and for incomplete legacy links.
  *
  * When `groupBySurvey` is true and data contains multiple surveys, an empty divider row
  * is inserted between each survey group.
@@ -65,7 +71,11 @@ export function buildSurveySubmissionsExportCsv(
   }
 
   const columns: BaseDataCsvColumn[] = [
+    { header: headers.id, cell: (r) => csvUuid(r._id) },
     { header: headers.memberName, cell: (r) => csvStr(r._memberName) },
+    { header: headers.kebele, cell: (r) => csvStr(r._kebeleName) },
+    { header: headers.woreda, cell: (r) => csvStr(r._woredaName) },
+    { header: headers.zone, cell: (r) => csvStr(r._zoneName) },
     { header: headers.createdAt, cell: (r) => csvStr(r._createdAt) },
     { header: headers.updatedAt, cell: (r) => csvStr(r._updatedAt) },
     ...questionColumns.map((qText): BaseDataCsvColumn => ({
@@ -81,19 +91,31 @@ export function buildSurveySubmissionsExportCsv(
     if (options.groupBySurvey) {
       const sid = csvStr(sub.surveyId || sub.surveyTitle);
       if (lastSurveyId !== null && sid !== lastSurveyId) {
-        const divider: Record<string, unknown> = { _memberName: "", _createdAt: "", _updatedAt: "" };
+        const divider: Record<string, unknown> = {
+          _id: "",
+          _memberName: "",
+          _kebeleName: "",
+          _woredaName: "",
+          _zoneName: "",
+          _createdAt: "",
+          _updatedAt: "",
+        };
         pivotedRows.push(divider);
       }
       lastSurveyId = sid;
     }
 
     const row: Record<string, unknown> = {
+      _id: sub.id ?? "",
       _memberName:
         sub.memberName ??
         sub.selfHelpGroupName ??
         sub.clusterName ??
         sub.targetName ??
         "",
+      _kebeleName: sub.kebeleName ?? "",
+      _woredaName: sub.woredaName ?? "",
+      _zoneName: sub.zoneName ?? "",
       _createdAt: sub.createdAt ?? sub.startedAt ?? "",
       _updatedAt: sub.updatedAt ?? sub.submittedAt ?? "",
     };
@@ -111,6 +133,6 @@ export function buildSurveySubmissionsExportCsv(
 
   return {
     csv: buildBaseDataCsv(columns, pivotedRows),
-    rowCount: pivotedRows.filter((r) => r._memberName !== "").length,
+    rowCount: apiData.length,
   };
 }

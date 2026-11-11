@@ -243,6 +243,7 @@
       "emptyDescription": "በፋይል ውስጥ ለማካተት ውሂብ የለም።",
       "federation": {
         "columns": {
+          "id": "መለያ",
           "name": "ስም",
           "description": "መግለጫ",
           "location": "አካባቢ",
@@ -255,6 +256,7 @@
       },
       "cluster": {
         "columns": {
+          "id": "መለያ",
           "name": "ስም",
           "description": "መግለጫ",
           "location": "አካባቢ",
@@ -269,6 +271,7 @@
       },
       "shg": {
         "columns": {
+          "id": "መለያ",
           "name": "ስም",
           "description": "መግለጫ",
           "status": "ሁኔታ",
@@ -289,6 +292,7 @@
       },
       "member": {
         "columns": {
+          "id": "መለያ",
           "firstName": "ስም",
           "lastName": "የአባት ስም",
           "phone": "ስልክ",
@@ -301,6 +305,9 @@
           "religion": "ሃይማኖት",
           "shg": "የራስ አገዝ ቡድን",
           "cluster": "ክላስተር",
+          "kebele": "ቀበሌ",
+          "woreda": "ወረዳ",
+          "zone": "ዞን",
           "locked": "ቆልፍ ሁኔታ",
           "createdAt": "ተፈጥሯል",
           "updatedAt": "የተዘመነ"
@@ -886,6 +893,9 @@
         "columns": {
           "id": "መለያ",
           "memberName": "ስም",
+          "kebele": "ቀበሌ",
+          "woreda": "ወረዳ",
+          "zone": "ዞን",
           "createdAt": "ተፈጥሯል",
           "updatedAt": "የተዘመነ"
         }
@@ -895,6 +905,7 @@
         "sectionQuestions": "ጥያቄዎች",
         "colField": "መስክ",
         "colValue": "ክምችት",
+        "lblId": "መለያ",
         "lblTitle": "ርዕስ",
         "lblDescription": "መግለጫ",
         "lblTargetType": "የዒላማ ዓይነት",
@@ -925,6 +936,9 @@
         "columns": {
           "id": "መለያ",
           "memberName": "ስም",
+          "kebele": "ቀበሌ",
+          "woreda": "ወረዳ",
+          "zone": "ዞን",
           "createdAt": "ተፈጥሯል",
           "updatedAt": "የተዘመነ"
         }
@@ -1327,6 +1341,7 @@
       "emptyTitle": "ለማውጣት የለም",
       "emptyDescription": "በፋይል ውስጥ ለማካተት ውሂብ የለም።",
       "columns": {
+        "id": "መለያ",
         "name": "ስም",
         "description": "መግለጫ",
         "region": "ክልል",

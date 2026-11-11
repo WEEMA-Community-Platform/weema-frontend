@@ -11,7 +11,7 @@ import {
   useUpdateRegionMutation,
 } from "@/hooks/use-base-data";
 import { exportRegionsList, type Region } from "@/lib/api/base-data";
-import { buildBaseDataCsv, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 import {
@@ -94,6 +94,7 @@ export function RegionManager() {
         return;
       }
       const columns = [
+        { header: tExport("columns.id"), cell: (r: Record<string, unknown>) => csvUuid(r.id) },
         { header: tExport("columns.name"), cell: (r: Record<string, unknown>) => str(r.name) },
         {
           header: tExport("columns.description"),
