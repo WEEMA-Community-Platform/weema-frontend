@@ -15,6 +15,7 @@ import { useCurrentUser } from "@/hooks/use-user";
 import type { EntityStatus, Federation } from "@/lib/api/community";
 import { exportFederationsList } from "@/lib/api/community";
 import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import {
   CardMetaRow,
   CommunityCard,
@@ -47,6 +48,7 @@ import {
 
 
 export function FederationManager() {
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const tPage = useTranslations("community.federation.page");
   const tCard = useTranslations("community.federation.card");
   const tFilters = useTranslations("community.federation.filters");
@@ -169,6 +171,7 @@ export function FederationManager() {
         description: tExport("successDescription", { count: data.length }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, "/api/export/federations")) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),

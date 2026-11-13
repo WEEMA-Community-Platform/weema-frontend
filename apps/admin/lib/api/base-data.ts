@@ -1,3 +1,5 @@
+import { throwIfEmailExportRequired } from "@/lib/api/export";
+
 export type BaseApiResponse = {
   message: string;
   statusCode: string;
@@ -351,6 +353,8 @@ export async function parseExportListResponse(
   const payload = (await response.json().catch(() => null)) as
     | (BaseApiResponse & { data?: unknown })
     | null;
+
+  throwIfEmailExportRequired(response, payload);
 
   if (
     !response.ok ||

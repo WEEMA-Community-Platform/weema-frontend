@@ -16,6 +16,7 @@ import { exportKebelesList, type Kebele } from "@/lib/api/base-data";
 import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
 import { Button } from "@/components/ui/button";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +60,7 @@ import {
 
 export function KebeleManager() {
   const isViewerAdmin = useIsViewerAdmin();
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const t = useTranslations("basedata.kebele");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -150,6 +152,7 @@ export function KebeleManager() {
         description: tExport("successDescription", { count: data.length }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, "/api/export/kebeles")) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),

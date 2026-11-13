@@ -10,6 +10,7 @@ import { useState, type PropsWithChildren } from "react";
 import { Toaster } from "sileo";
 import "sileo/styles.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { EmailExportProvider } from "@/components/export/email-export-provider";
 
 /** Session is dead (no valid refresh or API rejected). Server normalizes to `Unauthorized`; match common legacy messages too. */
 function isSessionExpiredError(error: unknown) {
@@ -74,7 +75,7 @@ export function Providers({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {children}
+        <EmailExportProvider>{children}</EmailExportProvider>
         <Toaster
           position="top-right"
           theme="dark"

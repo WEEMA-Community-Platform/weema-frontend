@@ -1,8 +1,8 @@
-import { forwardAuthorizedRequest } from "@/app/api/base-data/_lib";
+import { buildPathWithQuery, forwardAuthorizedRequest } from "@/app/api/base-data/_lib";
 
-export async function GET() {
+export async function GET(request: Request) {
   return forwardAuthorizedRequest({
     method: "GET",
-    path: "/api/export/surveys",
+    path: buildPathWithQuery(request, "/api/export/surveys"),
   });
 }

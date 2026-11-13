@@ -37,6 +37,7 @@ import {
 } from "@/lib/api/surveys";
 import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import { buildSurveySubmissionsExportCsv } from "@/lib/survey-submissions-export-csv";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import { normalizeSurveyResponse } from "@/lib/survey-builder/normalize";
 
 type PendingSubmissionLock = { submission: SurveySubmissionRecord; action: "lock" | "unlock" };
@@ -183,6 +184,7 @@ export function SurveySubmissionsPage({
   /** Resolved on the server (list / URL + survey GET). Drives SHG filters (MEMBER only) and labels. */
   surveyTargetType: string;
 }) {
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -308,6 +310,7 @@ export function SurveySubmissionsPage({
     () => ({
       id: tExportSubmissions("columns.id"),
       memberName: tExportSubmissions("columns.memberName"),
+      selfHelpGroupName: tExportSubmissions("columns.selfHelpGroupName"),
       kebele: tExportSubmissions("columns.kebele"),
       woreda: tExportSubmissions("columns.woreda"),
       zone: tExportSubmissions("columns.zone"),
@@ -346,6 +349,7 @@ export function SurveySubmissionsPage({
         description: tExportSubmissions("successDescription", { count: rowCount }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, `/api/export/survey-submissions/${encodeURIComponent(surveyId)}`)) return;
       sileo.error({
         title: tExportSubmissions("errorTitle"),
         description:

@@ -17,6 +17,7 @@ import { useWoredasQuery } from "@/hooks/use-base-data";
 import type { Cluster, EntityStatus } from "@/lib/api/community";
 import { exportClustersList } from "@/lib/api/community";
 import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ import {
 
 
 export function ClusterManager() {
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const tPage = useTranslations("community.cluster.page");
   const tCard = useTranslations("community.cluster.card");
   const tFilters = useTranslations("community.cluster.filters");
@@ -223,6 +225,7 @@ export function ClusterManager() {
         description: tExport("successDescription", { count: data.length }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, "/api/export/clusters")) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),

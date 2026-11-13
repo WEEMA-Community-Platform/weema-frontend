@@ -36,6 +36,7 @@ import { SurveyBuilderLoadingSkeleton } from "@/components/survey/builder/survey
 import { SurveyBuilderMainPanel } from "@/components/survey/builder/survey-builder-main-panel";
 import { SurveyReadOnlyView } from "@/components/survey/builder/survey-read-only-view";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import { useBuilderLeaveGuard } from "@/components/survey/builder/use-builder-leave-guard";
 import { useBuilderPersistence } from "@/components/survey/builder/use-builder-persistence";
 import {
@@ -56,6 +57,7 @@ export function SurveyBuilderPage({
   translationSourceSurveyId?: string | null;
   translationLanguage?: "en" | "am";
 }) {
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const isViewerAdmin = useIsViewerAdmin();
   const [initialSurveyId, setInitialSurveyId] = useState<string | null>(routeSurveyId ?? null);
   const [isLoadingInitialSurvey, setIsLoadingInitialSurvey] = useState(
@@ -533,6 +535,7 @@ export function SurveyBuilderPage({
         description: tExport("detailSuccessDescription"),
       });
     } catch (error) {
+      if (offerRequiredExport(error, `/api/export/surveys/${encodeURIComponent(initialSurveyId)}`)) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),
@@ -540,7 +543,7 @@ export function SurveyBuilderPage({
     } finally {
       setExportDetailPending(false);
     }
-  }, [initialSurveyId, builder.state.title, tDetail, tCommonBase, tExport, tValidation]);
+  }, [initialSurveyId, builder.state.title, tDetail, tCommonBase, tExport, tValidation, offerRequiredExport]);
 
   if (initialSurveyId && isLoadingInitialSurvey) {
     return <SurveyBuilderLoadingSkeleton />;

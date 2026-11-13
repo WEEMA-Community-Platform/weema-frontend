@@ -16,6 +16,7 @@ import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,6 +76,7 @@ function zoneSpecialWoredaRaw(zone: Zone): unknown {
 
 export function ZoneManager() {
   const isViewerAdmin = useIsViewerAdmin();
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const t = useTranslations("basedata.zone");
   const tCommon = useTranslations("basedata.common");
   const tActions = useTranslations("common.actions");
@@ -157,6 +159,7 @@ export function ZoneManager() {
         description: tExport("successDescription", { count: data.length }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, "/api/export/zones")) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),

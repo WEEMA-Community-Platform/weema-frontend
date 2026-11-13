@@ -1,4 +1,4 @@
-import { forwardAuthorizedRequest } from "@/app/api/base-data/_lib";
+import { buildPathWithQuery, forwardAuthorizedRequest } from "@/app/api/base-data/_lib";
 
 type RouteParams = {
   params: Promise<{ surveyId: string }>;
@@ -6,11 +6,8 @@ type RouteParams = {
 
 export async function GET(request: Request, { params }: RouteParams) {
   const { surveyId } = await params;
-  const url = new URL(request.url);
-  const qs = url.searchParams.toString();
-  const path = `/api/export/survey-submissions/${surveyId}${qs ? `?${qs}` : ""}`;
   return forwardAuthorizedRequest({
     method: "GET",
-    path,
+    path: buildPathWithQuery(request, `/api/export/survey-submissions/${surveyId}`),
   });
 }

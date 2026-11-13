@@ -1,4 +1,5 @@
 import type { BaseApiResponse } from "@/lib/api/base-data";
+import { throwIfEmailExportRequired } from "@/lib/api/export";
 
 export function buildQueryString(query: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();
@@ -141,6 +142,8 @@ export async function parseExportSurveyDetailResponse(
   const payload = (await response.json().catch(() => null)) as
     | (BaseApiResponse & { data?: unknown })
     | null;
+
+  throwIfEmailExportRequired(response, payload);
 
   if (
     !response.ok ||

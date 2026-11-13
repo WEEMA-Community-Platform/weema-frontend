@@ -7,6 +7,7 @@ import {
 export type SurveySubmissionsExportHeaders = {
   id: string;
   memberName: string;
+  selfHelpGroupName: string;
   kebele: string;
   woreda: string;
   zone: string;
@@ -45,7 +46,7 @@ function resolveAnswerValue(ans: Record<string, unknown>): string {
 
 /**
  * Builds a pivoted CSV: one row per submission, questions as columns.
- * Columns: ID, target name, member location, timestamps, then one column per unique question.
+ * Columns: ID, target name, self-help group, member location, timestamps, then one column per unique question.
  * Location cells remain empty for SHG/cluster submissions and for incomplete legacy links.
  *
  * When `groupBySurvey` is true and data contains multiple surveys, an empty divider row
@@ -73,6 +74,7 @@ export function buildSurveySubmissionsExportCsv(
   const columns: BaseDataCsvColumn[] = [
     { header: headers.id, cell: (r) => csvUuid(r._id) },
     { header: headers.memberName, cell: (r) => csvStr(r._memberName) },
+    { header: headers.selfHelpGroupName, cell: (r) => csvStr(r._selfHelpGroupName) },
     { header: headers.kebele, cell: (r) => csvStr(r._kebeleName) },
     { header: headers.woreda, cell: (r) => csvStr(r._woredaName) },
     { header: headers.zone, cell: (r) => csvStr(r._zoneName) },
@@ -94,6 +96,7 @@ export function buildSurveySubmissionsExportCsv(
         const divider: Record<string, unknown> = {
           _id: "",
           _memberName: "",
+          _selfHelpGroupName: "",
           _kebeleName: "",
           _woredaName: "",
           _zoneName: "",
@@ -113,9 +116,10 @@ export function buildSurveySubmissionsExportCsv(
         sub.clusterName ??
         sub.targetName ??
         "",
-      _kebeleName: sub.kebeleName ?? "",
-      _woredaName: sub.woredaName ?? "",
-      _zoneName: sub.zoneName ?? "",
+      _selfHelpGroupName: sub.selfHelpGroupName ?? "",
+      _kebeleName: sub.targetType === "MEMBER" ? sub.kebeleName ?? "" : "",
+      _woredaName: sub.targetType === "MEMBER" ? sub.woredaName ?? "" : "",
+      _zoneName: sub.targetType === "MEMBER" ? sub.zoneName ?? "" : "",
       _createdAt: sub.createdAt ?? sub.startedAt ?? "",
       _updatedAt: sub.updatedAt ?? sub.submittedAt ?? "",
     };

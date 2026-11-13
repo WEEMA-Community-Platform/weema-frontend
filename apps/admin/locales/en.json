@@ -232,6 +232,23 @@
       }
     }
   },
+  "exportDelivery": {
+    "title": "Send export by email?",
+    "singleDescription": "This export contains {count} rows and must be delivered by email as a CSV. It will be sent to your account email.",
+    "multipleDescription": "These exports contain {count} rows across {files} surveys. Each survey CSV will be sent separately to your account email.",
+    "localDownloadDescription": "The remaining smaller surveys will download as one CSV after you confirm.",
+    "cancel": "Cancel",
+    "send": "Send by email",
+    "sending": "Requesting…",
+    "queuedTitle": "Export requested",
+    "queuedDescription": "Your export is being prepared and will be sent to your email shortly.",
+    "queuedMultipleDescription": "{count} exports are being prepared and will be sent to your email shortly.",
+    "failedTitle": "Could not request export",
+    "failedDescription": "Please try again.",
+    "partialDescription": "{count} exports were already requested. Please retry the remaining exports.",
+    "localDownloadFailedTitle": "Download failed",
+    "localDownloadFailedDescription": "The email exports were requested, but the smaller surveys could not be downloaded."
+  },
   "community": {
     "export": {
       "button": "Export CSV",
@@ -893,6 +910,7 @@
         "columns": {
           "id": "ID",
           "memberName": "Name",
+          "selfHelpGroupName": "Self Help Group",
           "kebele": "Kebele",
           "woreda": "Woreda",
           "zone": "Zone",
@@ -936,6 +954,7 @@
         "columns": {
           "id": "ID",
           "memberName": "Name",
+          "selfHelpGroupName": "Self Help Group",
           "kebele": "Kebele",
           "woreda": "Woreda",
           "zone": "Zone",

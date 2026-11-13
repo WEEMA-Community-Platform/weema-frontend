@@ -19,6 +19,7 @@ import { useUsersQuery } from "@/hooks/use-users-admin";
 import type { EntityStatus, SHG, SHGEstablishedByType } from "@/lib/api/community";
 import { exportSelfHelpGroupsList } from "@/lib/api/community";
 import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import {
   CardMetaRow,
   CommunityCard,
@@ -54,6 +55,7 @@ import {
 
 
 export function SHGManager() {
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const tPage = useTranslations("community.shg.page");
   const tCard = useTranslations("community.shg.card");
   const tForm = useTranslations("community.shg.form");
@@ -380,6 +382,7 @@ export function SHGManager() {
         description: tExport("successDescription", { count: data.length }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, "/api/export/self-help-groups")) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),

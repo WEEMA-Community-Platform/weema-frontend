@@ -58,6 +58,8 @@ import {
 import { downloadBaseDataCsv, exportFilename, slugifyForFilename } from "@/lib/base-data-csv";
 import { buildSurveySubmissionsExportCsv } from "@/lib/survey-submissions-export-csv";
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
+import { EmailExportRequiredError } from "@/lib/api/export";
 
 const PAGE_SIZE = 10;
 
@@ -85,6 +87,7 @@ function SurveyStatusBadge({ status }: { status?: string }) {
 
 export function SurveysPage() {
   const isViewerAdmin = useIsViewerAdmin();
+  const { offerRequiredExport, offerEmailExports } = useEmailExportConfirmation();
   const router = useRouter();
   const tList = useTranslations("survey.list");
   const tCard = useTranslations("survey.list.card");
@@ -215,6 +218,7 @@ export function SurveysPage() {
     () => ({
       id: tListCol("id"),
       memberName: tListCol("memberName"),
+      selfHelpGroupName: tListCol("selfHelpGroupName"),
       kebele: tListCol("kebele"),
       woreda: tListCol("woreda"),
       zone: tListCol("zone"),
@@ -228,13 +232,40 @@ export function SurveysPage() {
     setExportAllPending(true);
     try {
       const allData: Record<string, unknown>[] = [];
+      const emailJobs: { path: string; rowCount: number }[] = [];
       for (const survey of surveys) {
         try {
           const { data } = await exportSurveySubmissionsBySurveyId(survey.id);
           allData.push(...data);
-        } catch {
-          // skip surveys that fail to export
+        } catch (error) {
+          if (error instanceof EmailExportRequiredError) {
+            emailJobs.push({
+              path: `/api/export/survey-submissions/${encodeURIComponent(survey.id)}`,
+              rowCount: error.rowCount,
+            });
+            continue;
+          }
+          throw error;
         }
+      }
+      if (emailJobs.length > 0) {
+        offerEmailExports(emailJobs, {
+          hasLocalDownload: allData.length > 0,
+          onAccepted: () => {
+            if (allData.length === 0) return;
+            const { csv, rowCount } = buildSurveySubmissionsExportCsv(
+              allData,
+              submissionsExportHeaders,
+              { groupBySurvey: true }
+            );
+            downloadBaseDataCsv(csv, exportFilename("surveys-submissions"));
+            sileo.success({
+              title: tExport("successTitle"),
+              description: tExport("successDescription", { count: rowCount }),
+            });
+          },
+        });
+        return;
       }
       if (allData.length === 0) {
         sileo.warning({
@@ -286,6 +317,7 @@ export function SurveysPage() {
         description: tExport("successDescription", { count: rowCount }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, `/api/export/survey-submissions/${encodeURIComponent(survey.id)}`)) return;
       sileo.error({
         title: tExport("errorTitle"),
         description:

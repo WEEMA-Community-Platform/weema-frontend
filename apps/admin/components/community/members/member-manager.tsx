@@ -17,6 +17,7 @@ import { useSHGsQuery } from "@/hooks/use-community";
 import type { Member } from "@/lib/api/members";
 import { exportMembersList } from "@/lib/api/members";
 import { buildBaseDataCsv, csvUuid, downloadBaseDataCsv, exportFilename } from "@/lib/base-data-csv";
+import { useEmailExportConfirmation } from "@/components/export/email-export-provider";
 import { GENDER_OPTIONS } from "@/components/community/members/constants";
 import { MemberCreateDialog } from "@/components/community/members/member-create-dialog";
 import { MemberDeleteDialog } from "@/components/community/members/member-delete-dialog";
@@ -31,6 +32,7 @@ import { MemberTableCard } from "@/components/community/members/member-table-car
 import { useIsViewerAdmin } from "@/hooks/use-viewer-admin";
 
 export function MemberManager() {
+  const { offerRequiredExport } = useEmailExportConfirmation();
   const isViewerAdmin = useIsViewerAdmin();
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -245,6 +247,7 @@ export function MemberManager() {
         description: tExport("successDescription", { count: data.length }),
       });
     } catch (error) {
+      if (offerRequiredExport(error, "/api/export/members")) return;
       sileo.error({
         title: tExport("errorTitle"),
         description: error instanceof Error ? error.message : tValidation("unexpectedError"),

@@ -232,6 +232,23 @@
       }
     }
   },
+  "exportDelivery": {
+    "title": "የወጪ ፋይሉን በኢሜይል ይላክ?",
+    "singleDescription": "ይህ ማውጫ {count} ረድፎች አሉት፤ እንደ CSV ወደ የመለያዎ ኢሜይል መላክ አለበት።",
+    "multipleDescription": "እነዚህ ማውጫዎች በ {files} ዳሰሳዎች ውስጥ {count} ረድፎች አሏቸው። የእያንዳንዱ ዳሰሳ CSV በተናጠል ወደ ኢሜይልዎ ይላካል።",
+    "localDownloadDescription": "የቀሩት አነስተኛ ዳሰሳዎች ካረጋገጡ በኋላ በአንድ CSV ይወርዳሉ።",
+    "cancel": "ሰርዝ",
+    "send": "በኢሜይል ላክ",
+    "sending": "በመጠየቅ ላይ…",
+    "queuedTitle": "ማውጫው ተጠይቋል",
+    "queuedDescription": "ማውጫዎ በመዘጋጀት ላይ ነው፤ በቅርቡ ወደ ኢሜይልዎ ይላካል።",
+    "queuedMultipleDescription": "{count} ማውጫዎች በመዘጋጀት ላይ ናቸው፤ በቅርቡ ወደ ኢሜይልዎ ይላካሉ።",
+    "failedTitle": "ማውጫውን መጠየቅ አልተቻለም",
+    "failedDescription": "እንደገና ይሞክሩ።",
+    "partialDescription": "{count} ማውጫዎች ቀድሞ ተጠይቀዋል። ለቀሩት እንደገና ይሞክሩ።",
+    "localDownloadFailedTitle": "ማውረድ አልተሳካም",
+    "localDownloadFailedDescription": "የኢሜይል ማውጫዎች ተጠይቀዋል፤ ነገር ግን ትንንሾቹን ዳሰሳዎች ማውረድ አልተቻለም።"
+  },
   "community": {
     "export": {
       "button": "CSV ወደ ውጪ ላክ",
@@ -893,6 +910,7 @@
         "columns": {
           "id": "መለያ",
           "memberName": "ስም",
+          "selfHelpGroupName": "የራስ አገዝ ቡድን",
           "kebele": "ቀበሌ",
           "woreda": "ወረዳ",
           "zone": "ዞን",
@@ -936,6 +954,7 @@
         "columns": {
           "id": "መለያ",
           "memberName": "ስም",
+          "selfHelpGroupName": "የራስ አገዝ ቡድን",
           "kebele": "ቀበሌ",
           "woreda": "ወረዳ",
           "zone": "ዞን",
